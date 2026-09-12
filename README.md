@@ -4,7 +4,7 @@ A browser-based internal tool that lets staff clock their time against the contr
 
 ## Status
 
-Early planning — no code written yet. This README doubles as a working spec while the project takes shape.
+Initial browser prototype in progress. The current slice is a dependency-free local dashboard that exercises the main clocking workflow before the React/API/PostgreSQL stack is introduced.
 
 ## Planned Tech Stack
 
@@ -48,7 +48,22 @@ An editable table, per user, for logging non-working time (e.g. leave, breaks) s
 
 ## Getting Started
 
-_To be filled in once the project is scaffolded (install steps, environment variables, how to run it locally)._
+### Current prototype
+
+Open `index.html` directly in a browser. No build step or server is required for this first prototype.
+
+The prototype currently includes:
+
+- Persistent start/stop clock state using browser storage, so a refresh resumes an open session.
+- Live current-session timers and accumulated contract totals.
+- Draggable and pinnable contract tiles.
+- A local dummy user and sample contracts.
+- Editable non-working-time entries with duration totals.
+- Working-times calendar prototype with registered users, 5-minute timeline columns, scheduled start/end times, break blocks, and overtime-window labels.
+
+### Next setup step
+
+Node.js and npm are not currently available on the development machine. Install the current Node.js LTS release before converting this prototype to the planned React frontend and Express API. The external contract/suffix integration, PostgreSQL persistence, and report generation remain intentionally deferred until their interfaces are confirmed. The current browser prototype persists working-time templates locally and automatically pauses/resumes an active contract around the signed-in user's configured break.
 
 ## License
 

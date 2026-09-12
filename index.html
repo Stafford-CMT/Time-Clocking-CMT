@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#11242a">
+  <title>Contract Time Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-mark" aria-hidden="true">CT</div>
+      <div class="brand-copy">
+        <span class="eyebrow">Operations</span>
+        <strong>Contract time</strong>
+      </div>
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <button class="nav-item is-active" data-view="dashboard" type="button"><span class="nav-icon">+</span>Dashboard</button>
+        <button class="nav-item" data-view="working-times" type="button"><span class="nav-icon">~</span>Working times</button>
+        <button class="nav-item" data-view="edit-times" type="button"><span class="nav-icon">/</span>Edit times</button>
+      </nav>
+      <div class="sidebar-note">
+        <span class="status-dot"></span>
+        <span>Local workspace<br><strong>All changes saved</strong></span>
+      </div>
+      <div class="sidebar-resize" aria-label="Resize sidebar" title="Drag to resize sidebar"></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Saturday, 12 September 2026</p>
+          <h1>Good morning, Jordan.</h1>
+        </div>
+        <button class="profile-button" type="button" aria-label="Open profile menu">
+          <span class="avatar">JR</span>
+          <span class="profile-text"><strong>Jordan Reed</strong><small>Field operations</small></span>
+          <span class="chevron">v</span>
+        </button>
+      </header>
+
+      <section class="view" data-view-panel="dashboard">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">Today at a glance</span>
+            <h2>Contract dashboard</h2>
+          </div>
+          <button class="add-button" id="add-contract" type="button"><span>+</span> Add contract</button>
+        </div>
+
+        <div class="metrics" aria-label="Daily summary">
+          <article class="metric-card accent-teal"><span class="metric-label">Tracked today</span><strong id="tracked-total">00:00:00</strong><small>Across all contracts</small></article>
+          <article class="metric-card accent-coral"><span class="metric-label">Non-working</span><strong id="non-working-total">00:00</strong><small>Logged today</small></article>
+        </div>
+
+        <div class="dashboard-toolbar">
+          <div>
+            <span class="toolbar-title">Your contracts</span>
+            <span class="toolbar-hint">Drag to arrange your workspace</span>
+          </div>
+          <div class="toolbar-actions">
+            <button class="icon-button" id="reset-layout" type="button" title="Reset tile layout" aria-label="Reset tile layout">&#8634;</button>
+            <label class="select-wrap">Sort <select id="sort-contracts"><option value="custom">Custom order</option><option value="active">Active first</option><option value="name">Contract name</option></select></label>
+          </div>
+        </div>
+        <div class="tile-grid" id="contract-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="view is-hidden" data-view-panel="working-times">
+        <div class="section-heading">
+          <div><span class="section-kicker">Daily schedule template</span><h2>Working times</h2></div>
+          <button class="add-button" id="add-user" type="button" title="Add a registered user"><span>+</span> Add user</button>
+        </div>
+        <div class="schedule-card">
+          <div class="schedule-toolbar"></div>
+          <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading">Team member</div><div class="timeline-heading" id="timeline-heading"></div></div><div id="working-time-rows"></div></div>
+          <p class="empty-state is-hidden" id="empty-state">No registered users yet. Add a user to build the schedule.</p>
+          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Scheduled work</span><span><i class="legend-swatch break-swatch"></i>Break</span></div>
+        </div>
+      </section>
+
+      <section class="view is-hidden" data-view-panel="edit-times">
+        <div class="section-heading">
+          <div><span class="section-kicker">Correct recorded contract time</span><h2>Edit times</h2></div>
+          <label class="date-control">Day<input id="edit-times-date" type="date" value="2026-09-12"></label>
+        </div>
+        <div class="schedule-card edit-times-card">
+          <div class="schedule-toolbar"><div><strong>Jordan Reed</strong><span>Current active user</span></div></div>
+          <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading">Contract</div><div class="timeline-heading" id="edit-timeline-heading"></div></div><div id="edit-time-rows"></div></div>
+          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="modal-backdrop is-hidden" id="contract-modal" role="presentation">
+    <form class="modal" id="contract-form" aria-labelledby="contract-modal-title">
+      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="contract-modal-title">Add contract</h2></div><button class="modal-close" id="close-contract-modal" type="button" aria-label="Close add contract form">&times;</button></div>
+      <label>Contract name<input id="contract-name" name="name" required placeholder="e.g. Meridian House"></label>
+      <div class="form-row"><label>Contract number<input id="contract-number" name="number" required placeholder="e.g. CNT-1048"></label><label>Suffix<input id="contract-suffix" name="suffix" required placeholder="e.g. A-01"></label></div>
+      <div class="modal-actions"><button class="secondary-button" id="cancel-contract" type="button">Cancel</button><button class="add-button" type="submit"><span>+</span> Add contract</button></div>
+    </form>
+  </div>
+  <div class="modal-backdrop is-hidden" id="schedule-modal" role="presentation">
+    <form class="modal" id="schedule-form" aria-labelledby="schedule-modal-title">
+      <div class="modal-header"><div><span class="section-kicker">Working times</span><h2 id="schedule-modal-title">Add user</h2></div><button class="modal-close" id="close-schedule-modal" type="button" aria-label="Close working times form">&times;</button></div>
+      <label>User name<input id="schedule-user-name" name="name" required placeholder="e.g. Alex Morgan"></label>
+      <div class="form-row"><label>Work starts<input id="schedule-start" name="start" type="time" value="06:00" required></label><label>Work ends<input id="schedule-end" name="end" type="time" value="15:00" required></label></div>
+      <div class="form-row"><label>Break starts<input id="schedule-break-start" name="breakStart" type="time" value="12:30"></label><label>Break ends<input id="schedule-break-end" name="breakEnd" type="time" value="13:05"></label></div>
+      <div class="modal-actions"><button class="secondary-button" id="cancel-schedule" type="button">Cancel</button><button class="add-button" type="submit"><span>+</span> Save user</button></div>
+    </form>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <div class="drag-tooltip is-hidden" id="drag-tooltip" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
