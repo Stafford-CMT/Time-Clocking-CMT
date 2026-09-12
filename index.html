@@ -16,9 +16,9 @@
         <strong>Contract time</strong>
       </div>
       <nav class="primary-nav" aria-label="Primary navigation">
-        <button class="nav-item is-active" data-view="dashboard" type="button"><span class="nav-icon">+</span>Dashboard</button>
-        <button class="nav-item" data-view="working-times" type="button"><span class="nav-icon">~</span>Working times</button>
-        <button class="nav-item" data-view="edit-times" type="button"><span class="nav-icon">/</span>Edit times</button>
+        <button class="nav-item is-active" data-view="dashboard" type="button">Dashboard</button>
+        <button class="nav-item" data-view="working-times" type="button">Working times</button>
+        <button class="nav-item" data-view="edit-times" type="button">Edit or Commit times</button>
       </nav>
       <div class="sidebar-note">
         <span class="status-dot"></span>
@@ -46,7 +46,10 @@
             <span class="section-kicker">Today at a glance</span>
             <h2>Contract dashboard</h2>
           </div>
-          <button class="add-button" id="add-contract" type="button"><span>+</span> Add contract</button>
+          <div class="section-heading-actions">
+            <button class="add-button" id="open-lists" type="button"><span>+</span> Lists</button>
+            <button class="add-button" id="add-contract" type="button"><span>+</span> Add tile</button>
+          </div>
         </div>
 
         <div class="metrics" aria-label="Daily summary">
@@ -60,8 +63,7 @@
             <span class="toolbar-hint">Drag to arrange your workspace</span>
           </div>
           <div class="toolbar-actions">
-            <button class="icon-button" id="reset-layout" type="button" title="Reset tile layout" aria-label="Reset tile layout">&#8634;</button>
-            <label class="select-wrap">Sort <select id="sort-contracts"><option value="custom">Custom order</option><option value="active">Active first</option><option value="name">Contract name</option></select></label>
+            <label class="select-wrap">Filter <select id="filter-contracts"><option value="visible">Visible</option><option value="hidden">Hidden</option><option value="all">All</option></select></label>
           </div>
         </div>
         <div class="tile-grid" id="contract-grid" aria-live="polite"></div>
@@ -86,7 +88,7 @@
           <label class="date-control">Day<input id="edit-times-date" type="date" value="2026-09-12"></label>
         </div>
         <div class="schedule-card edit-times-card">
-          <div class="schedule-toolbar"><div><strong>Jordan Reed</strong><span>Current active user</span></div></div>
+          <div class="schedule-toolbar"><div class="edit-user-block"><div class="edit-user-text"><strong>Jordan Reed</strong><span>Current active user</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button></div></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading">Contract</div><div class="timeline-heading" id="edit-timeline-heading"></div></div><div id="edit-time-rows"></div></div>
           <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span></div>
         </div>
@@ -95,10 +97,13 @@
   </div>
   <div class="modal-backdrop is-hidden" id="contract-modal" role="presentation">
     <form class="modal" id="contract-form" aria-labelledby="contract-modal-title">
-      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="contract-modal-title">Add contract</h2></div><button class="modal-close" id="close-contract-modal" type="button" aria-label="Close add contract form">&times;</button></div>
-      <label>Contract name<input id="contract-name" name="name" required placeholder="e.g. Meridian House"></label>
-      <div class="form-row"><label>Contract number<input id="contract-number" name="number" required placeholder="e.g. CNT-1048"></label><label>Suffix<input id="contract-suffix" name="suffix" required placeholder="e.g. A-01"></label></div>
-      <div class="modal-actions"><button class="secondary-button" id="cancel-contract" type="button">Cancel</button><button class="add-button" type="submit"><span>+</span> Add contract</button></div>
+      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="contract-modal-title">Add tile</h2></div><button class="modal-close" id="close-contract-modal" type="button" aria-label="Close add tile form">&times;</button></div>
+      <label>Customer name<input id="contract-customer-name" class="force-uppercase" name="customerName" required placeholder="e.g. Meridian House"></label>
+      <div class="form-row"><label>Contract number<input id="contract-number" class="force-uppercase" name="number" required placeholder="e.g. CNT-1048"></label><label>Suffix<input id="contract-suffix" class="force-uppercase" name="suffix" required placeholder="e.g. A-01"></label></div>
+      <label>Suffix description<input id="contract-suffix-description" class="force-uppercase" name="suffixDescription" placeholder="e.g. Ground floor works"></label>
+      <label>Machine type<select id="contract-machine-type" name="machineType"><option value="">Select machine type</option></select></label>
+      <label>Image<span class="modal-image-preview" id="contract-image-preview"></span><input id="contract-image" name="image" type="file" accept="image/*"></label>
+      <div class="modal-actions"><button class="secondary-button" id="cancel-contract" type="button">Cancel</button><button class="add-button" id="contract-submit" type="submit"><span>+</span> Add tile</button></div>
     </form>
   </div>
   <div class="modal-backdrop is-hidden" id="schedule-modal" role="presentation">
@@ -109,6 +114,35 @@
       <div class="form-row"><label>Break starts<input id="schedule-break-start" name="breakStart" type="time" value="12:30"></label><label>Break ends<input id="schedule-break-end" name="breakEnd" type="time" value="13:05"></label></div>
       <div class="modal-actions"><button class="secondary-button" id="cancel-schedule" type="button">Cancel</button><button class="add-button" type="submit"><span>+</span> Save user</button></div>
     </form>
+  </div>
+  <div class="modal-backdrop is-hidden" id="lists-modal" role="presentation">
+    <form class="modal" id="lists-form" aria-labelledby="lists-modal-title">
+      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="lists-modal-title">Manage lists</h2></div><button class="modal-close" id="close-lists-modal" type="button" aria-label="Close manage lists">&times;</button></div>
+      <label>Machine type
+        <div class="list-add-row"><input id="machine-type-input" type="text" placeholder="e.g. Excavator"><button class="secondary-button" id="add-machine-type" type="submit">Add</button></div>
+      </label>
+      <ul class="list-items" id="machine-type-list"></ul>
+      <div class="modal-actions"><button class="secondary-button" id="close-lists" type="button">Close</button></div>
+    </form>
+  </div>
+  <div class="modal-backdrop is-hidden" id="confirm-modal" role="alertdialog" aria-labelledby="confirm-modal-message">
+    <div class="modal confirm-modal">
+      <p id="confirm-modal-message"></p>
+      <div class="modal-actions"><button class="secondary-button" id="confirm-modal-cancel" type="button">Cancel</button><button class="confirm-danger-button" id="confirm-modal-confirm" type="button">Confirm</button></div>
+    </div>
+  </div>
+  <div class="modal-backdrop is-hidden" id="image-viewer-modal" role="presentation">
+    <div class="image-viewer">
+      <div class="image-viewer-toolbar">
+        <button class="icon-button" id="image-zoom-out" type="button" title="Zoom out" aria-label="Zoom out">&#8722;</button>
+        <button class="icon-button" id="image-zoom-fit" type="button" title="Zoom to fit" aria-label="Zoom to fit">&#8865;</button>
+        <button class="icon-button" id="image-zoom-in" type="button" title="Zoom in" aria-label="Zoom in">&#43;</button>
+        <button class="modal-close" id="close-image-viewer" type="button" aria-label="Close image viewer">&times;</button>
+      </div>
+      <div class="image-viewer-viewport" id="image-viewer-viewport">
+        <img id="image-viewer-img" alt="Tile image">
+      </div>
+    </div>
   </div>
   <div class="toast" id="toast" role="status"></div>
   <div class="drag-tooltip is-hidden" id="drag-tooltip" role="status"></div>
