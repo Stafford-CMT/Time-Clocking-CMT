@@ -17,7 +17,14 @@
       </div>
       <nav class="primary-nav" aria-label="Primary navigation">
         <button class="nav-item is-active" data-view="dashboard" type="button">Dashboard</button>
-        <button class="nav-item" data-view="working-times" type="button">Working times</button>
+        <div class="nav-group">
+          <button class="nav-item nav-parent" id="nav-setup-toggle" type="button" aria-expanded="false">Setup<span class="nav-chevron"></span></button>
+          <div class="nav-children is-hidden" id="nav-setup-children">
+            <button class="nav-item nav-child" data-view="working-times" type="button">Working times</button>
+            <button class="nav-item nav-child" data-view="contract-information" type="button">Contract information</button>
+            <button class="nav-item nav-child" id="nav-lists-open" type="button">Lists</button>
+          </div>
+        </div>
         <button class="nav-item" data-view="edit-times" type="button">Edit or Commit times</button>
       </nav>
       <div class="sidebar-note">
@@ -30,13 +37,13 @@
     <main class="main-content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Saturday, 12 September 2026</p>
+          <p class="eyebrow" id="today-date">Loading date…</p>
           <h1>Good morning, Jordan.</h1>
         </div>
         <button class="profile-button" type="button" aria-label="Open profile menu">
           <span class="avatar">JR</span>
           <span class="profile-text"><strong>Jordan Reed</strong><small>Field operations</small></span>
-          <span class="chevron">v</span>
+          <span class="chevron"></span>
         </button>
       </header>
 
@@ -72,7 +79,6 @@
       <section class="view is-hidden" data-view-panel="working-times">
         <div class="section-heading">
           <div><span class="section-kicker">Daily schedule template</span><h2>Working times</h2></div>
-          <button class="add-button" id="add-user" type="button" title="Add a registered user"><span>+</span> Add user</button>
         </div>
         <div class="schedule-card">
           <div class="schedule-toolbar"></div>
@@ -85,12 +91,34 @@
       <section class="view is-hidden" data-view-panel="edit-times">
         <div class="section-heading">
           <div><span class="section-kicker">Correct recorded contract time</span><h2>Edit times</h2></div>
-          <label class="date-control">Day<input id="edit-times-date" type="date" value="2026-09-12"></label>
+          <div class="section-heading-actions">
+            <span class="committed-badge is-hidden" id="committed-badge">&#128274; Committed</span>
+            <label class="date-control">Day<input id="edit-times-date" type="date"></label>
+          </div>
         </div>
-        <div class="schedule-card edit-times-card">
-          <div class="schedule-toolbar"><div class="edit-user-block"><div class="edit-user-text"><strong>Jordan Reed</strong><span>Current active user</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button></div></div>
+        <div class="schedule-card edit-times-card" id="edit-times-card">
+          <div class="schedule-toolbar"><div class="edit-user-block"><div class="edit-user-text"><strong>Jordan Reed</strong><span>Current active user</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button></div><label class="admin-toggle-label"><input type="checkbox" id="admin-mode-toggle">Admin mode</label></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading">Contract</div><div class="timeline-heading" id="edit-timeline-heading"></div></div><div id="edit-time-rows"></div></div>
           <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span></div>
+        </div>
+      </section>
+
+      <section class="view is-hidden" data-view-panel="contract-information">
+        <div class="section-heading">
+          <div><span class="section-kicker">Dashboard setup</span><h2>Contract information</h2></div>
+          <button class="add-button" id="add-contract-info" type="button"><span>+</span> Add contract</button>
+        </div>
+        <div class="table-card">
+          <div class="table-intro"><div><strong>Reference contracts</strong><span>Master contract details used elsewhere in the app</span></div></div>
+          <div class="table-scroll">
+            <table class="contract-info-table">
+              <thead>
+                <tr><th>Contract number</th><th>Machine type</th><th class="col-wide">Customer name</th><th>Sales Release</th><th>Order Confirmation</th><th class="col-icon"></th><th class="col-icon"></th></tr>
+              </thead>
+              <tbody id="contract-info-rows"></tbody>
+            </table>
+          </div>
+          <p class="empty-state is-hidden" id="contract-info-empty">No contract information yet. Add one to get started.</p>
         </div>
       </section>
     </main>
@@ -98,10 +126,10 @@
   <div class="modal-backdrop is-hidden" id="contract-modal" role="presentation">
     <form class="modal" id="contract-form" aria-labelledby="contract-modal-title">
       <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="contract-modal-title">Add tile</h2></div><button class="modal-close" id="close-contract-modal" type="button" aria-label="Close add tile form">&times;</button></div>
-      <label>Customer name<input id="contract-customer-name" class="force-uppercase" name="customerName" required placeholder="e.g. Meridian House"></label>
-      <div class="form-row"><label>Contract number<input id="contract-number" class="force-uppercase" name="number" required placeholder="e.g. CNT-1048"></label><label>Suffix<input id="contract-suffix" class="force-uppercase" name="suffix" required placeholder="e.g. A-01"></label></div>
-      <label>Suffix description<input id="contract-suffix-description" class="force-uppercase" name="suffixDescription" placeholder="e.g. Ground floor works"></label>
-      <label>Machine type<select id="contract-machine-type" name="machineType"><option value="">Select machine type</option></select></label>
+      <label>Customer name<select id="contract-customer-name" class="force-uppercase" name="customerName" required><option value="">Select customer</option></select></label>
+      <div class="form-row"><label>Contract number<select id="contract-number" class="force-uppercase" name="number" required><option value="">Select contract number</option></select></label><label>Suffix<select id="contract-suffix" class="force-uppercase" name="suffix"><option value="">Select suffix</option></select></label></div>
+      <label>Suffix description<input id="contract-suffix-description" class="force-uppercase" name="suffixDescription" readonly placeholder="Auto-filled from suffix"></label>
+      <label>Machine type<input id="contract-machine-type" name="machineType" readonly placeholder="Auto-filled from contract"></label>
       <label>Image<span class="modal-image-preview" id="contract-image-preview"></span><input id="contract-image" name="image" type="file" accept="image/*"></label>
       <div class="modal-actions"><button class="secondary-button" id="cancel-contract" type="button">Cancel</button><button class="add-button" id="contract-submit" type="submit"><span>+</span> Add tile</button></div>
     </form>
@@ -109,21 +137,62 @@
   <div class="modal-backdrop is-hidden" id="schedule-modal" role="presentation">
     <form class="modal" id="schedule-form" aria-labelledby="schedule-modal-title">
       <div class="modal-header"><div><span class="section-kicker">Working times</span><h2 id="schedule-modal-title">Add user</h2></div><button class="modal-close" id="close-schedule-modal" type="button" aria-label="Close working times form">&times;</button></div>
-      <label>User name<input id="schedule-user-name" name="name" required placeholder="e.g. Alex Morgan"></label>
+      <label>User's name<select id="schedule-user-name" name="userId" required><option value="">Select user</option></select></label>
       <div class="form-row"><label>Work starts<input id="schedule-start" name="start" type="time" value="06:00" required></label><label>Work ends<input id="schedule-end" name="end" type="time" value="15:00" required></label></div>
-      <div class="form-row"><label>Break starts<input id="schedule-break-start" name="breakStart" type="time" value="12:30"></label><label>Break ends<input id="schedule-break-end" name="breakEnd" type="time" value="13:05"></label></div>
-      <div class="modal-actions"><button class="secondary-button" id="cancel-schedule" type="button">Cancel</button><button class="add-button" type="submit"><span>+</span> Save user</button></div>
+      <div id="schedule-break-rows"></div>
+      <div class="modal-actions"><button class="secondary-button" id="cancel-schedule" type="button">Cancel</button><button class="add-button" type="submit">Save</button></div>
     </form>
   </div>
   <div class="modal-backdrop is-hidden" id="lists-modal" role="presentation">
-    <form class="modal" id="lists-form" aria-labelledby="lists-modal-title">
+    <div class="modal" aria-labelledby="lists-modal-title">
       <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="lists-modal-title">Manage lists</h2></div><button class="modal-close" id="close-lists-modal" type="button" aria-label="Close manage lists">&times;</button></div>
-      <label>Machine type
-        <div class="list-add-row"><input id="machine-type-input" type="text" placeholder="e.g. Excavator"><button class="secondary-button" id="add-machine-type" type="submit">Add</button></div>
-      </label>
-      <ul class="list-items" id="machine-type-list"></ul>
-      <div class="modal-actions"><button class="secondary-button" id="close-lists" type="button">Close</button></div>
-    </form>
+      <div class="modal-tabs">
+        <button class="modal-tab is-active" data-list-tab="machine-type" type="button">Machine type</button>
+        <button class="modal-tab" data-list-tab="suffix-description" type="button">Suffix description</button>
+        <button class="modal-tab" data-list-tab="customers" type="button">Customers</button>
+        <button class="modal-tab" data-list-tab="users" type="button">Users</button>
+        <button class="modal-tab" data-list-tab="cost-centres" type="button">Cost centre</button>
+      </div>
+      <form class="modal-tab-panel" id="machine-type-panel" data-list-panel="machine-type">
+        <label>Machine type
+          <div class="list-add-row"><input id="machine-type-input" type="text" placeholder="e.g. Excavator"><button class="add-button" type="submit">+ Add machine type</button></div>
+        </label>
+        <ul class="list-items" id="machine-type-list"></ul>
+      </form>
+      <form class="modal-tab-panel is-hidden" id="suffix-description-panel" data-list-panel="suffix-description">
+        <label>Suffix description
+          <div class="list-add-row"><input id="suffix-description-input" type="text" placeholder="e.g. Ground floor works"><button class="add-button" type="submit">+ Add suffix description</button></div>
+        </label>
+        <ul class="list-items" id="suffix-description-list"></ul>
+      </form>
+      <form class="modal-tab-panel is-hidden" id="customers-panel" data-list-panel="customers">
+        <label>Customer name
+          <div class="list-add-row"><input id="customer-input" type="text" placeholder="e.g. Meridian House"><button class="add-button" type="submit">+ Add customer</button></div>
+        </label>
+        <ul class="list-items" id="customer-list"></ul>
+      </form>
+      <div class="modal-tab-panel is-hidden" id="users-panel" data-list-panel="users">
+        <div class="default-working-times">
+          <span class="default-working-times-label">Default working times for new users</span>
+          <div class="default-working-times-grid">
+            <label>Work starts<input id="default-wt-start" type="time"></label>
+            <label>Work ends<input id="default-wt-end" type="time"></label>
+            <label>Break 1 starts<input id="default-wt-break1-start" type="time"></label>
+            <label>Break 1 ends<input id="default-wt-break1-end" type="time"></label>
+            <label>Break 2 starts<input id="default-wt-break2-start" type="time"></label>
+            <label>Break 2 ends<input id="default-wt-break2-end" type="time"></label>
+          </div>
+        </div>
+        <div class="users-panel-header"><span>Registered users</span><button class="add-button" id="add-user-list" type="button">+ Add user</button></div>
+        <div class="table-scroll"><table class="users-table"><thead><tr><th>Name</th><th>Email</th><th>User type</th><th>Cost centre</th><th></th></tr></thead><tbody id="user-rows"></tbody></table></div>
+      </div>
+      <form class="modal-tab-panel is-hidden" id="cost-centres-panel" data-list-panel="cost-centres">
+        <label>Cost centre
+          <div class="list-add-row"><input id="cost-centre-input" type="text" placeholder="e.g. CC-100 Groundworks"><button class="add-button" type="submit">+ Add cost centre</button></div>
+        </label>
+        <ul class="list-items" id="cost-centre-list"></ul>
+      </form>
+    </div>
   </div>
   <div class="modal-backdrop is-hidden" id="confirm-modal" role="alertdialog" aria-labelledby="confirm-modal-message">
     <div class="modal confirm-modal">
