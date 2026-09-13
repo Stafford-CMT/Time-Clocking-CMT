@@ -38,13 +38,15 @@
       <header class="topbar">
         <div>
           <p class="eyebrow" id="today-date">Loading date…</p>
-          <h1>Good morning, Jordan.</h1>
+          <h1 id="current-user-greeting">Good morning.</h1>
         </div>
-        <button class="profile-button" type="button" aria-label="Open profile menu">
-          <span class="avatar">JR</span>
-          <span class="profile-text"><strong>Jordan Reed</strong><small>Field operations</small></span>
-          <span class="chevron"></span>
-        </button>
+        <div class="profile-button">
+          <span class="avatar" id="current-user-avatar">?</span>
+          <span class="profile-text">
+            <select id="current-user-select" class="current-user-select" aria-label="Switch acting user"></select>
+            <small>Acting as (no login yet)</small>
+          </span>
+        </div>
       </header>
 
       <section class="view" data-view-panel="dashboard">
@@ -97,7 +99,7 @@
           </div>
         </div>
         <div class="schedule-card edit-times-card" id="edit-times-card">
-          <div class="schedule-toolbar"><div class="edit-user-block"><div class="edit-user-text"><strong>Jordan Reed</strong><span>Current active user</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button></div><label class="admin-toggle-label"><input type="checkbox" id="admin-mode-toggle">Admin mode</label></div>
+          <div class="schedule-toolbar"><div class="edit-user-block"><div class="edit-user-text"><strong id="edit-user-name">Jordan Reed</strong><span>Current active user</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button></div><label class="admin-toggle-label"><input type="checkbox" id="admin-mode-toggle">Admin mode</label></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading">Contract</div><div class="timeline-heading" id="edit-timeline-heading"></div></div><div id="edit-time-rows"></div></div>
           <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span></div>
         </div>
