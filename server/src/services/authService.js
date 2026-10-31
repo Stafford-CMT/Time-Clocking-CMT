@@ -32,7 +32,7 @@ async function completeLogin(code) {
 // path as a real sign-in, with a made-up oid standing in for Azure's.
 async function devLogin() {
   const email = env.devLoginEmail;
-  const name = email.split('@')[0].split(/[._-]/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+  const name = env.devLoginName || email.split('@')[0].split(/[._-]/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
   return usersService.findOrCreateFromAzureClaims({ oid: `dev-${email}`, email, name });
 }
 

@@ -20,6 +20,8 @@ module.exports = async function requireAuth(req, res, next) {
     // anything else reading req.session.user) always sees the current
     // value, not the one captured at login time.
     req.session.user.userType = current.user_type;
+    req.session.user.name = current.name;
+    req.session.user.email = current.email;
     next();
   } catch (err) {
     next(err);

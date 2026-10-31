@@ -32,7 +32,7 @@ async function findOrCreateFromAzureClaims({ oid, email, name }) {
   if (!user) {
     user = await usersRepo.create({ microsoftOid: oid, email, name, userType: 'user' });
   } else {
-    await usersRepo.touchLastLogin(user.id);
+    user = await usersRepo.recordSignIn(user.id, { email, name });
   }
   if (!user.is_active) throw new ApiError(403, 'This account has been deactivated');
   return toPublicUser(user);

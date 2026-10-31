@@ -96,7 +96,8 @@ still works without Caddy.
 
 Set `NODE_ENV=development` and `DEV_LOGIN_EMAIL=you@cliffeng.com` in `.env`
 (the `AZURE_*` values can then be blank). "Sign in with Microsoft" then
-signs you straight in as that email. You still need a PostgreSQL database
+signs you straight in as that email (add `DEV_LOGIN_NAME=Your Name` to
+show a proper name rather than one built from the email). You still need a PostgreSQL database
 and `npm run migrate`. The server refuses to start if `DEV_LOGIN_EMAIL` is
 set with `NODE_ENV=production`.
 

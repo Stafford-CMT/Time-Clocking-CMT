@@ -35,6 +35,7 @@ const azureSetting = (name) => (devLoginEmail ? process.env[name] || '' : requir
 module.exports = {
   nodeEnv,
   devLoginEmail,
+  devLoginName: (process.env.DEV_LOGIN_NAME || '').trim(),
   port: Number(process.env.PORT) || 4100,
 
   db: {

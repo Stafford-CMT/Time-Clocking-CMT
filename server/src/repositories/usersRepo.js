@@ -23,8 +23,18 @@ async function create({ microsoftOid, email, name, userType }) {
   return rows[0];
 }
 
-async function touchLastLogin(id) {
-  await getPool().query('UPDATE users SET last_login_at = now() WHERE id = $1', [id]);
+// Called on every sign-in: keeps name/email in step with Microsoft 365
+// (a blank value from Azure leaves the stored one alone).
+async function recordSignIn(id, { email, name }) {
+  const { rows } = await getPool().query(
+    `UPDATE users SET last_login_at = now(),
+       email = COALESCE($2, email),
+       name = COALESCE($3, name)
+     WHERE id = $1
+     RETURNING *`,
+    [id, email || null, name || null]
+  );
+  return rows[0];
 }
 
 async function listAll() {
@@ -51,4 +61,4 @@ async function countActiveAdmins() {
   return rows[0].n;
 }
 
-module.exports = { findByOid, findById, create, touchLastLogin, listAll, setUserType, setCostCentre, countActiveAdmins };
+module.exports = { findByOid, findById, create, recordSignIn, listAll, setUserType, setCostCentre, countActiveAdmins };
