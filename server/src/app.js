@@ -46,7 +46,9 @@ app.use(helmet({
 app.use(express.json({ limit: '15mb' })); // contract tile images ride as data: URLs, same limit as the localStorage prototype allowed
 app.use(sessionMiddleware);
 
-app.use('/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 20 }), authRoutes);
+// Development sign-in is exempt: switching between test accounts would
+// otherwise hit the limit within minutes.
+app.use('/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 20, skip: () => Boolean(env.devLoginEmail) }), authRoutes);
 
 // login.html (and its assets) must load before anyone can log in; everything
 // else in public/ requires a session, including index.html itself.

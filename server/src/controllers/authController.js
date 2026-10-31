@@ -15,7 +15,7 @@ function signIn(req, res, next, user) {
 
 async function login(req, res, next) {
   try {
-    if (env.devLoginEmail) return signIn(req, res, next, await authService.devLogin());
+    if (env.devLoginEmail) return signIn(req, res, next, await authService.devLogin(req.query.as || 'admin'));
     const url = await authService.getLoginRedirectUrl();
     res.redirect(url);
   } catch (err) {
@@ -54,4 +54,10 @@ function whoami(req, res) {
   res.json({ user: req.session.user || null });
 }
 
-module.exports = { login, callback, logout, whoami };
+// The sign-in page asks this to decide whether to offer the development
+// accounts; always empty outside development sign-in.
+function devAccounts(req, res) {
+  res.json({ accounts: authService.devAccounts().map(({ role, name }) => ({ role, name })) });
+}
+
+module.exports = { login, callback, logout, whoami, devAccounts };

@@ -97,7 +97,11 @@ still works without Caddy.
 Set `NODE_ENV=development` and `DEV_LOGIN_EMAIL=you@cliffeng.com` in `.env`
 (the `AZURE_*` values can then be blank). "Sign in with Microsoft" then
 signs you straight in as that email (add `DEV_LOGIN_NAME=Your Name` to
-show a proper name rather than one built from the email). You still need a PostgreSQL database
+show a proper name rather than one built from the email). The sign-in page
+then offers three test accounts — admin (that email), manager and user
+(`name+manager@…`, `name+user@…`) — so you can see the app as each role;
+sign out to switch. Each account's role is reset every time you sign in as
+it. You still need a PostgreSQL database
 and `npm run migrate`. The server refuses to start if `DEV_LOGIN_EMAIL` is
 set with `NODE_ENV=production`.
 
