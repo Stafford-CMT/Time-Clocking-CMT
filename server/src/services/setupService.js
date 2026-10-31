@@ -58,6 +58,16 @@ async function applyPatch(patch) {
   ARRAY_SECTIONS.forEach((key) => {
     if (key in patch && !Array.isArray(patch[key])) throw new ApiError(400, `${key} must be an array`);
   });
+  // Images and links end up in src/href attributes, so only let through the
+  // kinds the app itself produces (uploaded images, web links).
+  (patch.contracts?.upsert || []).forEach((contract) => {
+    if (contract.image && !/^data:image\//i.test(contract.image)) throw new ApiError(400, 'Tile image must be an uploaded image');
+  });
+  (patch.contractInfo || []).forEach((record) => {
+    ['oneDriveLink', 'orderConfirmationLink'].forEach((field) => {
+      if (record[field] && !/^https?:\/\//i.test(record[field])) throw new ApiError(400, 'Links must start with http:// or https://');
+    });
+  });
 
   await withTransaction(async (db) => {
     if (patch.contracts) {

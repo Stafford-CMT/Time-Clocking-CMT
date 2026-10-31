@@ -158,11 +158,6 @@ nobody is ever auto-admin or auto-manager.
 
 ## Known gaps
 
-- **HTML escaping:** the frontend builds its screens by inserting names
-  (customers, contracts, users…) into HTML without escaping. Harmless in the
-  single-browser prototype, but now that data is shared, someone could save
-  a name containing markup that runs in a colleague's browser. Should be
-  fixed before real use.
 - **Setup data is shared and unrestricted:** any signed-in user can edit
   lists, contract information, everyone's working times, and the tile
   layout (pinned/hidden/order is the same for everyone). Saves send only
@@ -174,6 +169,15 @@ nobody is ever auto-admin or auto-manager.
 - `state.nonWorking` has a table (`non_working`) and is round-tripped, but
   nothing in the current frontend renders or edits it — this is the
   root README's still-planned "Non-working time table" feature.
+
+## Shared data and HTML
+
+Names, links and images are shared between everyone, so the frontend must
+never put them into HTML as-is. In `public/app.js`, every stored value that
+goes into a template goes through `esc()`; links only render if they start
+with `http(s)://` (`safeUrl`), and tile images only if they are uploaded
+`data:image/` URLs (`safeImage`). The server also refuses any other kind of
+link or image in `PATCH /setup`. Keep to this when adding new screens.
 
 ## Project layout
 
