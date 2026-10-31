@@ -1,6 +1,8 @@
 'use strict';
 
 const usersRepo = require('../repositories/usersRepo');
+const setupRepo = require('../repositories/setupRepo');
+const { withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 const env = require('../config/env');
 
@@ -85,7 +87,11 @@ async function setIncluded(id, included, actorId) {
   if (!target) throw new ApiError(404, 'User not found');
   if (!included && id === actorId) throw new ApiError(400, 'You cannot remove yourself from Time Slide');
   if (!included && target.user_type === 'admin') throw new ApiError(400, 'Change their user type from Admin before removing them');
-  return toDirectoryEntry(await usersRepo.setIncluded(id, included));
+  const entry = toDirectoryEntry(await usersRepo.setIncluded(id, included));
+  // Ticking someone in gives them the default working times, so nobody has
+  // to be added again on the Working times screen.
+  entry.workingTimesAdded = included ? await withTransaction((db) => setupRepo.addDefaultWorkingTimes(db, id)) : false;
+  return entry;
 }
 
 // actorId is whoever is MAKING this change (the logged-in admin), never

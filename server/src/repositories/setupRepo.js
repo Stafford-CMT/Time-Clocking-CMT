@@ -10,6 +10,7 @@
  * /api/users.
  */
 const usersRepo = require('./usersRepo');
+const { uid } = require('../utils/ids');
 
 function timeToHm(value) {
   // pg returns TIME columns as 'HH:MM:SS' -- the setup screens use HH:MM.
@@ -184,7 +185,25 @@ async function replaceWorkingTimes(db, entries) {
   }
 }
 
+// Someone just ticked into Time Slide starts with a copy of the default
+// working times, unless they already have a row. Returns whether one was added.
+async function addDefaultWorkingTimes(db, userId) {
+  if ((await db.query('SELECT 1 FROM working_times WHERE user_id = $1', [userId])).rows.length) return false;
+  const defaults = (await db.query('SELECT start, "end" FROM default_working_times WHERE id = 1')).rows[0];
+  if (!defaults) return false;
+  const breaks = (await db.query('SELECT start, "end" FROM default_working_time_breaks ORDER BY sort_order')).rows;
+  const workingTimeId = uid('wt');
+  await db.query('INSERT INTO working_times (id, user_id, start, "end") VALUES ($1,$2,$3,$4)', [workingTimeId, userId, defaults.start, defaults.end]);
+  for (const [index, brk] of breaks.entries()) {
+    await db.query(
+      'INSERT INTO working_time_breaks (id, working_time_id, type, start, "end", sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
+      [uid('break'), workingTimeId, 'Break', brk.start, brk.end, index]
+    );
+  }
+  return true;
+}
+
 module.exports = {
   getSetup, upsertContract, setContractOrder, replaceNameList, replaceNonWorking,
-  replaceDefaultWorkingTimes, replaceContractInfo, replaceWorkingTimes,
+  replaceDefaultWorkingTimes, replaceContractInfo, replaceWorkingTimes, addDefaultWorkingTimes,
 };
