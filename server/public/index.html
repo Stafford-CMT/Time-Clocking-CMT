@@ -54,16 +54,11 @@
             <span class="section-kicker">Today at a glance</span>
             <h2>Contract dashboard</h2>
           </div>
-          <div class="section-heading-actions">
-            <button class="add-button" id="open-lists" type="button"><span>+</span> Lists</button>
-            <button class="add-button" id="add-contract" type="button"><span>+</span> Add tile</button>
+          <div class="metrics metrics-compact" aria-label="Daily summary">
+            <article class="metric-card accent-teal" title="Tracked today: across all contracts"><span class="metric-label">Tracked today</span><strong id="tracked-total">00:00:00</strong><small>Across all contracts</small></article>
+            <article class="metric-card accent-orange" id="non-contract-card" title="Non-contract: time not booked to a contract"><span class="metric-label">Non-contract</span><strong id="non-contract-total">00:00:00</strong><small>Time not booked to a contract</small><button class="metric-clock-button" id="non-contract-clock" type="button">Start</button></article>
+            <article class="metric-card accent-coral" title="Non-working: working hours with no clock running"><span class="metric-label">Non-working</span><strong id="non-working-total">00:00</strong><small>Working hours with no clock running</small></article>
           </div>
-        </div>
-
-        <div class="metrics" aria-label="Daily summary">
-          <article class="metric-card accent-teal"><span class="metric-label">Tracked today</span><strong id="tracked-total">00:00:00</strong><small>Across all contracts</small></article>
-          <article class="metric-card accent-orange" id="non-contract-card"><span class="metric-label">Non-contract</span><strong id="non-contract-total">00:00:00</strong><small>Time not booked to a contract</small><button class="metric-clock-button" id="non-contract-clock" type="button">Start</button></article>
-          <article class="metric-card accent-coral"><span class="metric-label">Non-working</span><strong id="non-working-total">00:00</strong><small>Working hours with no clock running</small></article>
         </div>
 
         <div class="dashboard-toolbar">
@@ -72,6 +67,8 @@
             <span class="toolbar-hint">Drag to arrange your workspace</span>
           </div>
           <div class="toolbar-actions">
+            <button class="add-button" id="open-lists" type="button"><span>+</span> Lists</button>
+            <button class="add-button" id="add-contract" type="button"><span>+</span> Add tile</button>
             <label class="select-wrap">Filter <select id="filter-contracts"><option value="visible">Visible</option><option value="hidden">Hidden</option><option value="all">All</option></select></label>
           </div>
         </div>

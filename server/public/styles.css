@@ -263,3 +263,11 @@ h2 { font-size: 27px; }
   .topbar { position: absolute; top: 36px; right: 32px; z-index: 5; margin: 0; }
   .section-heading { min-height: 66px; padding-right: var(--badge-space, 250px); }
 }
+/* Dashboard: the three daily figures sit in the title row as compact boxes (their explanation shows on hover) */
+.section-heading:has(.metrics-compact) { flex-wrap: wrap; row-gap: 12px; }
+.metrics.metrics-compact { display: flex; flex: 1 1 auto; justify-content: flex-end; gap: 8px; margin: 0; }
+.metrics-compact .metric-card { min-height: 0; display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 10px; row-gap: 1px; padding: 7px 11px 8px; border-radius: 11px; cursor: default; }
+.metrics-compact .metric-card::after, .metrics-compact .metric-card small { display: none; }
+.metrics-compact .metric-label { grid-column: 1 / -1; font-size: 10px; }
+.metrics-compact .metric-card strong { margin: 0; font-size: 19px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.metrics-compact .metric-clock-button { position: static; padding: 3px 9px; font-size: 10px; }
