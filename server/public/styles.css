@@ -218,3 +218,13 @@ h2 { font-size: 27px; }
 #lists-modal .modal-header, #lists-modal .modal-tabs { flex: 0 0 auto; }
 #lists-modal .modal-tab-panel { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 #lists-modal .users-table thead th { position: sticky; top: 0; z-index: 1; background: #fff; }
+/* Edit times: a clock that is still running (live bar, not editable until stopped) */
+.edit-session-block.is-running { cursor: default; background: #cfe8df; box-shadow: inset 0 0 0 1.5px #7cc3b4; }
+.edit-session-block.is-running:hover { background: #cfe8df; }
+.edit-session-block.is-running::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 14px; background: repeating-linear-gradient(135deg, rgba(20, 125, 120, .45) 0 4px, transparent 4px 8px); background-size: 11.3px 11.3px; animation: running-edge 1s linear infinite; }
+.is-non-contract .edit-session-block.is-running, .is-non-contract .edit-session-block.is-running:hover { background: #fbdcb8; box-shadow: inset 0 0 0 1.5px #e9a660; }
+.is-non-contract .edit-session-block.is-running::after { background-image: repeating-linear-gradient(135deg, rgba(201, 111, 34, .5) 0 4px, transparent 4px 8px); }
+.running-label { position: relative; z-index: 1; color: var(--teal-dark); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.is-non-contract .running-label { color: #a85a17; }
+@keyframes running-edge { from { background-position: 0 0; } to { background-position: 11.3px 0; } }
+@media (prefers-reduced-motion: reduce) { .edit-session-block.is-running::after { animation: none; } }
