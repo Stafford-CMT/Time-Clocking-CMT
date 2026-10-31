@@ -21,7 +21,7 @@ button { cursor: pointer; }
 /* EXPERIMENTAL — remove this rule to revert the long-press unlink/relink feature (see app.js for the matching note) */
 .edit-session-block.is-unlinked { border: 2px dashed #c6534b; background: #ffe4e0; }
 #edit-time-rows { position: relative; width: 1680px; }
-.edit-break-overlay { position: absolute; top: 0; left: 240px; width: 1440px; bottom: 0; z-index: 3; pointer-events: none; }
+.edit-break-overlay { position: absolute; top: 0; left: 240px; width: calc(1440px * var(--edit-zoom, 1)); bottom: 0; z-index: 3; pointer-events: none; }
 .edit-break-band { position: absolute; top: 0; bottom: 0; background: rgba(255, 228, 218, .55); border-left: 1px solid #e5a18e; border-right: 1px solid #e5a18e; }
 .brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: var(--teal); color: #fff; font: 700 15px 'Space Grotesk'; letter-spacing: -.5px; }
 .brand-copy { margin: -40px 0 70px 55px; display: flex; flex-direction: column; gap: 3px; }
@@ -99,7 +99,16 @@ h2 { font-size: 27px; }
 .user-name-line .remove-user:hover { background: #fff0e9; color: #a44d3c; }
 .user-cell { position: sticky; }
 .user-cell .add-break { position: absolute; top: auto; bottom: 4px; right: 8px; width: max-content; padding: 0 4px; }
-.edit-times-card .schedule-header, .edit-times-card .schedule-row { grid-template-columns: 240px 1440px; min-width: 1680px; }
+.edit-times-card .schedule-header, .edit-times-card .schedule-row { grid-template-columns: 240px calc(1440px * var(--edit-zoom, 1)); min-width: calc(240px + 1440px * var(--edit-zoom, 1)); }
+.edit-times-card { --edit-zoom: 1; --grid-minutes: 5; --minute: calc(1px * var(--edit-zoom)); }
+.edit-times-card .timeline-lane { background-image: repeating-linear-gradient(to right, transparent 0, transparent calc(var(--minute) * var(--grid-minutes) - 1px), #e9f0ed calc(var(--minute) * var(--grid-minutes) - 1px), #e9f0ed calc(var(--minute) * var(--grid-minutes))); }
+.edit-times-card .timeline-lane::before { background: repeating-linear-gradient(to right, transparent 0, transparent calc(var(--minute) * 60 - 1px), rgba(20, 125, 120, .12) calc(var(--minute) * 60 - 1px), rgba(20, 125, 120, .12) calc(var(--minute) * 60)); }
+.edit-times-card .timeline-heading span { overflow: hidden; padding-left: 3px; white-space: nowrap; }
+.zoom-bar { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.zoom-bar input[type="range"] { width: 140px; accent-color: var(--teal); cursor: pointer; }
+.zoom-button { width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 6px; background: #fafcf9; color: var(--ink); font-size: 15px; line-height: 1; cursor: pointer; }
+.zoom-button:hover, .zoom-value:hover { border-color: var(--teal); }
+.zoom-value { min-width: 44px; height: 26px; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--muted); font-size: 11px; font-weight: 700; cursor: pointer; }
 .modal .form-row { grid-template-columns: 1fr 1fr; }
 .modal .form-row input { width: 100%; }
 .timeline-lane { background-image: repeating-linear-gradient(to right, transparent 0, transparent 5px, #e9f0ed 5px, #e9f0ed 6px); }
