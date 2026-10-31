@@ -88,8 +88,11 @@ h2 { font-size: 27px; }
 .tile:has(.clock-button.is-running).is-pinned { border-color: #4eb9ac; }
 @keyframes active-glow { 0%, 100% { box-shadow: 0 0 0 3px rgba(78, 185, 172, .15), 0 0 20px rgba(20, 125, 120, .22), var(--shadow); } 50% { box-shadow: 0 0 0 4px rgba(78, 185, 172, .24), 0 0 32px rgba(20, 125, 120, .38), var(--shadow); } }
 .tile:not(.is-pinned) .pin-action { color: var(--muted); }
-.tile:not(.is-pinned) .pin-action { filter: grayscale(1); opacity: .62; }
-.tile.is-pinned .pin-action { color: #c6534b; filter: none; opacity: 1; }
+.pin-action .pin-icon { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tile:not(.is-pinned) .pin-action { color: #9aa8a6; }
+.tile:not(.is-pinned) .pin-action:hover { color: #c99a2e; }
+.tile.is-pinned .pin-action { color: #c99a2e; }
+.tile.is-pinned .pin-action .pin-head { fill: #f3c969; }
 .tile-action.pin-action, .tile-action.pin-action:hover, .tile.is-pinned .pin-action, .tile.is-pinned .pin-action:hover { background: transparent; }
 .tile.is-hidden-contract { opacity: .6; border-style: dashed; }
 .tile.is-hidden-contract .delete-contract { color: var(--teal-dark); }
