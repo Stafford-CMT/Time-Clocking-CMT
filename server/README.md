@@ -29,6 +29,11 @@ In the Azure Portal → **App registrations** → New registration (name it
 **Time Slide**; the live address is `timeslide.cliffeng.com`):
 - Add redirect URIs (Web platform): `https://timeslide.cliffeng.com/auth/callback`,
   plus `http://localhost:4100/auth/callback` for local development
+- Also add the sign-in pages, `https://timeslide.cliffeng.com/login.html` and
+  `http://localhost:4100/login.html`, as Web redirect URIs. Sign out also signs
+  the person out of Microsoft (deliberately, for shared PCs), and Microsoft only
+  sends them back to the app if that address is registered; otherwise it stops
+  on its own "You signed out" page.
 - Under **Certificates & secrets**, create a new client secret
 - Note the **Application (client) ID**, **Directory (tenant) ID**, and the
   client secret value — these go into `.env` below
