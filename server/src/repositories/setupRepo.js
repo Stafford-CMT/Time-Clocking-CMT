@@ -28,8 +28,9 @@ async function getSetup(db) {
     image: c.image,
     pinned: c.pinned,
     hidden: c.hidden,
+    system: c.system, // the built-in Non-contract clock: never a tile
   }));
-  const order = contracts.map((c) => c.id);
+  const order = contracts.filter((c) => !c.system).map((c) => c.id);
 
   const nonWorking = (await db.query('SELECT id, date, category, start_time, end_time FROM non_working ORDER BY date')).rows
     .map((r) => ({ id: r.id, date: r.date, category: r.category, start: timeToHm(r.start_time), end: timeToHm(r.end_time) }));
@@ -107,14 +108,15 @@ async function upsertContract(db, c) {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8${hasImage ? ',$9' : ''})
      ON CONFLICT (id) DO UPDATE SET customer_name = EXCLUDED.customer_name, number = EXCLUDED.number, suffix = EXCLUDED.suffix,
        suffix_description = EXCLUDED.suffix_description, machine_type = EXCLUDED.machine_type,
-       pinned = EXCLUDED.pinned, hidden = EXCLUDED.hidden${hasImage ? ', image = EXCLUDED.image' : ''}`,
+       pinned = EXCLUDED.pinned, hidden = EXCLUDED.hidden${hasImage ? ', image = EXCLUDED.image' : ''}
+     WHERE NOT contracts.system`,
     params
   );
 }
 
 async function setContractOrder(db, order) {
   for (let i = 0; i < order.length; i += 1) {
-    await db.query('UPDATE contracts SET sort_order = $1 WHERE id = $2', [i, order[i]]);
+    await db.query('UPDATE contracts SET sort_order = $1 WHERE id = $2 AND NOT system', [i, order[i]]);
   }
 }
 

@@ -194,3 +194,15 @@ h2 { font-size: 27px; }
 .edit-contract-text { display: flex; flex: 1; min-width: 0; flex-direction: column; justify-content: center; gap: 2px; }
 .edit-row-total { flex: 0 0 56px; color: var(--ink); font: 600 13px 'Space Grotesk'; font-variant-numeric: tabular-nums; text-align: right; }
 .edit-column-heading { display: flex; justify-content: space-between; gap: 12px; }
+/* Non-contract: built-in clock for time not booked to a contract (dashboard card, first row in Edit times) */
+.metric-card.accent-orange { border-color: #f2d2a8; background: #fff3e3; }
+.metric-card.accent-orange::after { background: rgba(255,255,255,.55); }
+.accent-orange strong { color: #a85a17; }
+.metric-clock-button { position: absolute; top: 14px; right: 14px; z-index: 2; padding: 6px 14px; border: 1.5px solid #e09a52; border-radius: 8px; background: #fff; color: #a85a17; font-size: 12px; font-weight: 700; cursor: pointer; }
+.metric-clock-button:hover { background: #ffe6c7; }
+.metric-clock-button.is-running { border-color: #c96f22; background: #e08a3c; color: #fff; }
+.metric-card.accent-orange.is-running { border-color: #e09a52; box-shadow: 0 0 0 3px rgba(224, 138, 60, .15); }
+.is-non-contract .edit-session-block { background: #fbdcb8; }
+.is-non-contract .edit-session-block:hover { background: #f8cd9c; }
+.is-non-contract .edit-session-block .schedule-handle:hover { background: rgba(201, 111, 34, .35); }
+.non-contract-swatch { background: #fbdcb8; }

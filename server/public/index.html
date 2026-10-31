@@ -65,7 +65,8 @@
 
         <div class="metrics" aria-label="Daily summary">
           <article class="metric-card accent-teal"><span class="metric-label">Tracked today</span><strong id="tracked-total">00:00:00</strong><small>Across all contracts</small></article>
-          <article class="metric-card accent-coral"><span class="metric-label">Non-working</span><strong id="non-working-total">00:00</strong><small>Working hours not on a contract</small></article>
+          <article class="metric-card accent-orange" id="non-contract-card"><span class="metric-label">Non-contract</span><strong id="non-contract-total">00:00:00</strong><small>Time not booked to a contract</small><button class="metric-clock-button" id="non-contract-clock" type="button">Start</button></article>
+          <article class="metric-card accent-coral"><span class="metric-label">Non-working</span><strong id="non-working-total">00:00</strong><small>Working hours with no clock running</small></article>
         </div>
 
         <div class="dashboard-toolbar">
@@ -105,7 +106,7 @@
         <div class="schedule-card zoomable edit-times-card" id="edit-times-card">
           <div class="schedule-toolbar"><div class="edit-user-block"><div class="edit-user-text"><strong id="edit-user-name"></strong><select id="edit-user-select" class="current-user-select edit-user-select is-hidden" aria-label="Show times for user"></select><span>Showing times for</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button></div><label class="admin-toggle-label is-hidden"><input type="checkbox" id="admin-mode-toggle">Admin mode</label></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading edit-column-heading"><span>Contract</span><span>Total</span></div><div class="timeline-heading" id="edit-timeline-heading"></div></div><div id="edit-time-rows"></div></div><p class="empty-state is-hidden" id="edit-empty-state">No time booked on this day.</p>
-          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span></div>
+          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch non-contract-swatch"></i>Non-contract time</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span></div>
         </div>
       </section>
 

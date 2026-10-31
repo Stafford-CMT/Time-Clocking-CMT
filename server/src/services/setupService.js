@@ -32,7 +32,7 @@ function demoSeedPatch() {
 }
 
 async function ensureSeeded() {
-  const { rows } = await getPool().query('SELECT COUNT(*)::int AS n FROM contracts');
+  const { rows } = await getPool().query('SELECT COUNT(*)::int AS n FROM contracts WHERE NOT system');
   if (rows[0].n === 0) {
     await applyPatch(demoSeedPatch());
     console.log('Seeded a fresh database with placeholder demo contracts (no real data existed yet).');
