@@ -17,9 +17,9 @@ of bcrypt/password auth.
 The frontend is wired to this API: everyone signs in as themselves, and
 every clock start/stop, break pause/resume, time-block edit and day commit
 is written to the database the moment it happens, timed by the server.
-Not yet tried against a real PostgreSQL server or a real Azure AD app
-registration — the API has only been exercised against an in-memory
-Postgres emulator (pg-mem). See "Known gaps".
+Runs against a local PostgreSQL 16 (migrations, sign-in sessions and the
+full API test all pass). Not yet tried with a real Azure AD app
+registration or deployed to the server. See "Known gaps".
 
 ## One-time setup
 

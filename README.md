@@ -6,7 +6,7 @@ A browser-based internal tool that lets staff clock their time against the contr
 
 The app runs as a Node.js + Express server backed by PostgreSQL, with Microsoft 365 (Entra ID) sign-in. Everything lives in [`server/`](server/) — the frontend is in `server/public/`. See [`server/README.md`](server/README.md) for setup, deployment, the API, and known gaps.
 
-It has not yet been run against a real PostgreSQL server or Azure AD app registration.
+It runs against a local PostgreSQL 16 database. It has not yet been tried with a real Azure AD app registration or deployed to the server.
 
 ## Tech Stack
 
