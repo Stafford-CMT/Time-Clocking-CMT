@@ -1,4 +1,6 @@
-# Contract Time Tracker
+# Time Slide
+
+*Tap to clock on. Slide to put it right.*
 
 A browser-based internal tool that lets staff clock their time against the contracts the company has landed, using a customizable, tile-based dashboard.
 

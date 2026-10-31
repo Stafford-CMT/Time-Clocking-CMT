@@ -1,4 +1,4 @@
-# Time-Clocking-CMT — Production Server
+# Time Slide — Production Server
 
 Express + PostgreSQL backend that also serves the frontend (`public/`), with
 per-user sign-in via Microsoft/Entra ID (Azure AD) SSO. Three roles:
@@ -25,8 +25,10 @@ registration or deployed to the server. See "Known gaps".
 
 ### 1. Azure AD (Entra ID) app registration
 
-In the Azure Portal → **App registrations** → New registration:
-- Add a redirect URI (Web platform): `https://<your-hostname>/auth/callback`
+In the Azure Portal → **App registrations** → New registration (name it
+**Time Slide**; the live address is `timeslide.cliffeng.com`):
+- Add redirect URIs (Web platform): `https://timeslide.cliffeng.com/auth/callback`,
+  plus `http://localhost:4100/auth/callback` for local development
 - Under **Certificates & secrets**, create a new client secret
 - Note the **Application (client) ID**, **Directory (tenant) ID**, and the
   client secret value — these go into `.env` below

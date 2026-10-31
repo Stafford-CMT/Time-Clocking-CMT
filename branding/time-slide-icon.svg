@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Time Slide: a stopwatch with one minute lit. Also used as the sidebar logo. -->
+  <rect width="64" height="64" rx="14" fill="#147d78"/>
+  <rect x="27" y="7" width="10" height="5" rx="2" fill="#ffffff"/>
+  <rect x="30" y="11" width="4" height="5" fill="#ffffff"/>
+  <rect x="45.5" y="14.5" width="5" height="7" rx="1.5" fill="#ffffff" transform="rotate(45 48 18)"/>
+  <circle cx="32" cy="36" r="20" fill="#ffffff"/>
+  <circle cx="32" cy="36" r="15.5" fill="#147d78"/>
+  <path d="M32 36 L32 20.5 A15.5 15.5 0 0 1 41.11 23.46 Z" fill="#f3c969"/>
+  <path d="M32 36 L41.11 23.46" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="32" cy="36" r="2.6" fill="#ffffff"/>
+</svg>

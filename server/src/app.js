@@ -50,9 +50,10 @@ app.use(sessionMiddleware);
 // otherwise hit the limit within minutes.
 app.use('/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 20, skip: () => Boolean(env.devLoginEmail) }), authRoutes);
 
-// login.html (and its assets) must load before anyone can log in; everything
+// login.html (and its icon) must load before anyone can log in; everything
 // else in public/ requires a session, including index.html itself.
 app.get('/login.html', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'login.html')));
+app.get('/favicon.svg', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'favicon.svg')));
 
 app.use('/api', requireAuth, apiRoutes);
 
