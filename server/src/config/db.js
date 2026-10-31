@@ -24,4 +24,21 @@ function getPool() {
   return pool;
 }
 
-module.exports = { getPool };
+// Runs fn(client) inside BEGIN/COMMIT on one pooled connection, rolling back
+// if it throws. Repositories take that client as their `db` argument.
+async function withTransaction(fn) {
+  const client = await getPool().connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { getPool, withTransaction };

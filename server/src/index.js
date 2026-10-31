@@ -2,10 +2,10 @@
 
 const env = require('./config/env');
 const app = require('./app');
-const stateService = require('./services/stateService');
+const setupService = require('./services/setupService');
 
 async function main() {
-  await stateService.ensureSeeded();
+  await setupService.ensureSeeded();
   // Bound to localhost only -- this port is an internal handoff to the
   // Caddy reverse proxy on the same machine, never reachable directly from
   // the network (Caddy is the only thing anyone else ever talks to).

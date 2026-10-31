@@ -4,21 +4,35 @@
  * requireAuth on this router). Each line below states its own extra role
  * requirement, if any -- reading this file tells you the entire access
  * policy for the API, no permissions matrix to cross-reference elsewhere.
+ * Clock/session/commit rules that depend on WHOSE times are being changed
+ * live in clockService (own times, or anyone's for an admin).
  */
 const express = require('express');
 const requireRole = require('../middleware/requireRole');
 const authController = require('../controllers/authController');
-const stateController = require('../controllers/stateController');
+const setupController = require('../controllers/setupController');
+const clockController = require('../controllers/clockController');
 const usersController = require('../controllers/usersController');
 
 const router = express.Router();
 
 router.get('/whoami', authController.whoami); // any logged-in session
 
-router.get('/state', stateController.getState); // any logged-in session (read)
-router.put('/state', stateController.putState); // any logged-in session (write) -- see stateController's comment
+router.get('/state', setupController.getState); // any logged-in session
+router.patch('/setup', setupController.patchSetup); // any logged-in session -- see setupController's comment
 
-router.get('/users', usersController.list); // any logged-in session -- needed for the user-switcher / working-times dropdowns
+router.post('/clock/break/pause', clockController.pauseForBreak); // own clock
+router.post('/clock/break/resume', clockController.resumeAfterBreak); // own clock
+router.post('/clock/:contractId/start', clockController.start); // own clock
+router.post('/clock/:contractId/stop', clockController.stop); // own clock
+
+router.patch('/sessions', clockController.updateSessions); // own sessions, or anyone's for admin
+router.delete('/sessions/:id', clockController.removeSession); // own sessions, or anyone's for admin
+router.post('/commits/:userId/:date', clockController.commit); // own day, or anyone's for admin
+router.delete('/commits/:userId/:date', clockController.uncommit); // admin only (checked in clockService)
+
+router.get('/users', usersController.list); // any logged-in session -- needed for the working-times dropdowns
 router.put('/users/:id/user-type', requireRole('admin'), usersController.setUserType);
+router.put('/users/:id/cost-centre', requireRole('admin'), usersController.setCostCentre);
 
 module.exports = router;

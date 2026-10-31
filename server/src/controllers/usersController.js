@@ -20,4 +20,12 @@ async function setUserType(req, res, next) {
   }
 }
 
-module.exports = { list, setUserType };
+async function setCostCentre(req, res, next) {
+  try {
+    res.json(await usersService.setCostCentre(req.params.id, req.body.costCentre));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list, setUserType, setCostCentre };

@@ -39,6 +39,11 @@ async function setUserType(id, userType) {
   return rows[0] || null;
 }
 
+async function setCostCentre(id, costCentre) {
+  const { rows } = await getPool().query('UPDATE users SET cost_centre = $1 WHERE id = $2 RETURNING *', [costCentre || null, id]);
+  return rows[0] || null;
+}
+
 async function countActiveAdmins() {
   const { rows } = await getPool().query(
     "SELECT COUNT(*)::int AS n FROM users WHERE user_type = 'admin' AND is_active = true"
@@ -46,4 +51,4 @@ async function countActiveAdmins() {
   return rows[0].n;
 }
 
-module.exports = { findByOid, findById, create, touchLastLogin, listAll, setUserType, countActiveAdmins };
+module.exports = { findByOid, findById, create, touchLastLogin, listAll, setUserType, setCostCentre, countActiveAdmins };

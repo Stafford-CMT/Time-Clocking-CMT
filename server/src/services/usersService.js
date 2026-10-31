@@ -58,4 +58,11 @@ async function setUserType(id, userType, actorId) {
   return toPublicUser(user);
 }
 
-module.exports = { findOrCreateFromAzureClaims, listUsers, setUserType, toPublicUser };
+async function setCostCentre(id, costCentre) {
+  if (costCentre != null && typeof costCentre !== 'string') throw new ApiError(400, 'costCentre must be a string');
+  const user = await usersRepo.setCostCentre(id, costCentre);
+  if (!user) throw new ApiError(404, 'User not found');
+  return toPublicUser(user);
+}
+
+module.exports = { findOrCreateFromAzureClaims, listUsers, setUserType, setCostCentre, toPublicUser };

@@ -18,8 +18,23 @@ function required(name) {
   return v;
 }
 
+const nodeEnv = process.env.NODE_ENV || 'development';
+
+// Local-development sign-in shortcut: when set, /auth/login signs you
+// straight in as this email instead of going to Microsoft, so the app can
+// run on a dev machine with no Azure app registration. Never allowed in
+// production -- that would let anyone reaching the server in without a
+// password, so this refuses to start rather than ignore it.
+const devLoginEmail = (process.env.DEV_LOGIN_EMAIL || '').trim().toLowerCase();
+if (devLoginEmail && nodeEnv === 'production') {
+  console.error('FATAL: DEV_LOGIN_EMAIL must not be set when NODE_ENV=production — refusing to start.');
+  process.exit(1);
+}
+const azureSetting = (name) => (devLoginEmail ? process.env[name] || '' : required(name));
+
 module.exports = {
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv,
+  devLoginEmail,
   port: Number(process.env.PORT) || 4100,
 
   db: {
@@ -40,9 +55,9 @@ module.exports = {
   sessionMaxAgeMs: Number(process.env.SESSION_MAX_AGE_MS) || 7 * 24 * 60 * 60 * 1000,
 
   azure: {
-    tenantId: required('AZURE_TENANT_ID'),
-    clientId: required('AZURE_CLIENT_ID'),
-    clientSecret: required('AZURE_CLIENT_SECRET'),
+    tenantId: azureSetting('AZURE_TENANT_ID'),
+    clientId: azureSetting('AZURE_CLIENT_ID'),
+    clientSecret: azureSetting('AZURE_CLIENT_SECRET'),
     redirectUri: process.env.AZURE_REDIRECT_URI || '',
     postLogoutRedirectUri: process.env.POST_LOGOUT_REDIRECT_URI || '',
   },
