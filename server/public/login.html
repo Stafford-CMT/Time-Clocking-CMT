@@ -78,7 +78,9 @@
       const box = document.getElementById('errBox');
       box.textContent = err==='domain'
         ? 'This app is only available to @cliffeng.com accounts.'
-        : 'Sign-in failed or was cancelled. Please try again.';
+        : err==='not-added'
+          ? "You haven't been added to Time Slide yet. Ask a Time Slide admin to add you, then sign in again."
+          : 'Sign-in failed or was cancelled. Please try again.';
       box.style.display = 'block';
     }
     // Development sign-in only: swap the Microsoft button for one per test account.

@@ -78,15 +78,39 @@ entered.
 
 ### 5. Bootstrap the first admin
 
-Sign in once via the app's "Sign in with Microsoft" button (this
-auto-creates your account as a `user`), then run:
+Try signing in once via the app's "Sign in with Microsoft" button. You will
+be refused ("not added to Time Slide yet"), but that records you. Or wait for
+the first staff sync (see "Staff from Microsoft" below). Then run:
 
 ```
 npm run promote-admin -- --email=you@cliffeng.com
 ```
 
-After that, promote/demote anyone else from **Lists → Users** in the app
+This makes you an admin and ticks you into Time Slide. After that, add
+people and promote/demote them from **Lists → Users** in the app
 (admin-only) — no more CLI needed.
+
+## Staff from Microsoft
+
+Staff are read from Entra ID through Microsoft Graph when the server starts,
+every 30 minutes (`DIRECTORY_SYNC_MINUTES`), and when an admin clicks
+**Sync now** in **Lists → Users**. This needs the app registration's
+Microsoft Graph **application** permission `User.Read.All`, with admin
+consent; until then the Users tab says it is waiting for consent and people
+appear there when they first try to sign in.
+
+- Everyone in the tenant (not guests) gets a row, **unticked**. An admin
+  ticks who is in Time Slide. Only ticked people can sign in or appear in
+  the app's user lists; unticking someone signs them out on their next click.
+- Name, email, job title, department and office come from Microsoft on each
+  sync. People who leave Entra ID are flagged, not deleted, so their times stay.
+- Admins can't untick themselves, and must change another admin's user type
+  before unticking them.
+- Finance grouping is the **Cost centre** set per person in the same table;
+  Microsoft's department is shown beside it.
+- For development before consent is granted, `DIRECTORY_SAMPLE=true` fills
+  the list with a dozen made-up people marked "Sample" instead of reading
+  Microsoft (refused in production). The first real sync removes them.
 
 ## Running
 
@@ -153,7 +177,9 @@ the signed-in user; each returns the refreshed clock state.
 | `PATCH /sessions` · `DELETE /sessions/:id` | Edit Times changes, as a batch so a block and its linked neighbour change together | own times; admin: anyone's |
 | `POST /commits/:userId/:date` | Lock a day's times | own day; admin: anyone's |
 | `DELETE /commits/:userId/:date` | Unlock a day | admin |
-| `GET /users` | User list | anyone |
+| `GET /users` | People in Time Slide | anyone |
+| `GET /directory` · `POST /directory/sync` | All staff from Microsoft, ticked or not, and the sync status · sync now | admin |
+| `PUT /users/:id/included` | Tick someone into Time Slide, or out of it | admin |
 | `PUT /users/:id/user-type` · `/cost-centre` | Change role / cost centre | admin |
 
 ## Roles
@@ -165,8 +191,8 @@ the signed-in user; each returns the refreshed clock state.
 - **manager** / **user** — clock, edit and commit their own times, and edit
   shared setup data.
 
-New accounts are always created as `user` on first Microsoft sign-in —
-nobody is ever auto-admin or auto-manager.
+New people (from the staff sync or a first sign-in) are always `user` and
+unticked — nobody is ever auto-admin, auto-manager or let in automatically.
 
 ## Known gaps
 

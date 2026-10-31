@@ -32,11 +32,11 @@ async function callback(req, res, next) {
     signIn(req, res, next, await authService.completeLogin(req.query.code));
   } catch (err) {
     if (err.statusCode === 403) {
-      // Signed in with Azure AD successfully, but rejected by our own
-      // domain allowlist (see usersService.findOrCreateFromAzureClaims) --
-      // no session is set, so this is a real sign-in refusal, not a login.
+      // Signed in with Azure AD successfully, but refused by our own checks
+      // (domain allowlist, or not ticked into Time Slide -- see
+      // usersService.findOrCreateFromAzureClaims). No session is set.
       console.warn('Sign-in rejected:', err.message);
-      return res.redirect('/login.html?error=domain');
+      return res.redirect(`/login.html?error=${err.reason || 'domain'}`);
     }
     next(err);
   }

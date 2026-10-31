@@ -3,6 +3,7 @@
 const env = require('./config/env');
 const app = require('./app');
 const setupService = require('./services/setupService');
+const directoryService = require('./services/directoryService');
 
 async function main() {
   await setupService.ensureSeeded();
@@ -10,8 +11,9 @@ async function main() {
   // Caddy reverse proxy on the same machine, never reachable directly from
   // the network (Caddy is the only thing anyone else ever talks to).
   app.listen(env.port, '127.0.0.1', () => {
-    console.log(`Time-Clocking-CMT server running on 127.0.0.1:${env.port} (behind Caddy for HTTPS).`);
+    console.log(`Time Slide server running on 127.0.0.1:${env.port} (behind Caddy for HTTPS).`);
   });
+  directoryService.startSchedule();
 }
 
 main().catch((err) => {

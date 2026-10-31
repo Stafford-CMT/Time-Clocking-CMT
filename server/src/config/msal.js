@@ -20,7 +20,8 @@ function getMsalClient() {
 }
 
 // openid/profile/email give us the id token claims (oid, preferred_username,
-// name) we need; no Graph API scope is requested since we don't call Graph.
+// name) we need. The staff sync (directoryService) reads Graph with the app's
+// own permission instead, so sign-in never asks for more than this.
 const SCOPES = ['openid', 'profile', 'email'];
 
 module.exports = { getMsalClient, SCOPES };

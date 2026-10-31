@@ -30,12 +30,21 @@ if (devLoginEmail && nodeEnv === 'production') {
   console.error('FATAL: DEV_LOGIN_EMAIL must not be set when NODE_ENV=production — refusing to start.');
   process.exit(1);
 }
+// Development only: fill the staff list with made-up people instead of
+// reading Entra ID (e.g. before admin consent for User.Read.All is granted).
+const directorySample = process.env.DIRECTORY_SAMPLE === 'true';
+if (directorySample && nodeEnv === 'production') {
+  console.error('FATAL: DIRECTORY_SAMPLE must not be set when NODE_ENV=production — refusing to start.');
+  process.exit(1);
+}
 const azureSetting = (name) => (devLoginEmail ? process.env[name] || '' : required(name));
 
 module.exports = {
   nodeEnv,
   devLoginEmail,
   devLoginName: (process.env.DEV_LOGIN_NAME || '').trim(),
+  directorySample,
+  directorySyncMinutes: Number(process.env.DIRECTORY_SYNC_MINUTES) || 30,
   port: Number(process.env.PORT) || 4100,
 
   db: {

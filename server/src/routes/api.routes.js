@@ -31,7 +31,10 @@ router.delete('/sessions/:id', clockController.removeSession); // own sessions, 
 router.post('/commits/:userId/:date', clockController.commit); // own day, or anyone's for admin
 router.delete('/commits/:userId/:date', clockController.uncommit); // admin only (checked in clockService)
 
-router.get('/users', usersController.list); // any logged-in session -- needed for the working-times dropdowns
+router.get('/users', usersController.list); // any logged-in session -- needed for the working-times dropdowns (people in Time Slide only)
+router.get('/directory', requireRole('admin'), usersController.directory); // all staff from Entra ID, ticked or not
+router.post('/directory/sync', requireRole('admin'), usersController.syncDirectory);
+router.put('/users/:id/included', requireRole('admin'), usersController.setIncluded);
 router.put('/users/:id/user-type', requireRole('admin'), usersController.setUserType);
 router.put('/users/:id/cost-centre', requireRole('admin'), usersController.setCostCentre);
 

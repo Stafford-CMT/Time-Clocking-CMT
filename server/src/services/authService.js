@@ -54,8 +54,8 @@ async function devLogin(role = 'admin') {
   // (keeping its Microsoft name) rather than making a second one.
   const existing = await usersRepo.findByEmail(account.email);
   const user = existing && !String(existing.microsoft_oid).startsWith('dev-')
-    ? usersService.toPublicUser(await usersRepo.recordSignIn(existing.id, {}))
-    : await usersService.findOrCreateFromAzureClaims({ oid: `dev-${account.email}`, email: account.email, name: account.name });
+    ? await usersService.findOrCreateFromAzureClaims({ oid: existing.microsoft_oid, email: existing.email }, { autoInclude: true })
+    : await usersService.findOrCreateFromAzureClaims({ oid: `dev-${account.email}`, email: account.email, name: account.name }, { autoInclude: true });
   if (user.userType === role) return user;
   return usersService.toPublicUser(await usersRepo.setUserType(user.id, role));
 }

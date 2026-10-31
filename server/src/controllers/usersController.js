@@ -1,6 +1,7 @@
 'use strict';
 
 const usersService = require('../services/usersService');
+const directoryService = require('../services/directoryService');
 
 async function list(req, res, next) {
   try {
@@ -28,4 +29,29 @@ async function setCostCentre(req, res, next) {
   }
 }
 
-module.exports = { list, setUserType, setCostCentre };
+async function directory(req, res, next) {
+  try {
+    res.json({ people: await usersService.listDirectory(), sync: directoryService.getStatus() });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function syncDirectory(req, res, next) {
+  try {
+    const sync = await directoryService.sync();
+    res.json({ people: await usersService.listDirectory(), sync });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function setIncluded(req, res, next) {
+  try {
+    res.json(await usersService.setIncluded(req.params.id, req.body.included, req.session.user.id));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list, setUserType, setCostCentre, directory, syncDirectory, setIncluded };

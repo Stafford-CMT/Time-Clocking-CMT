@@ -6,8 +6,9 @@
  * that once, outside the app. After the first admin exists, use the
  * in-app Users panel instead (PUT /api/users/:id/user-type).
  *
- * The target person must have already signed in at least once via Microsoft
- * (which auto-creates their 'user' row) before this script can find them.
+ * The target person must already have a row: either they have tried to sign
+ * in once via Microsoft, or the staff sync has brought them in from Entra ID.
+ * This also ticks them into Time Slide so they can sign in.
  *
  * Usage:
  *   node db/scripts/promote-admin.js --email=someone@cliffeng.com
@@ -42,7 +43,7 @@ async function main() {
 
   try {
     const { rows } = await client.query(
-      "UPDATE users SET user_type = 'admin' WHERE email = $1 RETURNING id, email, name",
+      "UPDATE users SET user_type = 'admin', included = true WHERE lower(email) = lower($1) RETURNING id, email, name",
       [email]
     );
     if (!rows.length) {

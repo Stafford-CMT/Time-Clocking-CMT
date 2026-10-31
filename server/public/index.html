@@ -187,8 +187,9 @@
             <label>Break 2 ends<input id="default-wt-break2-end" type="time"></label>
           </div>
         </div>
-        <div class="users-panel-header"><span>Registered users — added automatically when they first sign in</span></div>
-        <div class="table-scroll"><table class="users-table"><thead><tr><th>Name</th><th>Email</th><th>User type</th><th>Cost centre</th></tr></thead><tbody id="user-rows"></tbody></table></div>
+        <div class="users-panel-header"><span id="users-heading">People in Time Slide</span><div class="directory-tools is-hidden" id="directory-tools"><input id="directory-search" type="search" placeholder="Search name, email or department" aria-label="Search staff"><select id="directory-filter" aria-label="Show"><option value="all">Everyone</option><option value="in">In Time Slide</option><option value="out">Not in Time Slide</option></select><button class="directory-sync-button" id="directory-sync" type="button">Sync now</button></div></div>
+        <p class="directory-status is-hidden" id="directory-status"></p>
+        <div class="table-scroll"><table class="users-table"><thead><tr><th class="directory-col is-hidden">In Time Slide</th><th>Name</th><th>Email</th><th class="directory-col is-hidden">Department</th><th>User type</th><th>Cost centre</th></tr></thead><tbody id="user-rows"></tbody></table></div>
       </div>
       <form class="modal-tab-panel is-hidden" id="cost-centres-panel" data-list-panel="cost-centres">
         <label>Cost centre

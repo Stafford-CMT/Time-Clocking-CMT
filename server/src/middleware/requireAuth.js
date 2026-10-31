@@ -12,7 +12,7 @@ module.exports = async function requireAuth(req, res, next) {
   if (!req.session.user) return res.status(401).json({ error: 'Not logged in' });
   try {
     const current = await usersRepo.findById(req.session.user.id);
-    if (!current || !current.is_active) {
+    if (!current || !current.is_active || !current.included) {
       req.session.destroy(() => {});
       return res.status(401).json({ error: 'Not logged in' });
     }
