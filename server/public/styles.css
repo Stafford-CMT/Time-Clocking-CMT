@@ -206,3 +206,9 @@ h2 { font-size: 27px; }
 .is-non-contract .edit-session-block:hover { background: #f8cd9c; }
 .is-non-contract .edit-session-block .schedule-handle:hover { background: rgba(201, 111, 34, .35); }
 .non-contract-swatch { background: #fbdcb8; }
+/* Pop-ups never run past the bottom of the screen: they scroll inside instead. Lists keeps its title and tabs in place and scrolls only the open tab. */
+.modal { max-height: calc(100vh - 40px); overflow-y: auto; }
+#lists-modal .modal { display: flex; flex-direction: column; overflow: hidden; }
+#lists-modal .modal-header, #lists-modal .modal-tabs { flex: 0 0 auto; }
+#lists-modal .modal-tab-panel { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+#lists-modal .users-table thead th { position: sticky; top: 0; z-index: 1; background: #fff; }
