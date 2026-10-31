@@ -13,6 +13,7 @@ const authController = require('../controllers/authController');
 const setupController = require('../controllers/setupController');
 const clockController = require('../controllers/clockController');
 const usersController = require('../controllers/usersController');
+const configController = require('../controllers/configController');
 
 const router = express.Router();
 
@@ -37,5 +38,9 @@ router.post('/directory/sync', requireRole('admin'), usersController.syncDirecto
 router.put('/users/:id/included', requireRole('admin'), usersController.setIncluded);
 router.put('/users/:id/user-type', requireRole('admin'), usersController.setUserType);
 router.put('/users/:id/cost-centre', requireRole('admin'), usersController.setCostCentre);
+
+router.get('/config/syspro', requireRole('admin'), configController.getSyspro); // passwords come back only as "set" flags
+router.put('/config/syspro', requireRole('admin'), configController.saveSyspro);
+router.post('/config/syspro/test-enet', requireRole('admin'), configController.testSysproEnet);
 
 module.exports = router;

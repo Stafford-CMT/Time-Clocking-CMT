@@ -56,7 +56,9 @@ CREATE DATABASE time_clocking OWNER time_clocking_app;
 
 Copy `.env.example` to `.env` and fill in real values: `DB_*`, a freshly
 generated `SESSION_SECRET` (`node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`),
-and the `AZURE_*` values from step 1. `.env` is gitignored — never commit it.
+a `SETTINGS_ENCRYPTION_KEY` (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`,
+used to encrypt the Syspro passwords — keep a copy somewhere safe), and the
+`AZURE_*` values from step 1. `.env` is gitignored — never commit it.
 
 `ALLOWED_EMAIL_DOMAINS=cliffeng.com` is a server-side gate on top of Azure AD
 itself — even though the app registration is single-tenant, this also
@@ -111,6 +113,27 @@ appear there when they first try to sign in.
 - For development before consent is granted, `DIRECTORY_SAMPLE=true` fills
   the list with a dozen made-up people marked "Sample" instead of reading
   Microsoft (refused in production). The first real sync removes them.
+
+## Syspro connection (Setup → Configuration)
+
+Admins only — the menu item is hidden from everyone else and the API refuses
+them. Two sections, fill in whichever your Syspro set-up uses:
+
+- **Syspro e.net (web services)** — address (e.g.
+  `http://syspro-server:20000/SYSPROWCFService/Rest`), operator, operator
+  password, company ID, company password. Used to post committed times into
+  Syspro. **Test connection** logs on to e.net with the saved details and
+  straight off again.
+- **Syspro SQL Server (read only)** — server, port, company database, SQL
+  login and password, and the encryption switches. For read-only lookups; give
+  it a SQL login that can only read. There is no test button for this yet — it
+  comes with the code that reads Syspro.
+
+Passwords are encrypted (AES-256-GCM, `SETTINGS_ENCRYPTION_KEY`) before they
+are stored, and never sent back to the browser — the page only shows whether
+each is saved. Leaving a password box blank keeps the saved one. If the key
+is lost or changed, the passwords must be typed in again. Prefer an `https://`
+e.net address: Syspro's Logon call carries the passwords in the address.
 
 ## Running
 
@@ -181,12 +204,14 @@ the signed-in user; each returns the refreshed clock state.
 | `GET /directory` · `POST /directory/sync` | All staff from Microsoft, ticked or not, and the sync status · sync now | admin |
 | `PUT /users/:id/included` | Tick someone into Time Slide, or out of it | admin |
 | `PUT /users/:id/user-type` · `/cost-centre` | Change role / cost centre | admin |
+| `GET /config/syspro` · `PUT /config/syspro` | Syspro connection details (passwords only as "set" flags) · save them | admin |
+| `POST /config/syspro/test-enet` | Log on to Syspro e.net with the saved details and off again | admin |
 
 ## Roles
 
 - **admin** — can review and edit anyone's times (Edit Times shows a user
   picker), edit committed days, unlock commits, and change users' roles and
-  cost centres. The "Admin mode" checkbox is a per-browser safety catch only
+  cost centres, and set up the Syspro connection. The "Admin mode" checkbox is a per-browser safety catch only
   admins see; the server checks the role itself.
 - **manager** / **user** — clock, edit and commit their own times, and edit
   shared setup data.

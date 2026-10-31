@@ -24,6 +24,7 @@
             <button class="nav-item nav-child" data-view="working-times" type="button">Working times</button>
             <button class="nav-item nav-child" data-view="contract-information" type="button">Contract information</button>
             <button class="nav-item nav-child" id="nav-lists-open" type="button">Lists</button>
+            <button class="nav-item nav-child is-hidden" id="nav-configuration" data-view="configuration" type="button">Configuration</button>
           </div>
         </div>
         <button class="nav-item" data-view="edit-times" type="button">Edit or Commit times</button>
@@ -108,6 +109,37 @@
         </div>
       </section>
 
+      <section class="view is-hidden" data-view-panel="configuration">
+        <div class="section-heading">
+          <div><span class="section-kicker">Admins only</span><h2>Configuration</h2></div>
+          <button class="add-button" id="config-save" type="submit" form="syspro-form" disabled>Save changes</button>
+        </div>
+        <form class="config-form" id="syspro-form" autocomplete="off">
+          <div class="table-card">
+            <div class="table-intro"><div><strong>Syspro e.net (web services)</strong><span>Used to post committed times into Syspro. Your Syspro administrator has these details.</span></div><button class="secondary-button" id="config-test-enet" type="button">Test connection</button></div>
+            <p class="config-test-result is-hidden" id="config-test-result" role="status"></p>
+            <div class="config-fields">
+              <label class="config-wide">e.net address<input id="config-enet-url" type="url" placeholder="http://syspro-server:20000/SYSPROWCFService/Rest" spellcheck="false"></label>
+              <label>Operator<input id="config-enet-operator" type="text" spellcheck="false"></label>
+              <label>Operator password<span class="config-password"><input id="config-enet-operator-password" type="password" autocomplete="new-password"><button class="config-remove is-hidden" data-remove-password="config-enet-operator-password" type="button">Remove</button></span></label>
+              <label>Company ID<input id="config-enet-company" type="text" spellcheck="false"></label>
+              <label>Company password<span class="config-password"><input id="config-enet-company-password" type="password" autocomplete="new-password"><button class="config-remove is-hidden" data-remove-password="config-enet-company-password" type="button">Remove</button></span></label>
+            </div>
+          </div>
+          <div class="table-card">
+            <div class="table-intro"><div><strong>Syspro SQL Server (read only)</strong><span>Used to look up Syspro jobs. Use a SQL login that can only read the Syspro company database.</span></div></div>
+            <div class="config-fields">
+              <label>Server<input id="config-sql-server" type="text" placeholder="SYSPRO-SQL or SYSPRO-SQL\INSTANCE" spellcheck="false"></label>
+              <label>Port<input id="config-sql-port" type="number" min="1" max="65535"></label>
+              <label>Company database<input id="config-sql-database" type="text" placeholder="e.g. SysproCompanyA" spellcheck="false"></label>
+              <label>SQL login<input id="config-sql-user" type="text" spellcheck="false"></label>
+              <label>SQL password<span class="config-password"><input id="config-sql-password" type="password" autocomplete="new-password"><button class="config-remove is-hidden" data-remove-password="config-sql-password" type="button">Remove</button></span></label>
+              <div class="config-checks"><label class="config-check"><input id="config-sql-encrypt" type="checkbox"> Encrypt the connection</label><label class="config-check"><input id="config-sql-trust" type="checkbox"> Trust the server certificate (only if IT says so)</label></div>
+            </div>
+          </div>
+          <p class="config-updated" id="config-updated"></p>
+        </form>
+      </section>
       <section class="view is-hidden" data-view-panel="contract-information">
         <div class="section-heading">
           <div><span class="section-kicker">Dashboard setup</span><h2>Contract information</h2></div>

@@ -37,6 +37,14 @@ if (directorySample && nodeEnv === 'production') {
   console.error('FATAL: DIRECTORY_SAMPLE must not be set when NODE_ENV=production — refusing to start.');
   process.exit(1);
 }
+// Key for the passwords saved in Setup -> Configuration (Syspro logins):
+// 32 random bytes as 64 hex characters. Optional until a password is saved,
+// but a malformed key stops the server rather than failing later.
+const settingsKeyText = (process.env.SETTINGS_ENCRYPTION_KEY || '').trim();
+if (settingsKeyText && !/^[0-9a-fA-F]{64}$/.test(settingsKeyText)) {
+  console.error('FATAL: SETTINGS_ENCRYPTION_KEY must be 64 hex characters — refusing to start.');
+  process.exit(1);
+}
 const azureSetting = (name) => (devLoginEmail ? process.env[name] || '' : required(name));
 
 module.exports = {
@@ -62,6 +70,7 @@ module.exports = {
   },
 
   sessionSecret: required('SESSION_SECRET'),
+  settingsEncryptionKey: settingsKeyText ? Buffer.from(settingsKeyText, 'hex') : null,
   sessionMaxAgeMs: Number(process.env.SESSION_MAX_AGE_MS) || 7 * 24 * 60 * 60 * 1000,
 
   azure: {
