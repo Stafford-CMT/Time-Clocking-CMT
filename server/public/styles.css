@@ -90,7 +90,7 @@ h2 { font-size: 27px; }
 .tile.is-hidden-contract { opacity: .6; border-style: dashed; }
 .tile.is-hidden-contract .delete-contract { color: var(--teal-dark); }
 .user-column-heading { position: sticky; left: 0; z-index: 4; }
-.user-cell { position: sticky; left: 0; z-index: 3; background: #fff; }
+.user-cell { position: sticky; left: 0; z-index: 4; background: #fff; }
 .user-name-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .user-name-input { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 4px; padding: 1px 3px; background: transparent; color: var(--ink); font: 600 13px 'Space Grotesk'; }
 .user-name-input:hover { border-color: var(--line); }
