@@ -1,12 +1,8 @@
 # Time-Clocking-CMT — Production Server
 
-Express + PostgreSQL backend, with per-user sign-in via Microsoft/Entra ID
-(Azure AD) SSO. Three roles carried over from the browser prototype's
-`userType` field: **admin**, **manager**, **user**. Every authenticated user
-can currently read/write the full app state — same as the prototype's
-free "act as any user" dropdown had no real access control. `requireRole`
-is wired up and ready (see `src/middleware/requireRole.js`) for whenever
-real per-role restrictions are wanted.
+Express + PostgreSQL backend that also serves the frontend (`public/`), with
+per-user sign-in via Microsoft/Entra ID (Azure AD) SSO. Three roles:
+**admin**, **manager**, **user** — see "Roles" below.
 
 Built following the same process as the Design Plan Gantt board
 (`../Design Plan/Gantt-App-Production/server`) — see
@@ -16,17 +12,14 @@ follows (Express + Postgres, `express-session`, PM2, Caddy). Like the Gantt
 board, this deviates from the base blueprint by using Azure AD SSO instead
 of bcrypt/password auth.
 
-## Status: backend built, not yet wired to the frontend
+## Status
 
-This `server/` folder is a complete, self-contained backend (schema,
-migrations, Express app, Azure AD login flow) but the existing prototype
-frontend (`../index.html`, `../app.js`, `../styles.css` at the repo root)
-still reads/writes `localStorage` directly — it has **not** been rewired to
-call this API yet. That's a separate, larger change (async state loading,
-a real login page instead of the "act as any user" dropdown, moving the
-frontend files under `public/` so this server can serve them) and deserves
-its own review before touching the working prototype. See "Known gaps"
-below.
+The frontend is wired to this API: everyone signs in as themselves, and
+every clock start/stop, break pause/resume, time-block edit and day commit
+is written to the database the moment it happens, timed by the server.
+Not yet tried against a real PostgreSQL server or a real Azure AD app
+registration — the API has only been exercised against an in-memory
+Postgres emulator (pg-mem). See "Known gaps".
 
 ## One-time setup
 
@@ -70,11 +63,11 @@ npm install
 npm run migrate
 ```
 
-This creates the schema (`db/migrations/001_initial_schema.sql`) and tracks
-applied migrations in `schema_migrations`. On first run against an empty
-database, starting the server also seeds a small set of placeholder demo
-contracts (see `stateService.ensureSeeded`) — delete them from the app once
-real contracts are entered.
+This creates the schema (`db/migrations/*.sql`) and tracks applied
+migrations in `schema_migrations`. On first run against an empty database,
+starting the server also seeds four placeholder demo contracts (see
+`setupService.ensureSeeded`) — hide them in the app once real contracts are
+entered.
 
 ### 5. Bootstrap the first admin
 
@@ -85,9 +78,8 @@ auto-creates your account as a `user`), then run:
 npm run promote-admin -- --email=you@cliffeng.com
 ```
 
-After that, promote/demote anyone else via `PUT /api/users/:id/user-type`
-(admin-only) — no more CLI needed. (No in-app Users panel wired up to this
-endpoint yet — see "Known gaps".)
+After that, promote/demote anyone else from **Lists → Users** in the app
+(admin-only) — no more CLI needed.
 
 ## Running
 
@@ -99,6 +91,14 @@ Runs on `PORT` (default 4100) over plain HTTP — put Caddy in front for
 HTTPS (see below); `express-session`'s `secure` cookie flag only activates
 when `NODE_ENV=production`, so local dev over plain `http://localhost`
 still works without Caddy.
+
+### Local development without Azure
+
+Set `NODE_ENV=development` and `DEV_LOGIN_EMAIL=you@cliffeng.com` in `.env`
+(the `AZURE_*` values can then be blank). "Sign in with Microsoft" then
+signs you straight in as that email. You still need a PostgreSQL database
+and `npm run migrate`. The server refuses to start if `DEV_LOGIN_EMAIL` is
+set with `NODE_ENV=production`.
 
 ## HTTPS (Caddy)
 
@@ -121,48 +121,76 @@ Updating a running deployment:
 
 | Changed | Steps |
 |---|---|
-| Frontend files only (once served from `public/`) | Copy the file(s) over; refresh the browser. No restart. |
+| Frontend files only (`public/`) | Copy the file(s) over; refresh the browser. No restart. |
 | Backend (`src/**`) | Copy the file(s) over; `pm2 restart time-clocking-server`. |
 | `package.json` changed | `npm ci --omit=dev` on the server first, then restart. |
 | Database schema | Add a new numbered file to `db/migrations/`, copy it over, run `npm run migrate`. Never hand-edit the live schema. |
 | `ecosystem.config.js` itself changed | `pm2 delete time-clocking-server` then `pm2 start ecosystem.config.js` — a plain restart won't pick up config changes. |
 
+## API
+
+All under `/api`, all need a signed-in session. Clock actions always act as
+the signed-in user; each returns the refreshed clock state.
+
+| Endpoint | What it does | Who |
+|---|---|---|
+| `GET /state` | Setup data + your clock state + who you are | anyone |
+| `PATCH /setup` | Saves only the setup sections sent (lists, contract info, working times, tiles). Never deletes contracts. | anyone |
+| `POST /clock/:contractId/start` · `/stop` | Start/stop your clock. Starting one contract stops any other you had running. | own clock |
+| `POST /clock/break/pause` · `/resume` | Called by the browser when your scheduled break starts/ends | own clock |
+| `PATCH /sessions` · `DELETE /sessions/:id` | Edit Times changes, as a batch so a block and its linked neighbour change together | own times; admin: anyone's |
+| `POST /commits/:userId/:date` | Lock a day's times | own day; admin: anyone's |
+| `DELETE /commits/:userId/:date` | Unlock a day | admin |
+| `GET /users` | User list | anyone |
+| `PUT /users/:id/user-type` · `/cost-centre` | Change role / cost centre | admin |
+
 ## Roles
 
-- **admin** — intended for full read/write plus user management (the
-  management endpoint exists; nothing in the frontend calls it yet)
-- **manager** / **user** — currently identical access to admin (every
-  authenticated session can read/write full state) — see the note at the
-  top of this file
+- **admin** — can review and edit anyone's times (Edit Times shows a user
+  picker), edit committed days, unlock commits, and change users' roles and
+  cost centres. The "Admin mode" checkbox is a per-browser safety catch only
+  admins see; the server checks the role itself.
+- **manager** / **user** — clock, edit and commit their own times, and edit
+  shared setup data.
 
 New accounts are always created as `user` on first Microsoft sign-in —
 nobody is ever auto-admin or auto-manager.
 
-## Known gaps ported as-is from the prototype
+## Known gaps
 
-- `state.nonWorking` has a table (`non_working`) and is round-tripped
-  through `GET`/`PUT /api/state`, but nothing in the current frontend
-  renders or edits it (same as in the localStorage version) — this is the
-  README's still-planned "Non-working time table" feature.
-- `app_settings.admin_mode` is carried over as a manual global toggle
-  (the "Admin mode" checkbox that unlocks editing committed dates), not
-  derived from `users.user_type`. Worth revisiting once real roles are
-  wired into the frontend, since right now any signed-in user can flip it.
+- **HTML escaping:** the frontend builds its screens by inserting names
+  (customers, contracts, users…) into HTML without escaping. Harmless in the
+  single-browser prototype, but now that data is shared, someone could save
+  a name containing markup that runs in a colleague's browser. Should be
+  fixed before real use.
+- **Setup data is shared and unrestricted:** any signed-in user can edit
+  lists, contract information, everyone's working times, and the tile
+  layout (pinned/hidden/order is the same for everyone). Saves send only
+  changed sections, so stale browsers don't wipe other sections, but two
+  people editing the same section at once is still last-write-wins.
+- **Breaks need the page open:** the browser notices a scheduled break and
+  asks the server to pause/resume; with no tab open, the clock runs through
+  the break (same as the prototype).
+- `state.nonWorking` has a table (`non_working`) and is round-tripped, but
+  nothing in the current frontend renders or edits it — this is the
+  root README's still-planned "Non-working time table" feature.
 
 ## Project layout
 
 ```
 src/
   app.js, index.js        Express app + startup
-  config/                 env, db pool, session, MSAL (Azure AD)
+  config/                 env, db pool + withTransaction, session, MSAL (Azure AD)
   middleware/              requireAuth, requireRole
   routes/                  auth.routes.js, api.routes.js
   controllers/ / services/ / repositories/
                            Controller -> Service -> Repository, one direction
                            only. Repositories are the only place with raw SQL.
+                           setup* = shared setup data, clock* = clocking.
 db/
   migrations/              numbered .sql files, tracked in schema_migrations
   scripts/                 migrate.js, promote-admin.js
 public/
-  login.html               (index.html/app.js not yet moved here — see Status)
+  index.html, app.js, styles.css   the app (served only to signed-in users)
+  login.html                        sign-in page
 ```

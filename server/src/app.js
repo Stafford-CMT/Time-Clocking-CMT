@@ -32,9 +32,14 @@ app.use(helmet({
       // per-request; not worth it for a LAN-only app serving no third-party content.
       scriptSrc: ["'self'", "'unsafe-inline'"],
       scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      // styles.css @imports DM Sans / Space Grotesk from Google Fonts.
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       imgSrc: ["'self'", 'data:'],
       connectSrc: ["'self'"],
+      // Production is HTTPS behind Caddy; locally (plain http://localhost)
+      // this would make the browser rewrite every request to https and fail.
+      upgradeInsecureRequests: env.nodeEnv === 'production' ? [] : null,
     },
   },
 }));

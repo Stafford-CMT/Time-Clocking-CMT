@@ -4,66 +4,44 @@ A browser-based internal tool that lets staff clock their time against the contr
 
 ## Status
 
-Initial browser prototype in progress. The current slice is a dependency-free local dashboard that exercises the main clocking workflow before the React/API/PostgreSQL stack is introduced.
+The app runs as a Node.js + Express server backed by PostgreSQL, with Microsoft 365 (Entra ID) sign-in. Everything lives in [`server/`](server/) — the frontend is in `server/public/`. See [`server/README.md`](server/README.md) for setup, deployment, the API, and known gaps.
 
-## Planned Tech Stack
+It has not yet been run against a real PostgreSQL server or Azure AD app registration.
 
-- **Frontend:** React (with a drag-and-drop library such as `dnd-kit`)
+## Tech Stack
+
+- **Frontend:** plain HTML/CSS/JavaScript, no build step (`server/public/`)
 - **Backend:** Node.js + Express (REST API)
 - **Database:** PostgreSQL
-- **Auth:** Local/dummy login for now; Microsoft 365 login (via Microsoft Entra ID / MSAL) to be added later
-- **Hosting:** Windows Server — Node process run as a service (e.g. via PM2 or NSSM), with IIS as a reverse proxy in front of it
-
-This stack is a starting recommendation, not a final decision — it can change as the project develops.
+- **Auth:** Microsoft 365 login via Microsoft Entra ID (MSAL), with a local-development sign-in shortcut
+- **Hosting:** Windows Server — Node process run under PM2, with Caddy as the HTTPS reverse proxy
 
 ## Architecture Notes
 
-- **No data loss on crash/disconnect:** start/stop events are written to the database immediately when they happen (not batched). The tile's timer display is purely calculated from the stored start time and can refresh periodically (e.g. every second, client-side) without needing a server round-trip. If the app or connection drops mid-session, reloading re-fetches the open session's start time from the database and the timer resumes correctly — nothing is lost because nothing was ever held only in memory.
-- **Contract/suffix data source:** lives in a different application's database on a separate server. This app will not connect to that database directly — it will go through an integration layer using whatever protocol that other app exposes (e.g. a REST API, ODBC link, or message queue). Protocol TBD; treat this as an external dependency to confirm with that app's owners.
+- **No data loss on crash/disconnect:** start/stop events are written to the database immediately when they happen (not batched), timed by the server. The tile's timer display is calculated from the stored start time and refreshes every second client-side. If the app or connection drops mid-session, reloading re-fetches the open session's start time and the timer resumes correctly.
+- **Contract/suffix data source:** lives in a different application's database on a separate server. This app will not connect to that database directly — it will go through an integration layer using whatever protocol that other app exposes (e.g. a REST API, ODBC link, or message queue). Protocol TBD; treat this as an external dependency to confirm with that app's owners. Until then, contract numbers and suffixes are entered on the Contract information page.
 
 ## Features
 
 ### Tile dashboard
 
-Each tile represents one contract clocking session and shows:
+Each tile represents one contract and shows the contract number and suffix, machine type, an image, your accumulated and current-session time, and a start/stop button. Tiles can be dragged to reposition, pinned in place, and hidden. Starting one contract stops whichever one you had running.
 
-- Contract number
-- Suffix
-- The logged-in user (from Microsoft 365 login, once wired up)
-- Accumulated time
-- Current session time
-- A start/stop button
-- An image placeholder
-- Support for dragging to reposition and pinning in place
+### Working times and breaks
 
-Contract number and suffix are chosen from a dropdown list, ultimately sourced from a separate SQL database.
+Each user has a working-time schedule with breaks. A running clock pauses automatically when your break starts and resumes when it ends (while the app is open).
 
-### Time correction
+### Edit or Commit times
 
-Users can edit a clocked session after the fact — both the start time (if a session was started late/early) and the end time (if it was stopped incorrectly).
+A per-day timeline of your recorded time blocks. Drag a block's edges to correct start/end times (linked neighbours move with it; long-press a block to unlink it), double-click to delete. Committing a day locks it; only an admin can edit or unlock a committed day. Admins can view and correct anyone's times.
 
-### Non-working time table
+### Non-working time table (planned)
 
-An editable table, per user, for logging non-working time (e.g. leave, breaks) separately from contract time.
+An editable table, per user, for logging non-working time (e.g. leave) separately from contract time. The database table exists; there is no screen for it yet.
 
 ## Getting Started
 
-### Current prototype
-
-Open `index.html` directly in a browser. No build step or server is required for this first prototype.
-
-The prototype currently includes:
-
-- Persistent start/stop clock state using browser storage, so a refresh resumes an open session.
-- Live current-session timers and accumulated contract totals.
-- Draggable and pinnable contract tiles.
-- A local dummy user and sample contracts.
-- Editable non-working-time entries with duration totals.
-- Working-times calendar prototype with registered users, 5-minute timeline columns, scheduled start/end times, break blocks, and overtime-window labels.
-
-### Next setup step
-
-Node.js and npm are not currently available on the development machine. Install the current Node.js LTS release before converting this prototype to the planned React frontend and Express API. The external contract/suffix integration, PostgreSQL persistence, and report generation remain intentionally deferred until their interfaces are confirmed. The current browser prototype persists working-time templates locally and automatically pauses/resumes an active contract around the signed-in user's configured break.
+See [`server/README.md`](server/README.md). In short: create a PostgreSQL database, copy `server/.env.example` to `server/.env` and fill it in, then in `server/` run `npm install`, `npm run migrate`, `npm start`, and open http://localhost:4100.
 
 ## License
 
