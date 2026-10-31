@@ -4,7 +4,7 @@
  * promoting/demoting a user is normally admin-only, so nobody can become
  * the first admin through the app itself -- this direct-DB script resolves
  * that once, outside the app. After the first admin exists, use the
- * in-app Users panel instead (PUT /api/users/:id/role).
+ * in-app Users panel instead (PUT /api/users/:id/user-type).
  *
  * The target person must have already signed in at least once via Microsoft
  * (which auto-creates their 'user' row) before this script can find them.

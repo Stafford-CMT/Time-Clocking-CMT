@@ -48,7 +48,7 @@ async function getFullState() {
   const order = contracts.map((c) => c.id);
 
   const nonWorking = (await pool.query('SELECT id, date, category, start_time, end_time FROM non_working ORDER BY date')).rows
-    .map((r) => ({ id: r.id, date: r.date.toISOString().slice(0, 10), category: r.category, start: timeToHm(r.start_time), end: timeToHm(r.end_time) }));
+    .map((r) => ({ id: r.id, date: r.date, category: r.category, start: timeToHm(r.start_time), end: timeToHm(r.end_time) }));
 
   const machineTypes = (await pool.query('SELECT name FROM machine_types ORDER BY sort_order')).rows.map((r) => r.name);
   const suffixDescriptions = (await pool.query('SELECT name FROM suffix_descriptions ORDER BY sort_order')).rows.map((r) => r.name);
@@ -80,7 +80,7 @@ async function getFullState() {
     suffixes: suffixesByInfo[r.id] || [],
   }));
 
-  const committedDates = (await pool.query('SELECT date FROM committed_dates ORDER BY date')).rows.map((r) => r.date.toISOString().slice(0, 10));
+  const committedDates = (await pool.query('SELECT date FROM committed_dates ORDER BY date')).rows.map((r) => r.date);
 
   const adminMode = (await pool.query('SELECT admin_mode FROM app_settings WHERE id = 1')).rows[0].admin_mode;
 
@@ -110,7 +110,7 @@ async function getFullState() {
     editSessions[s.contract_id].push({
       id: s.id,
       userId: s.user_id,
-      date: s.date.toISOString().slice(0, 10),
+      date: s.date,
       start: s.start_time.length === 8 ? s.start_time : `${s.start_time}:00`,
       end: s.end_time.length === 8 ? s.end_time : `${s.end_time}:00`,
       unlinked: s.unlinked,

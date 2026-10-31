@@ -1,7 +1,13 @@
 'use strict';
 
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 const env = require('./env');
+
+// DATE columns come back as plain 'YYYY-MM-DD' strings. pg's default parses
+// them to a JS Date at LOCAL midnight, and toISOString() on that gives the
+// previous day on any server ahead of UTC -- every load/save round trip
+// would then shift sessions and committed dates back a day.
+types.setTypeParser(types.builtins.DATE, (value) => value);
 
 let pool;
 function getPool() {

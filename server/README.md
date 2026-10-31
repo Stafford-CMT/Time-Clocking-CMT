@@ -47,7 +47,7 @@ On your Postgres server, create a dedicated database and login for this app
 
 ```sql
 CREATE USER time_clocking_app WITH PASSWORD '...';
-CREATE DATABASE "TimeClocking" OWNER time_clocking_app;
+CREATE DATABASE time_clocking OWNER time_clocking_app;
 ```
 (`CREATE DATABASE` can't run in the same statement/transaction as
 `CREATE USER` — run them separately.)
