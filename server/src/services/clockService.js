@@ -135,7 +135,10 @@ async function commit(actor, userId, date) {
   assertCanActOn(actor, userId);
   if (!DATE_RE.test(date)) throw new ApiError(400, 'date must be YYYY-MM-DD');
   const db = getPool();
-  if (await clockRepo.findActive(db, userId)) throw new ApiError(409, 'Stop the running clock before committing');
+  // A running clock will add time to every day from the one it started on, so
+  // only those days are blocked -- a committed day can never gain time later.
+  const active = await clockRepo.findActive(db, userId);
+  if (active && localDate(new Date(active.startedAt)) <= date) throw new ApiError(409, 'Stop the running clock before committing');
   await clockRepo.addCommit(db, userId, date);
   return getState(actor);
 }
