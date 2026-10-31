@@ -251,3 +251,6 @@ h2 { font-size: 27px; }
 .day-strip-older input { padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font-size: 12px; }
 @media (max-width: 760px) { .day-strip-bar { grid-template-columns: minmax(0, 1fr) auto; } .day-strip-month { display: none; } .day-strip-older { grid-column: 1 / -1; } }
 @media (prefers-reduced-motion: reduce) { .day-strip { scroll-behavior: auto; } }
+.day-chip-bar { position: relative; }
+.day-chip.is-over .day-chip-bar { overflow: visible; }
+.day-chip.is-over .day-chip-bar::before { content: ''; position: absolute; top: -4px; left: -2px; right: -2px; height: 2px; border-radius: 2px; background: #c6534b; }
