@@ -29,6 +29,13 @@ async function findOrCreateFromAzureClaims({ oid, email, name }) {
     }
   }
   let user = await usersRepo.findByOid(oid);
+  // An account made by the development sign-in has a made-up "dev-" oid;
+  // the first real Microsoft sign-in with the same email takes it over,
+  // keeping its role and times.
+  if (!user && email && !oid.startsWith('dev-')) {
+    const devAccount = await usersRepo.findByEmail(email);
+    if (devAccount && String(devAccount.microsoft_oid).startsWith('dev-')) user = await usersRepo.setOid(devAccount.id, oid);
+  }
   if (!user) {
     user = await usersRepo.create({ microsoftOid: oid, email, name, userType: 'user' });
   } else {

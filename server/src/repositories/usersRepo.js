@@ -8,6 +8,16 @@ async function findByOid(oid) {
   return rows[0] || null;
 }
 
+async function findByEmail(email) {
+  const { rows } = await getPool().query('SELECT * FROM users WHERE lower(email) = lower($1)', [email]);
+  return rows[0] || null;
+}
+
+async function setOid(id, oid) {
+  const { rows } = await getPool().query('UPDATE users SET microsoft_oid = $2 WHERE id = $1 RETURNING *', [id, oid]);
+  return rows[0];
+}
+
 async function findById(id) {
   const { rows } = await getPool().query('SELECT * FROM users WHERE id = $1', [id]);
   return rows[0] || null;
@@ -61,4 +71,4 @@ async function countActiveAdmins() {
   return rows[0].n;
 }
 
-module.exports = { findByOid, findById, create, recordSignIn, listAll, setUserType, setCostCentre, countActiveAdmins };
+module.exports = { findByOid, findByEmail, setOid, findById, create, recordSignIn, listAll, setUserType, setCostCentre, countActiveAdmins };

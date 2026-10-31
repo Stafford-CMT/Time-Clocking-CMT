@@ -50,7 +50,12 @@ function devAccounts() {
 async function devLogin(role = 'admin') {
   const account = devAccounts().find((item) => item.role === role);
   if (!account) throw new ApiError(400, 'Unknown development account');
-  const user = await usersService.findOrCreateFromAzureClaims({ oid: `dev-${account.email}`, email: account.email, name: account.name });
+  // Once that email has signed in through Microsoft, reuse the real account
+  // (keeping its Microsoft name) rather than making a second one.
+  const existing = await usersRepo.findByEmail(account.email);
+  const user = existing && !String(existing.microsoft_oid).startsWith('dev-')
+    ? usersService.toPublicUser(await usersRepo.recordSignIn(existing.id, {}))
+    : await usersService.findOrCreateFromAzureClaims({ oid: `dev-${account.email}`, email: account.email, name: account.name });
   if (user.userType === role) return user;
   return usersService.toPublicUser(await usersRepo.setUserType(user.id, role));
 }
