@@ -234,6 +234,8 @@ $('#add-contract').addEventListener('click', () => openContractModal()); $('#con
 $('#admin-mode-toggle').addEventListener('change', (event) => { adminMode = event.target.checked; sessionStorage.setItem(ADMIN_MODE_KEY, String(adminMode)); renderEditTimes(); showToast(adminMode ? 'Admin mode enabled' : 'Admin mode disabled'); });
 $('#edit-user-select').addEventListener('change', (event) => { editTimesUserId = event.target.value; renderEditTimes(); });
 $('#sign-out').addEventListener('click', signOut);
+// On wide screens the profile badge sits on the same line as each screen's title (see .topbar in styles.css); keep the title row clear of it.
+const profileBadge = document.querySelector('.profile-button'); new ResizeObserver(() => document.querySelector('.main-content').style.setProperty('--badge-space', `${profileBadge.offsetWidth + 20}px`)).observe(profileBadge);
 $('#non-contract-clock').addEventListener('click', () => { const nonContract = state.contracts.find((contract) => contract.system); if (nonContract) toggleClock(nonContract.id); });
 $('#nav-configuration').addEventListener('click', loadSysproConfig); $('#syspro-form').addEventListener('input', () => setConfigDirty(true)); $('#syspro-form').addEventListener('submit', async (event) => { event.preventDefault(); if (await saveSysproConfig()) showToast('Configuration saved'); }); $('#config-test-enet').addEventListener('click', testSysproEnet); document.querySelectorAll('[data-remove-password]').forEach((button) => button.addEventListener('click', () => removeSysproPassword(button.dataset.removePassword)));
 $('#add-contract-info').addEventListener('click', addContractInfo);

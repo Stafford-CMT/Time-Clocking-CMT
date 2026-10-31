@@ -257,3 +257,9 @@ h2 { font-size: 27px; }
 /* Today's date sits in the profile badge, under the name and role */
 .profile-date { margin-top: 3px; padding-top: 4px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }
 .topbar { align-items: center; justify-content: flex-end; margin-bottom: 4px; } /* just the profile badge now: no greeting, so the page starts higher */
+/* Wide screens: the profile badge shares the title row, so every screen's title starts at the top */
+@media (min-width: 901px) {
+  .main-content { position: relative; }
+  .topbar { position: absolute; top: 36px; right: 32px; z-index: 5; margin: 0; }
+  .section-heading { min-height: 66px; padding-right: var(--badge-space, 250px); }
+}
