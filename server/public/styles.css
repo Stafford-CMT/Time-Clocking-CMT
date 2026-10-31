@@ -254,3 +254,6 @@ h2 { font-size: 27px; }
 .day-chip-bar { position: relative; }
 .day-chip.is-over .day-chip-bar { overflow: visible; }
 .day-chip.is-over .day-chip-bar::before { content: ''; position: absolute; top: -4px; left: -2px; right: -2px; height: 2px; border-radius: 2px; background: #c6534b; }
+/* Today's date sits in the profile badge, under the name and role */
+.profile-date { margin-top: 3px; padding-top: 4px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }
+.topbar { align-items: center; justify-content: flex-end; margin-bottom: 4px; } /* just the profile badge now: no greeting, so the page starts higher */
