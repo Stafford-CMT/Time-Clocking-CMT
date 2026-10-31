@@ -106,7 +106,15 @@ async function updateSessions(actor, changes) {
       const endTime = change.end ?? session.end;
       if (!TIME_RE.test(startTime) || !TIME_RE.test(endTime)) throw new ApiError(400, 'Times must be HH:MM or HH:MM:SS');
       if (timeToSeconds(endTime) <= timeToSeconds(startTime)) throw new ApiError(400, 'End time must be after start time');
-      await clockRepo.updateTimeSession(db, session.id, { start: startTime, end: endTime, unlinked: change.unlinked ?? session.unlinked });
+      for (const flag of ['unlinkedStart', 'unlinkedEnd']) {
+        if (change[flag] !== undefined && typeof change[flag] !== 'boolean') throw new ApiError(400, `${flag} must be true or false`);
+      }
+      await clockRepo.updateTimeSession(db, session.id, {
+        start: startTime,
+        end: endTime,
+        unlinkedStart: change.unlinkedStart ?? session.unlinkedStart,
+        unlinkedEnd: change.unlinkedEnd ?? session.unlinkedEnd,
+      });
     }
   });
   return getState(actor);

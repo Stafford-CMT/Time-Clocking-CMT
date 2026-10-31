@@ -33,7 +33,7 @@ async function clearActive(db, userId) {
 }
 
 function toSession(row) {
-  return { id: row.id, contractId: row.contract_id, userId: row.user_id, date: row.date, start: row.start_time, end: row.end_time, unlinked: row.unlinked };
+  return { id: row.id, contractId: row.contract_id, userId: row.user_id, date: row.date, start: row.start_time, end: row.end_time, unlinkedStart: row.unlinked_start, unlinkedEnd: row.unlinked_end };
 }
 
 async function insertTimeSession(db, { id, contractId, userId, date, start, end }) {
@@ -48,8 +48,11 @@ async function findTimeSession(db, id) {
   return rows[0] ? toSession(rows[0]) : null;
 }
 
-async function updateTimeSession(db, id, { start, end, unlinked }) {
-  await db.query('UPDATE time_sessions SET start_time = $2, end_time = $3, unlinked = $4 WHERE id = $1', [id, start, end, unlinked]);
+async function updateTimeSession(db, id, { start, end, unlinkedStart, unlinkedEnd }) {
+  await db.query(
+    'UPDATE time_sessions SET start_time = $2, end_time = $3, unlinked_start = $4, unlinked_end = $5 WHERE id = $1',
+    [id, start, end, unlinkedStart, unlinkedEnd]
+  );
 }
 
 async function deleteTimeSession(db, id) {
