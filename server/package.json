@@ -1,0 +1,25 @@
+{
+  "name": "time-clocking-server",
+  "version": "1.0.0",
+  "description": "Time-Clocking-CMT — Express + PostgreSQL backend, Azure AD (Entra ID) SSO, static frontend.",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "migrate": "node db/scripts/migrate.js",
+    "promote-admin": "node db/scripts/promote-admin.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^2.16.2",
+    "connect-pg-simple": "^10.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.1",
+    "express-session": "^1.18.1",
+    "helmet": "^7.2.0",
+    "pg": "^8.13.1"
+  }
+}

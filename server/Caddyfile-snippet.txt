@@ -1,0 +1,36 @@
+This is NOT a standalone Caddyfile -- if this app is going on a server that
+already runs a shared Caddy instance for other apps (e.g. CMTDC01, which runs
+IO Buddy and the Design Plan Gantt board), add a block to that EXISTING
+Caddyfile rather than starting a second Caddy process (a second one would
+fight the existing one for ports 80/443).
+
+Pick a port this app's PM2 process doesn't collide with (check the existing
+Caddyfile / `pm2 list` for ports already in use -- IO Buddy uses 4000, Gantt
+uses 4001; this app's .env defaults PORT to 4100).
+
+Add a block like:
+
+    https://<name> {
+        tls internal
+        reverse_proxy localhost:4100
+    }
+
+Then reload Caddy (picks up config changes without dropping other apps'
+sites or restarting that process):
+
+    pm2 reload caddy
+
+Steps for the DNS name itself:
+  1. Add a DNS A record in the `clifford.local` zone pointing at this
+     server's IP (Add-DnsServerResourceRecordA -ZoneName "clifford.local" -Name "<name>" -IPv4Address "<server-ip>")
+  2. Append the block above to the existing Caddyfile
+  3. `pm2 reload caddy`
+  4. Add "https://<name>/auth/callback" as the Web redirect URI on this
+     app's own Azure AD app registration
+  5. No separate `caddy trust`/AD-publish step needed if the CA is already
+     trusted domain-wide from a previous app's setup -- any new cert it
+     issues (for any hostname) is automatically trusted too.
+
+If this is the FIRST app going on this particular server (no shared Caddy
+yet), follow ../Windows App Deployment Runbook.md section 7 instead to set
+up Caddy itself first.
