@@ -14,7 +14,7 @@ async function getState(req, res, next) {
 // the prototype. Add requireRole on the route if that should change.
 async function patchSetup(req, res, next) {
   try {
-    await setupService.applyPatch(req.body);
+    await setupService.applyPatch(req.body, req.session.user);
     res.json({ ok: true });
   } catch (err) {
     next(err);

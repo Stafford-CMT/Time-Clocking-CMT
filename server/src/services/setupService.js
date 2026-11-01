@@ -20,10 +20,10 @@ function demoSeedPatch() {
   return {
     contracts: {
       upsert: [
-        { id: 'meridian', customerName: 'Meridian House', number: 'CNT-1048', suffix: 'A-01', pinned: false },
-        { id: 'northline', customerName: 'Northline Depot', number: 'CNT-0917', suffix: 'B-04', pinned: true },
-        { id: 'harbour', customerName: 'Harbour Exchange', number: 'CNT-1182', suffix: 'C-02', pinned: false },
-        { id: 'civic', customerName: 'Civic Centre Refurb', number: 'CNT-0974', suffix: 'A-03', pinned: false },
+        { id: 'meridian', customerName: 'Meridian House', number: 'CNT-1048', suffix: 'A-01' },
+        { id: 'northline', customerName: 'Northline Depot', number: 'CNT-0917', suffix: 'B-04' },
+        { id: 'harbour', customerName: 'Harbour Exchange', number: 'CNT-1182', suffix: 'C-02' },
+        { id: 'civic', customerName: 'Civic Centre Refurb', number: 'CNT-0974', suffix: 'A-03' },
       ],
       order: ['meridian', 'northline', 'harbour', 'civic'],
     },
@@ -39,10 +39,10 @@ async function ensureSeeded() {
   }
 }
 
-// Everything the frontend needs on load: shared setup, the caller's clock
-// state, and who the caller is.
+// Everything the frontend needs on load: shared setup (with the caller's own
+// tile layout), the caller's clock state, and who the caller is.
 async function getFullState(actor) {
-  const setup = await setupRepo.getSetup(getPool());
+  const setup = await setupRepo.getSetup(getPool(), actor.id);
   const clock = await clockService.getState(actor);
   return { ...setup, ...clock, currentUser: actor };
 }
@@ -50,8 +50,9 @@ async function getFullState(actor) {
 /* Applies only the sections present in `patch` -- the frontend sends just
  * what changed, so one person's edit to (say) the customer list can't
  * overwrite another's newer working-times change with a stale copy.
+ * Tile hidden/pinned/order are saved for `actor` only (the demo seed has none).
  */
-async function applyPatch(patch) {
+async function applyPatch(patch, actor) {
   if (!patch || typeof patch !== 'object') throw new ApiError(400, 'Expected a JSON object');
   const unknown = Object.keys(patch).filter((key) => !SECTIONS.includes(key));
   if (unknown.length) throw new ApiError(400, `Unknown setup section(s): ${unknown.join(', ')}`);
@@ -74,8 +75,9 @@ async function applyPatch(patch) {
       for (const contract of patch.contracts.upsert || []) {
         if (!contract.id) throw new ApiError(400, 'Every contract needs an id');
         await setupRepo.upsertContract(db, contract);
+        if (actor) await setupRepo.setTileSettings(db, actor.id, contract);
       }
-      if (Array.isArray(patch.contracts.order)) await setupRepo.setContractOrder(db, patch.contracts.order);
+      if (actor && Array.isArray(patch.contracts.order)) await setupRepo.setTileOrder(db, actor.id, patch.contracts.order);
     }
     for (const [key, table] of Object.entries(NAME_LISTS)) {
       if (patch[key]) await setupRepo.replaceNameList(db, table, patch[key]);

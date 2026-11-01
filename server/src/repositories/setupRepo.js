@@ -17,8 +17,15 @@ function timeToHm(value) {
   return value ? value.slice(0, 5) : value;
 }
 
-async function getSetup(db) {
-  const contracts = (await db.query('SELECT * FROM contracts ORDER BY sort_order')).rows.map((c) => ({
+// Tiles are shared; hidden, pinned and order are the caller's own. A tile the
+// caller has no settings row for (one someone else added) is hidden for them.
+async function getSetup(db, userId) {
+  const contracts = (await db.query(
+    `SELECT c.*, s.hidden AS my_hidden, s.pinned AS my_pinned FROM contracts c
+     LEFT JOIN user_tile_settings s ON s.contract_id = c.id AND s.user_id = $1
+     ORDER BY s.sort_order NULLS LAST, c.sort_order`,
+    [userId]
+  )).rows.map((c) => ({
     id: c.id,
     customerName: c.customer_name,
     number: c.number,
@@ -26,8 +33,8 @@ async function getSetup(db) {
     suffixDescription: c.suffix_description,
     machineType: c.machine_type,
     image: c.image,
-    pinned: c.pinned,
-    hidden: c.hidden,
+    pinned: c.my_pinned ?? false,
+    hidden: c.system ? false : c.my_hidden ?? true,
     system: c.system, // the built-in Non-contract clock: never a tile
   }));
   const order = contracts.filter((c) => !c.system).map((c) => c.id);
@@ -97,26 +104,44 @@ async function getSetup(db) {
  * clocked session against it, and the frontend only ever hides tiles. So a
  * browser holding a stale contract list can't destroy anyone's time.
  * `image` is only overwritten when the key is present, so pin/hide/reorder
- * saves don't have to re-upload every tile's picture.
+ * saves don't have to re-upload every tile's picture. A new contract goes to
+ * the end of the shared creation order.
  */
 async function upsertContract(db, c) {
-  const params = [c.id, c.customerName || '', c.number || '', c.suffix || '', c.suffixDescription || '', c.machineType || '', !!c.pinned, !!c.hidden];
+  const params = [c.id, c.customerName || '', c.number || '', c.suffix || '', c.suffixDescription || '', c.machineType || ''];
   const hasImage = Object.prototype.hasOwnProperty.call(c, 'image');
   if (hasImage) params.push(c.image || null);
   await db.query(
-    `INSERT INTO contracts (id, customer_name, number, suffix, suffix_description, machine_type, pinned, hidden${hasImage ? ', image' : ''})
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8${hasImage ? ',$9' : ''})
+    `INSERT INTO contracts (id, customer_name, number, suffix, suffix_description, machine_type, sort_order${hasImage ? ', image' : ''})
+     VALUES ($1,$2,$3,$4,$5,$6,(SELECT COALESCE(MAX(sort_order) + 1, 0) FROM contracts)${hasImage ? ',$7' : ''})
      ON CONFLICT (id) DO UPDATE SET customer_name = EXCLUDED.customer_name, number = EXCLUDED.number, suffix = EXCLUDED.suffix,
-       suffix_description = EXCLUDED.suffix_description, machine_type = EXCLUDED.machine_type,
-       pinned = EXCLUDED.pinned, hidden = EXCLUDED.hidden${hasImage ? ', image = EXCLUDED.image' : ''}
+       suffix_description = EXCLUDED.suffix_description, machine_type = EXCLUDED.machine_type${hasImage ? ', image = EXCLUDED.image' : ''}
      WHERE NOT contracts.system`,
     params
   );
 }
 
-async function setContractOrder(db, order) {
+// The rest of a user's tile settings; a tile new to them goes to the end of
+// their order.
+async function setTileSettings(db, userId, c) {
+  await db.query(
+    `INSERT INTO user_tile_settings (user_id, contract_id, hidden, pinned, sort_order)
+     SELECT $1::text, id, $3, $4, (SELECT COALESCE(MAX(sort_order) + 1, 0) FROM user_tile_settings WHERE user_id = $1::text)
+     FROM contracts WHERE id = $2 AND NOT system
+     ON CONFLICT (user_id, contract_id) DO UPDATE SET hidden = EXCLUDED.hidden, pinned = EXCLUDED.pinned`,
+    [userId, c.id, !!c.hidden, !!c.pinned]
+  );
+}
+
+// Tiles in the order that the user has never chosen stay hidden for them.
+async function setTileOrder(db, userId, order) {
   for (let i = 0; i < order.length; i += 1) {
-    await db.query('UPDATE contracts SET sort_order = $1 WHERE id = $2 AND NOT system', [i, order[i]]);
+    await db.query(
+      `INSERT INTO user_tile_settings (user_id, contract_id, hidden, sort_order)
+       SELECT $1::text, id, true, $3 FROM contracts WHERE id = $2 AND NOT system
+       ON CONFLICT (user_id, contract_id) DO UPDATE SET sort_order = EXCLUDED.sort_order`,
+      [userId, order[i], i]
+    );
   }
 }
 
@@ -206,6 +231,6 @@ async function addDefaultWorkingTimes(db, userId) {
 }
 
 module.exports = {
-  getSetup, upsertContract, setContractOrder, replaceNameList, replaceNonWorking,
+  getSetup, upsertContract, setTileSettings, setTileOrder, replaceNameList, replaceNonWorking,
   replaceDefaultWorkingTimes, replaceContractInfo, replaceWorkingTimes, addDefaultWorkingTimes,
 };

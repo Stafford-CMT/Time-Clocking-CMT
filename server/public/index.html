@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#11242a">
   <title>Time Slide</title>
-  <meta name="description" content="Tap to clock on. Slide to put it right.">
+  <meta name="description" content="Tap to start. Slide to put it right.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -63,13 +63,12 @@
 
         <div class="dashboard-toolbar">
           <div>
-            <span class="toolbar-title">Your contracts</span>
-            <span class="toolbar-hint">Drag to arrange your workspace</span>
+            <span class="toolbar-title" id="tiles-heading">Your contracts</span>
+            <span class="toolbar-hint" id="tiles-hint">Drag to arrange your workspace</span>
           </div>
           <div class="toolbar-actions">
             <button class="add-button" id="open-lists" type="button"><span>+</span> Lists</button>
-            <button class="add-button" id="add-contract" type="button"><span>+</span> Add tile</button>
-            <label class="select-wrap">Filter <select id="filter-contracts"><option value="visible">Visible</option><option value="hidden">Hidden</option><option value="all">All</option></select></label>
+            <label class="tile-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.4 10.4 15 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="tile-search" type="search" placeholder="Find a tile: contract, suffix or customer" aria-label="Find a tile by contract, suffix or customer" autocomplete="off"></label>
           </div>
         </div>
         <div class="tile-grid" id="contract-grid" aria-live="polite"></div>
