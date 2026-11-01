@@ -13,6 +13,8 @@ const NAME_LISTS = {
 };
 const ARRAY_SECTIONS = ['nonWorking', 'contractInfo', 'workingTimes', ...Object.keys(NAME_LISTS)];
 const SECTIONS = ['contracts', 'defaultWorkingTimes', ...ARRAY_SECTIONS];
+// Company-wide settings only an admin may change (the Users and Cost centre tabs).
+const ADMIN_SECTIONS = ['defaultWorkingTimes', 'costCentres'];
 
 // Placeholder tiles for a brand-new, empty database only (dev/test
 // convenience) -- delete them in the app once real contracts are entered.
@@ -56,6 +58,7 @@ async function applyPatch(patch, actor) {
   if (!patch || typeof patch !== 'object') throw new ApiError(400, 'Expected a JSON object');
   const unknown = Object.keys(patch).filter((key) => !SECTIONS.includes(key));
   if (unknown.length) throw new ApiError(400, `Unknown setup section(s): ${unknown.join(', ')}`);
+  if (actor && actor.userType !== 'admin' && ADMIN_SECTIONS.some((key) => key in patch)) throw new ApiError(403, 'Only an admin can change default working times or cost centres');
   ARRAY_SECTIONS.forEach((key) => {
     if (key in patch && !Array.isArray(patch[key])) throw new ApiError(400, `${key} must be an array`);
   });

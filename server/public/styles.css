@@ -94,8 +94,6 @@ h2 { font-size: 27px; }
 .tile.is-pinned .pin-action { color: #c99a2e; }
 .tile.is-pinned .pin-action .pin-head { fill: #f3c969; }
 .tile-action.pin-action, .tile-action.pin-action:hover, .tile.is-pinned .pin-action, .tile.is-pinned .pin-action:hover { background: transparent; }
-.tile.is-hidden-contract { border-style: dashed; }.tile.is-hidden-contract > :not(.tile-footer), .tile.is-hidden-contract .tile-footer-left { opacity: .6; }
-.tile.is-hidden-contract .delete-contract { color: var(--teal-dark); }
 .user-column-heading { position: sticky; left: 0; z-index: 4; }
 .user-cell { position: sticky; left: 0; z-index: 4; background: #fff; }
 .user-name-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -286,9 +284,29 @@ h2 { font-size: 27px; }
 .tile-search svg { position: absolute; left: 11px; width: 14px; height: 14px; color: var(--muted); pointer-events: none; }
 .tile-search input { width: 300px; max-width: 100%; padding: 10px 12px 10px 32px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); font-size: 12px; }
 .tile-search input:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
-.add-to-dashboard { background: var(--ink); }
-.new-tile-card { align-items: center; justify-content: center; gap: 6px; border: 1px dashed #bdcbc6; background: transparent; box-shadow: none; color: var(--muted); font: inherit; font-size: 12px; text-align: center; cursor: pointer; }
-.new-tile-card:hover, .new-tile-card:focus-visible { border-color: var(--teal); color: var(--teal-dark); }
-.new-tile-card strong { color: var(--ink); font-size: 13px; }
-.new-tile-plus { color: var(--teal); font-size: 36px; line-height: 1; }
 @media (max-width: 650px) { .tile-search { flex: 1; }.tile-search input { width: 100%; } }
+.find-tiles-modal { width: min(960px, 95%); display: flex; flex-direction: column; }
+.find-tiles-modal .modal-header { margin-bottom: 16px; }
+.find-tiles-modal .tile-search input { width: 100%; padding: 11px 12px 11px 32px; font-size: 13px; }
+.find-tiles-count { margin: 10px 2px 8px; color: var(--muted); font-size: 11px; font-weight: 700; }
+/* Find a tile results: a small version of the dashboard grid */
+.find-tiles-list { list-style: none; margin: 0; padding: 3px; display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); align-content: start; gap: 12px; min-height: 140px; max-height: 60vh; overflow-y: auto; }
+.modal .find-tile { position: relative; display: flex; flex-direction: column; gap: 0; height: 100%; box-sizing: border-box; margin: 0; padding: 9px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: var(--shadow); color: var(--ink); font-size: 12px; font-weight: 500; cursor: pointer; }
+.modal .find-tile:hover { border-color: var(--teal); }
+.modal .find-tile:has(input:checked:not(:disabled)) { border-color: var(--teal); outline: 2px solid var(--teal); outline-offset: -1px; background: #f3faf7; }
+/* The tick box is hidden but still there for the keyboard (Tab, then Space); a ticked tile shows a teal ✓ instead */
+.modal .find-tile input { position: absolute; top: 10px; right: 10px; width: 1px; height: 1px; margin: 0; padding: 0; opacity: 0; pointer-events: none; }
+.modal .find-tile:has(input:focus-visible) { outline: 2px solid var(--teal); outline-offset: 2px; }
+.find-tile:has(input:checked:not(:disabled))::after { content: '\2713'; position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 12px; font-weight: 700; line-height: 1; }
+.find-tile-title { padding-right: 24px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 600 13px 'Space Grotesk'; }
+.find-tile-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 7px; min-height: 18px; margin-top: 4px; }
+.find-tile-image { position: relative; display: grid; place-items: center; height: 72px; margin-top: auto; overflow: hidden; border-radius: 8px; background: linear-gradient(135deg, #edf3ef, #dfeae5); color: #9ab1aa; font: 600 9px 'Space Grotesk'; letter-spacing: .1em; text-transform: uppercase; }
+.find-tile-meta + .find-tile-image { margin-top: 8px; }
+.find-tile-image img { width: 100%; height: 100%; object-fit: cover; }
+.find-tile-status { position: absolute; left: 6px; bottom: 6px; padding: 3px 8px; border-radius: 999px; background: rgba(255, 255, 255, .94); color: var(--teal-dark); font-family: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+.modal .find-tile.is-on-dashboard { cursor: default; background: #fafcf9; box-shadow: none; }
+.modal .find-tile.is-on-dashboard:hover { border-color: var(--line); }
+.find-tile.is-on-dashboard .find-tile-title, .find-tile.is-on-dashboard .find-tile-meta, .find-tile.is-on-dashboard img { opacity: .55; }
+.find-tiles-empty { grid-column: 1 / -1; padding: 22px 12px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); font-size: 13px; text-align: center; }
+.find-tiles-actions #find-tiles-new { margin-right: auto; }
+.find-tiles-actions .add-button:disabled { opacity: .45; cursor: not-allowed; }

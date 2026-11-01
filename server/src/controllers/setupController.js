@@ -11,7 +11,8 @@ async function getState(req, res, next) {
 }
 
 // Every authenticated user (any role) can edit setup data today -- same as
-// the prototype. Add requireRole on the route if that should change.
+// the prototype -- except the admin-only sections setupService refuses
+// (default working times, cost centres).
 async function patchSetup(req, res, next) {
   try {
     await setupService.applyPatch(req.body, req.session.user);

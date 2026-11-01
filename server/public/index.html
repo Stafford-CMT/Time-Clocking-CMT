@@ -68,7 +68,7 @@
           </div>
           <div class="toolbar-actions">
             <button class="add-button" id="open-lists" type="button"><span>+</span> Lists</button>
-            <label class="tile-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.4 10.4 15 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="tile-search" type="search" placeholder="Find a tile: contract, suffix or customer" aria-label="Find a tile by contract, suffix or customer" autocomplete="off"></label>
+            <button class="add-button" id="open-find-tiles" type="button" aria-haspopup="dialog"><span>+</span> Add tile</button>
           </div>
         </div>
         <div class="tile-grid" id="contract-grid" aria-live="polite"></div>
@@ -161,7 +161,7 @@
       <label>Suffix description<input id="contract-suffix-description" class="force-uppercase" name="suffixDescription" readonly placeholder="Auto-filled from suffix"></label>
       <label>Machine type<input id="contract-machine-type" name="machineType" readonly placeholder="Auto-filled from contract"></label>
       <label>Image<span class="modal-image-preview" id="contract-image-preview"></span><input id="contract-image" name="image" type="file" accept="image/*"></label>
-      <div class="modal-actions"><button class="secondary-button" id="cancel-contract" type="button">Cancel</button><button class="add-button" id="contract-submit" type="submit"><span>+</span> Add tile</button></div>
+      <div class="modal-actions"><button class="add-button" id="contract-submit" type="submit"><span>+</span> Add tile</button></div>
     </form>
   </div>
   <div class="modal-backdrop is-hidden" id="schedule-modal" role="presentation">
@@ -170,7 +170,7 @@
       <label>User's name<select id="schedule-user-name" name="userId" required><option value="">Select user</option></select></label>
       <div class="form-row"><label>Work starts<input id="schedule-start" name="start" type="time" value="06:00" required></label><label>Work ends<input id="schedule-end" name="end" type="time" value="15:00" required></label></div>
       <div id="schedule-break-rows"></div>
-      <div class="modal-actions"><button class="secondary-button" id="cancel-schedule" type="button">Cancel</button><button class="add-button" type="submit">Save</button></div>
+      <div class="modal-actions"><button class="add-button" type="submit">Save</button></div>
     </form>
   </div>
   <div class="modal-backdrop is-hidden" id="lists-modal" role="presentation">
@@ -180,8 +180,8 @@
         <button class="modal-tab is-active" data-list-tab="machine-type" type="button">Machine type</button>
         <button class="modal-tab" data-list-tab="suffix-description" type="button">Suffix description</button>
         <button class="modal-tab" data-list-tab="customers" type="button">Customers</button>
-        <button class="modal-tab" data-list-tab="users" type="button">Users</button>
-        <button class="modal-tab" data-list-tab="cost-centres" type="button">Cost centre</button>
+        <button class="modal-tab" data-list-tab="users" data-admin-only type="button">Users</button>
+        <button class="modal-tab" data-list-tab="cost-centres" data-admin-only type="button">Cost centre</button>
       </div>
       <form class="modal-tab-panel" id="machine-type-panel" data-list-panel="machine-type">
         <label>Machine type
@@ -223,6 +223,15 @@
         </label>
         <ul class="list-items" id="cost-centre-list"></ul>
       </form>
+    </div>
+  </div>
+  <div class="modal-backdrop is-hidden" id="find-tiles-modal" role="presentation">
+    <div class="modal find-tiles-modal" role="dialog" aria-labelledby="find-tiles-title">
+      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="find-tiles-title">Find a tile</h2></div><button class="modal-close" id="close-find-tiles" type="button" aria-label="Close find a tile">&times;</button></div>
+      <div class="tile-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.4 10.4 15 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="tile-search" type="search" placeholder="Contract, suffix or customer" aria-label="Find a tile by contract, suffix or customer" autocomplete="off"></div>
+      <div class="find-tiles-count" id="find-tiles-count" aria-live="polite"></div>
+      <ul class="find-tiles-list" id="find-tiles-list"></ul>
+      <div class="modal-actions find-tiles-actions"><button class="secondary-button" id="find-tiles-new" type="button">+ Add a new tile</button><button class="add-button" id="find-tiles-add" type="button" disabled>Add to dashboard</button></div>
     </div>
   </div>
   <div class="modal-backdrop is-hidden" id="confirm-modal" role="alertdialog" aria-labelledby="confirm-modal-message">
