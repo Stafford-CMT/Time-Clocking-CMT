@@ -184,6 +184,24 @@ async function updateSessions(actor, changes) {
   return getState(actor);
 }
 
+// Undo of a removed block in Edit Times: puts it back exactly as it was.
+async function restoreSession(actor, session) {
+  if (!session || typeof session !== 'object') throw new ApiError(400, 'Expected the removed time block');
+  const { id, contractId, userId, date, start, end } = session;
+  if (typeof id !== 'string' || !id || typeof userId !== 'string') throw new ApiError(400, 'Time block needs an id and a user');
+  if (!DATE_RE.test(String(date)) || !TIME_RE.test(String(start)) || !TIME_RE.test(String(end))) throw new ApiError(400, 'Time block needs a date (YYYY-MM-DD) and HH:MM times');
+  if (timeToSeconds(end) <= timeToSeconds(start)) throw new ApiError(400, 'End time must be after start time');
+  assertCanActOn(actor, userId);
+  await withTransaction(async (db) => {
+    if (!(await clockRepo.contractExists(db, contractId))) throw new ApiError(404, 'Contract not found');
+    if (await clockRepo.findTimeSession(db, id)) throw new ApiError(409, 'That time block is already there');
+    await assertNotCommitted(db, actor, userId, date);
+    await clockRepo.insertTimeSession(db, { id, contractId, userId, date, start, end });
+    await clockRepo.updateTimeSession(db, id, { start, end, unlinkedStart: session.unlinkedStart === true, unlinkedEnd: session.unlinkedEnd === true, autoStopped: false });
+  });
+  return getState(actor);
+}
+
 async function removeSession(actor, id) {
   await withTransaction(async (db) => {
     const session = await clockRepo.findTimeSession(db, id);
@@ -222,6 +240,6 @@ async function uncommit(actor, userId, date) {
 }
 
 module.exports = {
-  getState, start, stop, updateSessions, removeSession, commit, uncommit, markAutoNoticed,
+  getState, start, stop, updateSessions, restoreSession, removeSession, commit, uncommit, markAutoNoticed,
   autoClockOutAt, runClockSchedule, startClockSchedule,
 };

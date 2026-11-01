@@ -26,6 +26,7 @@ router.post('/clock/:contractId/start', clockController.start); // own clock
 router.post('/clock/:contractId/stop', clockController.stop); // own clock
 
 router.patch('/sessions', clockController.updateSessions); // own sessions, or anyone's for admin
+router.post('/sessions', clockController.restoreSession); // undo a removed block: own sessions, or anyone's for admin
 router.delete('/sessions/:id', clockController.removeSession); // own sessions, or anyone's for admin
 router.post('/commits/:userId/:date', clockController.commit); // own day, or anyone's for admin
 router.delete('/commits/:userId/:date', clockController.uncommit); // admin only (checked in clockService)

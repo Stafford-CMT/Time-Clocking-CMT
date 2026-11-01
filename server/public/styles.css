@@ -338,3 +338,10 @@ h2 { font-size: 27px; }
 .clock-button.is-paused { background: var(--teal-dark); }
 .paused-time { color: var(--teal-dark); }
 .metric-clock-button.is-paused { border-color: #c96f22; background: #fff3e6; color: #a85a17; border-style: dashed; }
+/* Edit Times undo / redo, beside Commit */
+.edit-times-card .schedule-toolbar .undo-redo { display: flex; flex: 0 0 auto; align-self: stretch; gap: 4px; }
+.undo-redo-button { display: grid; place-items: center; width: 34px; padding: 0; border: 1.5px solid var(--teal); border-radius: 8px; background: transparent; color: var(--teal-dark); cursor: pointer; }
+.undo-redo-button:hover { background: var(--mint); }
+.undo-redo-button:disabled { border-color: var(--line); color: #b3bfbd; cursor: not-allowed; background: transparent; }
+.undo-redo-button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.schedule-legend .legend-tips { margin-left: auto; color: var(--muted); font-style: italic; }
