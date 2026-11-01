@@ -61,6 +61,7 @@
           </div>
         </div>
 
+        <div class="auto-notice is-hidden" id="auto-notice" role="status"><svg class="clock-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.3 1.5"/></svg><p id="auto-notice-text"></p><button class="secondary-button" id="auto-notice-check" type="button">Check times</button><button class="modal-close" id="auto-notice-close" type="button" aria-label="Dismiss this message">&times;</button></div>
         <div class="dashboard-toolbar">
           <div>
             <span class="toolbar-title" id="tiles-heading">Your contracts</span>
@@ -83,7 +84,7 @@
           <div class="schedule-toolbar"></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading">Team member</div><div class="timeline-heading" id="timeline-heading"></div></div><div id="working-time-rows"></div></div>
           <p class="empty-state is-hidden" id="empty-state">No registered users yet. Add a user to build the schedule.</p>
-          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Scheduled work</span><span><i class="legend-swatch break-swatch"></i>Break</span></div>
+          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Scheduled work</span><span><i class="legend-swatch break-swatch"></i>Break</span><span><i class="legend-swatch auto-clock-out-swatch"></i>Auto clock-out (drag your own line to change it)</span></div>
         </div>
       </section>
 

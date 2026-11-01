@@ -5,6 +5,7 @@ const setupRepo = require('../repositories/setupRepo');
 const { withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 const env = require('../config/env');
+const { timeToSeconds, TIME_RE } = require('../utils/time');
 
 function toPublicUser(row) {
   return {
@@ -118,4 +119,19 @@ async function setCostCentre(id, costCentre) {
   return toPublicUser(user);
 }
 
-module.exports = { findOrCreateFromAzureClaims, listUsers, listDirectory, setIncluded, setUserType, setCostCentre, toPublicUser };
+// Anyone can move their own auto clock-out time; an admin can move anyone's.
+// A time at or before the end of their working day is stored as NULL ("at the
+// end of the working day"), so it keeps following that end if it changes.
+async function setAutoClockOut(actor, id, autoClockOut) {
+  if (actor.id !== id && actor.userType !== 'admin') throw new ApiError(403, 'You can only change your own auto clock-out time');
+  if (autoClockOut != null && autoClockOut !== '' && (typeof autoClockOut !== 'string' || !TIME_RE.test(autoClockOut) || autoClockOut.startsWith('24'))) {
+    throw new ApiError(400, 'autoClockOut must be HH:MM');
+  }
+  const dayEnd = await usersRepo.workingDayEnd(id);
+  const later = autoClockOut && (!dayEnd || timeToSeconds(autoClockOut) > timeToSeconds(dayEnd));
+  const user = await usersRepo.setAutoClockOut(id, later ? autoClockOut : null);
+  if (!user) throw new ApiError(404, 'User not found');
+  return { id: user.id, autoClockOut: user.auto_clock_out ? user.auto_clock_out.slice(0, 5) : '' };
+}
+
+module.exports = { findOrCreateFromAzureClaims, listUsers, listDirectory, setIncluded, setUserType, setCostCentre, setAutoClockOut, toPublicUser };

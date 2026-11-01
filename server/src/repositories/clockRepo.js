@@ -33,13 +33,13 @@ async function clearActive(db, userId) {
 }
 
 function toSession(row) {
-  return { id: row.id, contractId: row.contract_id, userId: row.user_id, date: row.date, start: row.start_time, end: row.end_time, unlinkedStart: row.unlinked_start, unlinkedEnd: row.unlinked_end };
+  return { id: row.id, contractId: row.contract_id, userId: row.user_id, date: row.date, start: row.start_time, end: row.end_time, unlinkedStart: row.unlinked_start, unlinkedEnd: row.unlinked_end, autoStopped: row.auto_stopped, autoNoticed: row.auto_noticed };
 }
 
-async function insertTimeSession(db, { id, contractId, userId, date, start, end }) {
+async function insertTimeSession(db, { id, contractId, userId, date, start, end, autoStopped = false }) {
   await db.query(
-    'INSERT INTO time_sessions (id, contract_id, user_id, date, start_time, end_time) VALUES ($1, $2, $3, $4, $5, $6)',
-    [id, contractId, userId, date, start, end]
+    'INSERT INTO time_sessions (id, contract_id, user_id, date, start_time, end_time, auto_stopped) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    [id, contractId, userId, date, start, end, autoStopped]
   );
 }
 
@@ -48,11 +48,43 @@ async function findTimeSession(db, id) {
   return rows[0] ? toSession(rows[0]) : null;
 }
 
-async function updateTimeSession(db, id, { start, end, unlinkedStart, unlinkedEnd }) {
+async function updateTimeSession(db, id, { start, end, unlinkedStart, unlinkedEnd, autoStopped }) {
   await db.query(
-    'UPDATE time_sessions SET start_time = $2, end_time = $3, unlinked_start = $4, unlinked_end = $5 WHERE id = $1',
-    [id, start, end, unlinkedStart, unlinkedEnd]
+    'UPDATE time_sessions SET start_time = $2, end_time = $3, unlinked_start = $4, unlinked_end = $5, auto_stopped = $6 WHERE id = $1',
+    [id, start, end, unlinkedStart, unlinkedEnd, autoStopped]
   );
+}
+
+// The dashboard's "stopped automatically" message has been seen.
+async function markAutoNoticed(db, userId, ids) {
+  await db.query('UPDATE time_sessions SET auto_noticed = true WHERE user_id = $1 AND id = ANY($2)', [userId, ids]);
+}
+
+// Committing a day counts as checking its auto clock-outs.
+async function clearAutoStopped(db, userId, date) {
+  await db.query('UPDATE time_sessions SET auto_stopped = false WHERE user_id = $1 AND date = $2', [userId, date]);
+}
+
+// Everyone with a clock running or paused for a break: the people the
+// server's clock schedule (breaks, auto clock-out) may need to act for.
+async function findScheduledClockUsers(db) {
+  const { rows } = await db.query('SELECT user_id FROM active_sessions UNION SELECT user_id FROM user_break_state');
+  return rows.map((r) => r.user_id);
+}
+
+/* A person's day as the clock schedule sees it, or null without working
+ * times: clockOut is the later of users.auto_clock_out and the end of their
+ * working day (GREATEST skips a NULL auto_clock_out); times are 'HH:MM:SS'. */
+async function findClockSchedule(db, userId) {
+  const { rows } = await db.query(
+    `SELECT w.id, GREATEST(u.auto_clock_out, w."end") AS clock_out
+       FROM working_times w JOIN users u ON u.id = w.user_id
+      WHERE w.user_id = $1`,
+    [userId]
+  );
+  if (!rows[0]) return null;
+  const breaks = (await db.query('SELECT start, "end" FROM working_time_breaks WHERE working_time_id = $1 ORDER BY start', [rows[0].id])).rows;
+  return { clockOut: rows[0].clock_out, breaks: breaks.map((b) => ({ start: b.start, end: b.end })) };
 }
 
 async function deleteTimeSession(db, id) {
@@ -60,12 +92,12 @@ async function deleteTimeSession(db, id) {
 }
 
 async function findBreakState(db, userId) {
-  const { rows } = await db.query('SELECT contract_id FROM user_break_state WHERE user_id = $1', [userId]);
-  return rows[0] ? { contractId: rows[0].contract_id } : null;
+  const { rows } = await db.query('SELECT contract_id, resume_at FROM user_break_state WHERE user_id = $1', [userId]);
+  return rows[0] ? { contractId: rows[0].contract_id, resumeAt: new Date(rows[0].resume_at).getTime() } : null;
 }
 
-async function setBreakState(db, userId, contractId) {
-  await db.query('INSERT INTO user_break_state (user_id, contract_id) VALUES ($1, $2)', [userId, contractId]);
+async function setBreakState(db, userId, contractId, resumeAt) {
+  await db.query('INSERT INTO user_break_state (user_id, contract_id, resume_at) VALUES ($1, $2, $3)', [userId, contractId, new Date(resumeAt)]);
 }
 
 async function clearBreakState(db, userId) {
@@ -115,6 +147,7 @@ async function getClockState(db, userId, allUsers) {
 module.exports = {
   lockUser, contractExists, findActive, setActive, clearActive,
   insertTimeSession, findTimeSession, updateTimeSession, deleteTimeSession,
+  markAutoNoticed, clearAutoStopped, findScheduledClockUsers, findClockSchedule,
   findBreakState, setBreakState, clearBreakState,
   isCommitted, addCommit, removeCommit, getClockState,
 };

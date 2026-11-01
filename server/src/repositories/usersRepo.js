@@ -50,7 +50,7 @@ async function recordSignIn(id, { email, name }) {
 // Only the people ticked into Time Slide -- everything outside Lists -> Users.
 async function listAll() {
   const { rows } = await getPool().query(
-    'SELECT id, email, name, user_type, cost_centre, is_active, created_at, last_login_at FROM users WHERE included ORDER BY created_at'
+    'SELECT id, email, name, user_type, cost_centre, auto_clock_out, is_active, created_at, last_login_at FROM users WHERE included ORDER BY created_at'
   );
   return rows;
 }
@@ -106,6 +106,17 @@ async function setCostCentre(id, costCentre) {
   return rows[0] || null;
 }
 
+async function setAutoClockOut(id, time) {
+  const { rows } = await getPool().query('UPDATE users SET auto_clock_out = $1 WHERE id = $2 RETURNING *', [time || null, id]);
+  return rows[0] || null;
+}
+
+// The end of this person's working day ('HH:MM:SS'), or null without one.
+async function workingDayEnd(id) {
+  const { rows } = await getPool().query('SELECT "end" FROM working_times WHERE user_id = $1', [id]);
+  return rows[0]?.end ?? null;
+}
+
 async function countActiveAdmins() {
   const { rows } = await getPool().query(
     "SELECT COUNT(*)::int AS n FROM users WHERE user_type = 'admin' AND is_active = true AND included"
@@ -115,5 +126,5 @@ async function countActiveAdmins() {
 
 module.exports = {
   findByOid, findByEmail, setOid, findById, create, recordSignIn, listAll, listDirectory, setIncluded,
-  saveDirectoryPerson, markMissingFromDirectory, deleteSampleStaff, setUserType, setCostCentre, countActiveAdmins,
+  saveDirectoryPerson, markMissingFromDirectory, deleteSampleStaff, setUserType, setCostCentre, setAutoClockOut, workingDayEnd, countActiveAdmins,
 };

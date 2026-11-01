@@ -72,19 +72,7 @@ async function getSetup(db, userId) {
     suffixes: suffixesByInfo[r.id] || [],
   }));
 
-  const wtBreakRows = (await db.query('SELECT * FROM working_time_breaks ORDER BY sort_order')).rows;
-  const breaksByWt = {};
-  wtBreakRows.forEach((b) => {
-    breaksByWt[b.working_time_id] = breaksByWt[b.working_time_id] || [];
-    breaksByWt[b.working_time_id].push({ id: b.id, type: b.type, start: timeToHm(b.start), end: timeToHm(b.end) });
-  });
-  const workingTimes = (await db.query('SELECT * FROM working_times')).rows.map((wt) => ({
-    id: wt.id,
-    userId: wt.user_id,
-    start: timeToHm(wt.start),
-    end: timeToHm(wt.end),
-    breaks: breaksByWt[wt.id] || [],
-  }));
+  const workingTimes = await listWorkingTimes(db);
 
   const users = (await usersRepo.listAll()).map((u) => ({
     id: u.id,
@@ -92,6 +80,7 @@ async function getSetup(db, userId) {
     email: u.email || '',
     userType: u.user_type,
     costCentre: u.cost_centre || '',
+    autoClockOut: u.auto_clock_out ? timeToHm(u.auto_clock_out) : '', // '' = at the end of their working day
   }));
 
   return {
@@ -195,6 +184,22 @@ async function replaceContractInfo(db, records) {
   }
 }
 
+async function listWorkingTimes(db) {
+  const wtBreakRows = (await db.query('SELECT * FROM working_time_breaks ORDER BY sort_order')).rows;
+  const breaksByWt = {};
+  wtBreakRows.forEach((b) => {
+    breaksByWt[b.working_time_id] = breaksByWt[b.working_time_id] || [];
+    breaksByWt[b.working_time_id].push({ id: b.id, type: b.type, start: timeToHm(b.start), end: timeToHm(b.end) });
+  });
+  return (await db.query('SELECT * FROM working_times')).rows.map((wt) => ({
+    id: wt.id,
+    userId: wt.user_id,
+    start: timeToHm(wt.start),
+    end: timeToHm(wt.end),
+    breaks: breaksByWt[wt.id] || [],
+  }));
+}
+
 async function replaceWorkingTimes(db, entries) {
   await db.query('DELETE FROM working_times'); // cascades working_time_breaks
   for (const entry of entries) {
@@ -232,5 +237,5 @@ async function addDefaultWorkingTimes(db, userId) {
 
 module.exports = {
   getSetup, upsertContract, setTileSettings, setTileOrder, replaceNameList, replaceNonWorking,
-  replaceDefaultWorkingTimes, replaceContractInfo, replaceWorkingTimes, addDefaultWorkingTimes,
+  replaceDefaultWorkingTimes, replaceContractInfo, listWorkingTimes, replaceWorkingTimes, addDefaultWorkingTimes,
 };

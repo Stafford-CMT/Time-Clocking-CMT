@@ -4,6 +4,7 @@ const env = require('./config/env');
 const app = require('./app');
 const setupService = require('./services/setupService');
 const directoryService = require('./services/directoryService');
+const clockService = require('./services/clockService');
 
 async function main() {
   await setupService.ensureSeeded();
@@ -14,6 +15,7 @@ async function main() {
     console.log(`Time Slide server running on 127.0.0.1:${env.port} (behind Caddy for HTTPS).`);
   });
   directoryService.startSchedule();
+  clockService.startClockSchedule(); // breaks and auto clock-out
 }
 
 main().catch((err) => {

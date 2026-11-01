@@ -22,8 +22,6 @@ router.get('/whoami', authController.whoami); // any logged-in session
 router.get('/state', setupController.getState); // any logged-in session
 router.patch('/setup', setupController.patchSetup); // any logged-in session -- see setupController's comment
 
-router.post('/clock/break/pause', clockController.pauseForBreak); // own clock
-router.post('/clock/break/resume', clockController.resumeAfterBreak); // own clock
 router.post('/clock/:contractId/start', clockController.start); // own clock
 router.post('/clock/:contractId/stop', clockController.stop); // own clock
 
@@ -31,6 +29,7 @@ router.patch('/sessions', clockController.updateSessions); // own sessions, or a
 router.delete('/sessions/:id', clockController.removeSession); // own sessions, or anyone's for admin
 router.post('/commits/:userId/:date', clockController.commit); // own day, or anyone's for admin
 router.delete('/commits/:userId/:date', clockController.uncommit); // admin only (checked in clockService)
+router.post('/sessions/auto-noticed', clockController.markAutoNoticed); // own sessions: the "stopped automatically" message was seen
 
 router.get('/users', usersController.list); // any logged-in session -- needed for the working-times dropdowns (people in Time Slide only)
 router.get('/directory', requireRole('admin'), usersController.directory); // all staff from Entra ID, ticked or not
@@ -38,6 +37,7 @@ router.post('/directory/sync', requireRole('admin'), usersController.syncDirecto
 router.put('/users/:id/included', requireRole('admin'), usersController.setIncluded);
 router.put('/users/:id/user-type', requireRole('admin'), usersController.setUserType);
 router.put('/users/:id/cost-centre', requireRole('admin'), usersController.setCostCentre);
+router.put('/users/:id/auto-clock-out', usersController.setAutoClockOut); // own, or anyone's for admin (checked in usersService)
 
 router.get('/config/syspro', requireRole('admin'), configController.getSyspro); // passwords come back only as "set" flags
 router.put('/config/syspro', requireRole('admin'), configController.saveSyspro);

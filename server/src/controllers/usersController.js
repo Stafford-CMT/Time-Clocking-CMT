@@ -29,6 +29,14 @@ async function setCostCentre(req, res, next) {
   }
 }
 
+async function setAutoClockOut(req, res, next) {
+  try {
+    res.json(await usersService.setAutoClockOut(req.session.user, req.params.id, req.body.autoClockOut));
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function directory(req, res, next) {
   try {
     res.json({ people: await usersService.listDirectory(), sync: directoryService.getStatus() });
@@ -54,4 +62,4 @@ async function setIncluded(req, res, next) {
   }
 }
 
-module.exports = { list, setUserType, setCostCentre, directory, syncDirectory, setIncluded };
+module.exports = { list, setUserType, setCostCentre, setAutoClockOut, directory, syncDirectory, setIncluded };

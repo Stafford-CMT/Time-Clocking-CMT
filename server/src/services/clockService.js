@@ -23,20 +23,99 @@ async function assertNotCommitted(db, actor, userId, date) {
   }
 }
 
-function getState(actor) {
+async function getState(actor) {
+  // Catch up the caller's own clock schedule first (breaks, auto clock-out),
+  // so nobody is shown a clock still waiting for the next sweep.
+  await runClockSchedule(Date.now(), [actor.id]).catch((err) => console.error('Clock schedule failed:', err));
   return clockRepo.getClockState(getPool(), actor.id, isAdmin(actor));
 }
 
 // Stops the user's running clock, if any, and records it as completed
-// session(s). Returns what was running, or null.
-async function closeActive(db, userId, endMs) {
+// session(s). Returns what was running, or null. An automatic stop marks the
+// last piece -- the one ending at the clock-out time -- for the person to check.
+async function closeActive(db, userId, endMs, { autoStopped = false } = {}) {
   const active = await clockRepo.findActive(db, userId);
   if (!active) return null;
-  for (const piece of splitByDay(active.startedAt, endMs)) {
-    await clockRepo.insertTimeSession(db, { id: uid('session'), contractId: active.contractId, userId, ...piece });
+  const pieces = splitByDay(active.startedAt, endMs);
+  for (const [index, piece] of pieces.entries()) {
+    await clockRepo.insertTimeSession(db, { id: uid('session'), contractId: active.contractId, userId, ...piece, autoStopped: autoStopped && index === pieces.length - 1 });
   }
   await clockRepo.clearActive(db, userId);
   return active;
+}
+
+// The moment `time` ('HH:MM:SS') falls on the local day containing dayMs.
+function atTime(dayMs, time) {
+  const day = new Date(dayMs);
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, timeToSeconds(time)).getTime();
+}
+
+/* Auto clock-out: a running clock stops at its owner's clock-out time
+ * (clockOut, 'HH:MM:SS') on the day it was started. A clock started after
+ * that time -- someone staying late on purpose -- runs to the end of that
+ * day instead. */
+function autoClockOutAt(startedAt, clockOut) {
+  const cutoff = atTime(startedAt, clockOut);
+  const started = new Date(startedAt);
+  return startedAt < cutoff ? cutoff : new Date(started.getFullYear(), started.getMonth(), started.getDate() + 1).getTime();
+}
+
+/* The clock schedule, run by the server so nobody needs a page open:
+ * - Breaks: a clock that was already running when one of the person's breaks
+ *   starts is paused at the break start and restarted at the break end.
+ *   Starting a clock during a break (working through it) is left alone. A
+ *   break that ends at or after the clock-out time ends the clock instead,
+ *   marked like an auto clock-out.
+ * - Auto clock-out, as above, marked for the person to check.
+ * Every step is recorded at its scheduled moment, however late the server
+ * gets to it (a sweep every 30 seconds, every state load, and before every
+ * start/stop). Steps are applied in time order until nothing more is due. */
+async function applyClockSchedule(db, userId, now) {
+  const schedule = await clockRepo.findClockSchedule(db, userId);
+  for (let step = 0; step < 20; step += 1) {
+    const active = await clockRepo.findActive(db, userId);
+    if (!active) {
+      const paused = await clockRepo.findBreakState(db, userId);
+      if (!paused || paused.resumeAt > now) return;
+      await clockRepo.clearBreakState(db, userId);
+      if (!(await clockRepo.isCommitted(db, userId, localDate(new Date(paused.resumeAt))))) {
+        await clockRepo.setActive(db, userId, paused.contractId, new Date(paused.resumeAt));
+      }
+      continue;
+    }
+    if (!schedule) return;
+    const cutoff = autoClockOutAt(active.startedAt, schedule.clockOut);
+    const nextBreak = schedule.breaks
+      .map((b) => ({ start: atTime(active.startedAt, b.start), end: atTime(active.startedAt, b.end) }))
+      .filter((b) => b.end > b.start && b.start > active.startedAt && b.start < cutoff)
+      .sort((a, b) => a.start - b.start)[0];
+    if (nextBreak && nextBreak.start <= now) {
+      const resumes = nextBreak.end < cutoff;
+      await closeActive(db, userId, nextBreak.start, { autoStopped: !resumes });
+      if (resumes) await clockRepo.setBreakState(db, userId, active.contractId, nextBreak.end);
+      continue;
+    }
+    if (cutoff <= now) {
+      await closeActive(db, userId, cutoff, { autoStopped: true });
+      await clockRepo.clearBreakState(db, userId);
+    }
+    return;
+  }
+}
+
+async function runClockSchedule(now = Date.now(), userIds = null) {
+  for (const userId of userIds || (await clockRepo.findScheduledClockUsers(getPool()))) {
+    await withTransaction(async (db) => {
+      await clockRepo.lockUser(db, userId);
+      await applyClockSchedule(db, userId, now);
+    });
+  }
+}
+
+function startClockSchedule() {
+  const sweep = () => runClockSchedule().catch((err) => console.error('Clock schedule failed:', err));
+  sweep();
+  setInterval(sweep, 30 * 1000).unref();
 }
 
 // Starting one contract stops whatever else this user had running, exactly
@@ -47,9 +126,10 @@ async function start(actor, contractId) {
     await clockRepo.lockUser(db, actor.id);
     if (!(await clockRepo.contractExists(db, contractId))) throw new ApiError(404, 'Contract not found');
     await assertNotCommitted(db, actor, actor.id, localDate(new Date()));
+    const now = Date.now();
+    await applyClockSchedule(db, actor.id, now); // a missed break or clock-out is recorded first, at its own time
     const active = await clockRepo.findActive(db, actor.id);
     if (active && active.contractId === contractId) return;
-    const now = Date.now();
     await closeActive(db, actor.id, now);
     await clockRepo.setActive(db, actor.id, contractId, new Date(now));
     await clockRepo.clearBreakState(db, actor.id);
@@ -60,34 +140,13 @@ async function start(actor, contractId) {
 async function stop(actor, contractId) {
   await withTransaction(async (db) => {
     await clockRepo.lockUser(db, actor.id);
+    const now = Date.now();
+    await applyClockSchedule(db, actor.id, now); // a missed break or clock-out is recorded first, at its own time
     const active = await clockRepo.findActive(db, actor.id);
-    if (active && active.contractId === contractId) await closeActive(db, actor.id, Date.now());
-    await clockRepo.clearBreakState(db, actor.id);
-  });
-  return getState(actor);
-}
-
-// Called by the browser when the user's scheduled break begins/ends.
-async function pauseForBreak(actor) {
-  await withTransaction(async (db) => {
-    await clockRepo.lockUser(db, actor.id);
-    if (await clockRepo.findBreakState(db, actor.id)) return;
-    const paused = await closeActive(db, actor.id, Date.now());
-    if (paused) await clockRepo.setBreakState(db, actor.id, paused.contractId);
-  });
-  return getState(actor);
-}
-
-async function resumeAfterBreak(actor) {
-  await withTransaction(async (db) => {
-    await clockRepo.lockUser(db, actor.id);
-    const breakState = await clockRepo.findBreakState(db, actor.id);
-    if (!breakState) return;
-    await clockRepo.clearBreakState(db, actor.id);
-    const committed = await clockRepo.isCommitted(db, actor.id, localDate(new Date()));
-    if (!committed && !(await clockRepo.findActive(db, actor.id))) {
-      await clockRepo.setActive(db, actor.id, breakState.contractId, new Date());
-    }
+    if (active && active.contractId === contractId) await closeActive(db, actor.id, now);
+    // Stopping during a break also cancels the restart at the end of it.
+    const paused = await clockRepo.findBreakState(db, actor.id);
+    if (paused && paused.contractId === contractId) await clockRepo.clearBreakState(db, actor.id);
   });
   return getState(actor);
 }
@@ -109,11 +168,16 @@ async function updateSessions(actor, changes) {
       for (const flag of ['unlinkedStart', 'unlinkedEnd']) {
         if (change[flag] !== undefined && typeof change[flag] !== 'boolean') throw new ApiError(400, `${flag} must be true or false`);
       }
+      if (change.autoStopped !== undefined && change.autoStopped !== false) throw new ApiError(400, 'autoStopped can only be cleared');
+      // Moving the end of an auto-stopped block, or keeping it (autoStopped:
+      // false), means its owner has checked it.
+      const endMoved = timeToSeconds(endTime) !== timeToSeconds(session.end);
       await clockRepo.updateTimeSession(db, session.id, {
         start: startTime,
         end: endTime,
         unlinkedStart: change.unlinkedStart ?? session.unlinkedStart,
         unlinkedEnd: change.unlinkedEnd ?? session.unlinkedEnd,
+        autoStopped: session.autoStopped && !endMoved && change.autoStopped !== false,
       });
     }
   });
@@ -140,6 +204,14 @@ async function commit(actor, userId, date) {
   const active = await clockRepo.findActive(db, userId);
   if (active && localDate(new Date(active.startedAt)) <= date) throw new ApiError(409, 'Stop the running clock before committing');
   await clockRepo.addCommit(db, userId, date);
+  await clockRepo.clearAutoStopped(db, userId, date); // the browser asked first if any were unchecked
+  return getState(actor);
+}
+
+// The dashboard's "stopped automatically" message was seen (own sessions only).
+async function markAutoNoticed(actor, ids) {
+  if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) throw new ApiError(400, 'ids must be an array of session ids');
+  await clockRepo.markAutoNoticed(getPool(), actor.id, ids);
   return getState(actor);
 }
 
@@ -149,4 +221,7 @@ async function uncommit(actor, userId, date) {
   return getState(actor);
 }
 
-module.exports = { getState, start, stop, pauseForBreak, resumeAfterBreak, updateSessions, removeSession, commit, uncommit };
+module.exports = {
+  getState, start, stop, updateSessions, removeSession, commit, uncommit, markAutoNoticed,
+  autoClockOutAt, runClockSchedule, startClockSchedule,
+};

@@ -49,6 +49,14 @@ async function getFullState(actor) {
   return { ...setup, ...clock, currentUser: actor };
 }
 
+/* Working times are saved as the whole list, but anyone other than an admin
+ * may only change their own row: everyone else's rows are kept exactly as
+ * they are in the database, and no row can be added or removed. */
+function ownRowOnly(current, submitted, userId) {
+  const mine = submitted.find((entry) => entry && entry.userId === userId);
+  return current.map((entry) => (entry.userId === userId && mine ? { ...mine, id: entry.id, userId } : entry));
+}
+
 /* Applies only the sections present in `patch` -- the frontend sends just
  * what changed, so one person's edit to (say) the customer list can't
  * overwrite another's newer working-times change with a stale copy.
@@ -88,7 +96,10 @@ async function applyPatch(patch, actor) {
     if (patch.nonWorking) await setupRepo.replaceNonWorking(db, patch.nonWorking);
     if (patch.defaultWorkingTimes) await setupRepo.replaceDefaultWorkingTimes(db, patch.defaultWorkingTimes);
     if (patch.contractInfo) await setupRepo.replaceContractInfo(db, patch.contractInfo);
-    if (patch.workingTimes) await setupRepo.replaceWorkingTimes(db, patch.workingTimes);
+    if (patch.workingTimes) {
+      const entries = actor && actor.userType !== 'admin' ? ownRowOnly(await setupRepo.listWorkingTimes(db), patch.workingTimes, actor.id) : patch.workingTimes;
+      await setupRepo.replaceWorkingTimes(db, entries);
+    }
   });
 }
 
