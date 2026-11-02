@@ -18,8 +18,9 @@ The frontend is wired to this API: everyone signs in as themselves, and
 every clock start/stop, break pause/resume, time-block edit and day commit
 is written to the database the moment it happens, timed by the server.
 Runs against a local PostgreSQL 16 (migrations, sign-in sessions and the
-full API test all pass). Not yet tried with a real Azure AD app
-registration or deployed to the server. See "Known gaps".
+full API test all pass). Sign-in and sign-out with the real Azure AD app
+registration work at `http://localhost:4100` (tested 2026-11-02), and the
+staff sync reads Entra ID. Not yet deployed to the server. See "Known gaps".
 
 ## One-time setup
 
@@ -141,7 +142,7 @@ e.net address: Syspro's Logon call carries the passwords in the address.
 npm start
 ```
 
-Runs on `PORT` (default 4100) over plain HTTP — put Caddy in front for
+Runs on `PORT` over plain HTTP: 4004 on the live server, 4100 on a development PC (the default) — put Caddy in front for
 HTTPS (see below); `express-session`'s `secure` cookie flag only activates
 when `NODE_ENV=production`, so local dev over plain `http://localhost`
 still works without Caddy.
