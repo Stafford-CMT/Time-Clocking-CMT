@@ -11,10 +11,16 @@ uses 4004 on the live server, set by PORT in its .env).
 
 Add a block like:
 
-    https://<name> {
-        tls internal
+    timeslide.cliffeng.com {
         reverse_proxy localhost:4004
     }
+
+No `tls` line, same as the iobuddy.cliffeng.com block: Caddy gets a public
+Let's Encrypt certificate by itself. That needs the public DNS for
+timeslide.cliffeng.com to point at the same public address as iobuddy, and
+ports 80/443 reaching this server, exactly as they already do for IO Buddy.
+(`tls internal` is only for internal-only names like the Gantt board's
+`designplan`.)
 
 Then reload Caddy (picks up config changes without dropping other apps'
 sites or restarting that process):
@@ -22,11 +28,14 @@ sites or restarting that process):
     pm2 reload caddy
 
 Steps for the DNS name itself:
-  1. Add a DNS A record in the `clifford.local` zone pointing at this
-     server's IP (Add-DnsServerResourceRecordA -ZoneName "clifford.local" -Name "<name>" -IPv4Address "<server-ip>")
+  1. Add DNS for timeslide.cliffeng.com exactly like iobuddy.cliffeng.com's
+     (checked 2026-11-02 with nslookup):
+       - internal, on CMT-DC: A record -> 10.0.0.254 (this server)
+       - public cliffeng.com DNS: A record -> 41.223.246.128 (or CNAME to
+         iobuddy.cliffeng.com); the firewall already passes 80/443 here
   2. Append the block above to the existing Caddyfile
   3. `pm2 reload caddy`
-  4. Add "https://<name>/auth/callback" as the Web redirect URI on this
+  4. Add "https://timeslide.cliffeng.com/auth/callback" (and .../login.html) as Web redirect URIs on this
      app's own Azure AD app registration
   5. No separate `caddy trust`/AD-publish step needed if the CA is already
      trusted domain-wide from a previous app's setup -- any new cert it

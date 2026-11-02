@@ -168,6 +168,39 @@ its own Caddy process. Instead, add the site block in
 `Caddyfile-snippet.txt` into that existing Caddyfile, then reload it —
 see that file for the full steps.
 
+## Moving the data to the live server
+
+The live server starts with this PC's set-up (staff and who is ticked in,
+roles, cost centres, working times, lists, real tiles, contract information)
+but no clocked time. On this PC, on the day:
+
+```
+npm run make-live-copy
+```
+
+This saves `db/live-copy/time-slide-live-copy_<date>.sql` and lists what it
+holds; this PC's database is not changed. The file leaves out clocked time,
+commits, exports and sign-in sessions, and ends by deleting the development
+test accounts and the placeholder demo tiles. It holds staff names and
+emails: it is gitignored -- copy it straight to the server, nowhere else.
+
+On the server, **before the app is ever started** (an empty database makes
+the app add placeholder tiles, and the restore then clashes with them):
+
+1. Create the empty database and its login (One-time setup, step 2).
+2. Load the file, all or nothing:
+   ```
+   psql -h localhost -U time_clocking_app -d time_clocking -v ON_ERROR_STOP=1 --single-transaction -f time-slide-live-copy_<date>.sql
+   ```
+3. `npm run migrate` -- should report every migration as already applied.
+4. Start it (see Deployment (PM2)), sign in and check, then delete the .sql
+   file from the server.
+
+The Syspro passwords in Configuration are encrypted with
+`SETTINGS_ENCRYPTION_KEY`: if any are saved on this PC, the live `.env`
+needs the same key. None were saved on 2026-11-02, so the live server can
+have its own key and the passwords are entered there.
+
 ## Deployment (PM2)
 
 ```
