@@ -204,6 +204,11 @@ the signed-in user; each returns the refreshed clock state.
 | `GET /directory` · `POST /directory/sync` | All staff from Microsoft, ticked or not, and the sync status · sync now | admin |
 | `PUT /users/:id/included` | Tick someone into Time Slide, or out of it | admin |
 | `PUT /users/:id/user-type` · `/cost-centre` | Change role / cost centre | admin |
+| `GET /export/overview?from=&to=` | Setup → Data export grid: each person's days with hours and status (not committed / committed / exported / changed since export), plus the exports covering those dates | own row; everyone for admin |
+| `GET /export/times?from=&to=&userId=` | Preview spreadsheet (.xlsx) — marks nothing as exported (no `userId` = everyone, admins only) | own times; anyone's for admin |
+| `POST /export/batches` | Export: every committed, not-yet-exported day in `{from, to}` becomes one batch and is returned as .xlsx; a day is never in two live batches | admin |
+| `GET /export/batches/:id/file` · `DELETE /export/batches/:id` | Download an export again exactly as it was · undo it so its days can be exported again | admin |
+| `POST /export/reminders` | Email everyone with uncommitted days before today in `{from, to}` (needs `MAIL_FROM` and Graph `Mail.Send`) | admin |
 | `GET /config/syspro` · `PUT /config/syspro` | Syspro connection details (passwords only as "set" flags) · save them | admin |
 | `POST /config/syspro/test-enet` | Log on to Syspro e.net with the saved details and off again | admin |
 
@@ -221,14 +226,15 @@ unticked — nobody is ever auto-admin, auto-manager or let in automatically.
 
 ## Known gaps
 
-- **Setup data is shared and unrestricted:** any signed-in user can edit
-  lists, contract information, everyone's working times, and the tile
-  layout (pinned/hidden/order is the same for everyone). Saves send only
-  changed sections, so stale browsers don't wipe other sections, but two
-  people editing the same section at once is still last-write-wins.
-- **Breaks need the page open:** the browser notices a scheduled break and
-  asks the server to pause/resume; with no tab open, the clock runs through
-  the break (same as the prototype).
+- **Most setup data is shared:** any signed-in user can edit the machine
+  type, suffix description and customer lists and contract information.
+  Users, Cost centre, Rework reasons and Default working times are
+  admin-only; tile layout (pinned/hidden/order) is per person. Saves send
+  only changed sections, so stale browsers don't wipe other sections, but
+  two people editing the same section at once is still last-write-wins.
+- **Commit reminder emails need IT:** `MAIL_FROM` plus Microsoft Graph
+  `Mail.Send` (preferably limited to that one mailbox). Until then the
+  Email reminders button explains what is missing and sends nothing.
 - `state.nonWorking` has a table (`non_working`) and is round-tripped, but
   nothing in the current frontend renders or edits it — this is the
   root README's still-planned "Non-working time table" feature.

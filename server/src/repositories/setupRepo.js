@@ -5,7 +5,8 @@
  * default_working_times(+breaks), contract_info(+suffixes),
  * working_times(+breaks). Clocking tables live in clockRepo.
  *
- * `users` is read here for the frontend's convenience but never written --
+ * `users` is read here for the frontend's convenience and only written by a
+ * cost centre rename (renameCostCentre) --
  * accounts come from Azure AD sign-in, role/cost-centre changes go through
  * /api/users.
  */
@@ -45,13 +46,15 @@ async function getSetup(db, userId) {
   const machineTypes = (await db.query('SELECT name FROM machine_types ORDER BY sort_order')).rows.map((r) => r.name);
   const suffixDescriptions = (await db.query('SELECT name FROM suffix_descriptions ORDER BY sort_order')).rows.map((r) => r.name);
   const customers = (await db.query('SELECT name FROM customers ORDER BY sort_order')).rows.map((r) => r.name);
-  const costCentres = (await db.query('SELECT name FROM cost_centres ORDER BY sort_order')).rows.map((r) => r.name);
+  const costCentres = await listCostCentres(db); // A-Z
+  const reworkReasons = (await db.query('SELECT name FROM rework_reasons ORDER BY lower(name), name')).rows.map((x) => x.name);
 
-  const defaultRow = (await db.query('SELECT start, "end" FROM default_working_times WHERE id = 1')).rows[0];
+  const defaultRow = (await db.query('SELECT start, "end", auto_clock_out_delay FROM default_working_times WHERE id = 1')).rows[0];
   const defaultBreaks = (await db.query('SELECT start, "end" FROM default_working_time_breaks ORDER BY sort_order')).rows;
   const defaultWorkingTimes = {
     start: timeToHm(defaultRow.start),
     end: timeToHm(defaultRow.end),
+    autoClockOutDelay: defaultRow.auto_clock_out_delay, // minutes after the end of the working day
     breaks: defaultBreaks.map((b) => ({ start: timeToHm(b.start), end: timeToHm(b.end) })),
   };
 
@@ -84,7 +87,7 @@ async function getSetup(db, userId) {
   }));
 
   return {
-    contracts, order, nonWorking, machineTypes, suffixDescriptions, customers, costCentres,
+    contracts, order, nonWorking, machineTypes, suffixDescriptions, customers, costCentres, reworkReasons,
     defaultWorkingTimes, contractInfo, workingTimes, users,
   };
 }
@@ -134,6 +137,28 @@ async function setTileOrder(db, userId, order) {
   }
 }
 
+/* Cost centres are keyed by name, and users.cost_centre holds that name as
+ * text (no foreign key). So a rename changes both in one transaction, and a
+ * cost centre anyone still has is never deleted. */
+async function listCostCentres(db) {
+  return (await db.query('SELECT name FROM cost_centres ORDER BY lower(name), name')).rows.map((r) => r.name);
+}
+
+async function costCentreUsage(db, names) {
+  const { rows } = await db.query('SELECT cost_centre AS name, COUNT(*)::int AS people FROM users WHERE cost_centre = ANY($1) GROUP BY cost_centre', [names]);
+  return rows;
+}
+
+async function renameCostCentre(db, from, to) {
+  await db.query('UPDATE cost_centres SET name = $2 WHERE name = $1', [from, to]);
+  const { rowCount } = await db.query('UPDATE users SET cost_centre = $2 WHERE cost_centre = $1', [from, to]);
+  return rowCount;
+}
+
+async function deleteCostCentre(db, name) {
+  await db.query('DELETE FROM cost_centres WHERE name = $1', [name]);
+}
+
 async function replaceNameList(db, table, names) {
   await db.query(`DELETE FROM ${table}`);
   let i = 0;
@@ -154,7 +179,9 @@ async function replaceNonWorking(db, entries) {
 }
 
 async function replaceDefaultWorkingTimes(db, value) {
-  await db.query('UPDATE default_working_times SET start = $1, "end" = $2 WHERE id = 1', [value.start, value.end]);
+  // Whole minutes, 0 to 5 hours; anything else keeps the saved delay.
+  const delay = Number.isInteger(value.autoClockOutDelay) && value.autoClockOutDelay >= 0 && value.autoClockOutDelay <= 300 ? value.autoClockOutDelay : null;
+  await db.query('UPDATE default_working_times SET start = $1, "end" = $2, auto_clock_out_delay = COALESCE($3, auto_clock_out_delay) WHERE id = 1', [value.start, value.end, delay]);
   await db.query('DELETE FROM default_working_time_breaks');
   let breakIdx = 0;
   for (const b of value.breaks || []) {
@@ -238,4 +265,5 @@ async function addDefaultWorkingTimes(db, userId) {
 module.exports = {
   getSetup, upsertContract, setTileSettings, setTileOrder, replaceNameList, replaceNonWorking,
   replaceDefaultWorkingTimes, replaceContractInfo, listWorkingTimes, replaceWorkingTimes, addDefaultWorkingTimes,
+  listCostCentres, costCentreUsage, renameCostCentre, deleteCostCentre,
 };

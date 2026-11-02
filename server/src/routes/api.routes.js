@@ -14,6 +14,8 @@ const setupController = require('../controllers/setupController');
 const clockController = require('../controllers/clockController');
 const usersController = require('../controllers/usersController');
 const configController = require('../controllers/configController');
+const exportController = require('../controllers/exportController');
+const costCentreController = require('../controllers/costCentreController');
 
 const router = express.Router();
 
@@ -38,7 +40,16 @@ router.post('/directory/sync', requireRole('admin'), usersController.syncDirecto
 router.put('/users/:id/included', requireRole('admin'), usersController.setIncluded);
 router.put('/users/:id/user-type', requireRole('admin'), usersController.setUserType);
 router.put('/users/:id/cost-centre', requireRole('admin'), usersController.setCostCentre);
+router.put('/cost-centres/:name', requireRole('admin'), costCentreController.rename); // renames it for everyone who has it too
+router.delete('/cost-centres/:name', requireRole('admin'), costCentreController.remove); // refused while anyone has it
 router.put('/users/:id/auto-clock-out', usersController.setAutoClockOut); // own, or anyone's for admin (checked in usersService)
+
+router.get('/export/overview', exportController.overview); // own days, or everyone's for admin (checked in exportService)
+router.get('/export/times', exportController.exportTimes); // preview spreadsheet, marks nothing: own times, or anyone's / everyone's for admin
+router.post('/export/batches', requireRole('admin'), exportController.createBatch); // download = mark committed days as exported
+router.get('/export/batches/:id/file', requireRole('admin'), exportController.batchFile);
+router.delete('/export/batches/:id', requireRole('admin'), exportController.undoBatch);
+router.post('/export/reminders', requireRole('admin'), exportController.sendReminders); // emails people with uncommitted days
 
 router.get('/config/syspro', requireRole('admin'), configController.getSyspro); // passwords come back only as "set" flags
 router.put('/config/syspro', requireRole('admin'), configController.saveSyspro);

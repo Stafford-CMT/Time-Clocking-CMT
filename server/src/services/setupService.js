@@ -2,6 +2,7 @@
 
 const setupRepo = require('../repositories/setupRepo');
 const clockService = require('./clockService');
+const costCentreService = require('./costCentreService');
 const { getPool, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 
@@ -10,11 +11,12 @@ const NAME_LISTS = {
   suffixDescriptions: 'suffix_descriptions',
   customers: 'customers',
   costCentres: 'cost_centres',
+  reworkReasons: 'rework_reasons',
 };
 const ARRAY_SECTIONS = ['nonWorking', 'contractInfo', 'workingTimes', ...Object.keys(NAME_LISTS)];
 const SECTIONS = ['contracts', 'defaultWorkingTimes', ...ARRAY_SECTIONS];
-// Company-wide settings only an admin may change (the Users and Cost centre tabs).
-const ADMIN_SECTIONS = ['defaultWorkingTimes', 'costCentres'];
+// Company-wide settings only an admin may change (the Users, Cost centre and Rework reasons tabs).
+const ADMIN_SECTIONS = ['defaultWorkingTimes', 'costCentres', 'reworkReasons'];
 
 // Placeholder tiles for a brand-new, empty database only (dev/test
 // convenience) -- delete them in the app once real contracts are entered.
@@ -66,7 +68,7 @@ async function applyPatch(patch, actor) {
   if (!patch || typeof patch !== 'object') throw new ApiError(400, 'Expected a JSON object');
   const unknown = Object.keys(patch).filter((key) => !SECTIONS.includes(key));
   if (unknown.length) throw new ApiError(400, `Unknown setup section(s): ${unknown.join(', ')}`);
-  if (actor && actor.userType !== 'admin' && ADMIN_SECTIONS.some((key) => key in patch)) throw new ApiError(403, 'Only an admin can change default working times or cost centres');
+  if (actor && actor.userType !== 'admin' && ADMIN_SECTIONS.some((key) => key in patch)) throw new ApiError(403, 'Only an admin can change default working times, cost centres or rework reasons');
   ARRAY_SECTIONS.forEach((key) => {
     if (key in patch && !Array.isArray(patch[key])) throw new ApiError(400, `${key} must be an array`);
   });
@@ -89,6 +91,10 @@ async function applyPatch(patch, actor) {
         if (actor) await setupRepo.setTileSettings(db, actor.id, contract);
       }
       if (actor && Array.isArray(patch.contracts.order)) await setupRepo.setTileOrder(db, actor.id, patch.contracts.order);
+    }
+    if (patch.costCentres) {
+      const kept = new Set(patch.costCentres);
+      await costCentreService.assertUnused(db, (await setupRepo.listCostCentres(db)).filter((name) => !kept.has(name)));
     }
     for (const [key, table] of Object.entries(NAME_LISTS)) {
       if (patch[key]) await setupRepo.replaceNameList(db, table, patch[key]);

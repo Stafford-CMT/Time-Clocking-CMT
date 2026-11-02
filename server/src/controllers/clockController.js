@@ -13,7 +13,7 @@ const handle = (action) => async (req, res, next) => {
 };
 
 module.exports = {
-  start: handle((req) => clockService.start(req.session.user, req.params.contractId)),
+  start: handle((req) => clockService.start(req.session.user, req.params.contractId, req.body && req.body.reworkReason)),
   stop: handle((req) => clockService.stop(req.session.user, req.params.contractId)),
   updateSessions: handle((req) => clockService.updateSessions(req.session.user, req.body && req.body.changes)),
   removeSession: handle((req) => clockService.removeSession(req.session.user, req.params.id)),

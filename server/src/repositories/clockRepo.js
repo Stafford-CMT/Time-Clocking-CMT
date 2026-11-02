@@ -5,6 +5,9 @@
  * or a transaction client from withTransaction -- so clockService can group
  * several calls into one transaction.
  */
+const { timeToSeconds } = require('../utils/time');
+
+const secondsToTime = (s) => [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((n) => String(n).padStart(2, '0')).join(':');
 
 // Serialises clock actions for one user (e.g. a double-clicked Start). Locks
 // the users row because it always exists, unlike the active_sessions row
@@ -19,13 +22,19 @@ async function contractExists(db, contractId) {
 }
 
 async function findActive(db, userId) {
-  const { rows } = await db.query('SELECT contract_id, started_at FROM active_sessions WHERE user_id = $1', [userId]);
+  const { rows } = await db.query('SELECT contract_id, started_at, rework_reason FROM active_sessions WHERE user_id = $1', [userId]);
   if (!rows.length) return null;
-  return { contractId: rows[0].contract_id, startedAt: new Date(rows[0].started_at).getTime() };
+  return { contractId: rows[0].contract_id, startedAt: new Date(rows[0].started_at).getTime(), reworkReason: rows[0].rework_reason };
 }
 
-async function setActive(db, userId, contractId, startedAt) {
-  await db.query('INSERT INTO active_sessions (user_id, contract_id, started_at) VALUES ($1, $2, $3)', [userId, contractId, startedAt]);
+// reworkReason: null for ordinary time, or the reason this clock is running as rework.
+async function setActive(db, userId, contractId, startedAt, reworkReason = null) {
+  await db.query('INSERT INTO active_sessions (user_id, contract_id, started_at, rework_reason) VALUES ($1, $2, $3, $4)', [userId, contractId, startedAt, reworkReason]);
+}
+
+async function reworkReasonExists(db, name) {
+  const { rows } = await db.query('SELECT 1 FROM rework_reasons WHERE name = $1', [name]);
+  return rows.length > 0;
 }
 
 async function clearActive(db, userId) {
@@ -33,13 +42,13 @@ async function clearActive(db, userId) {
 }
 
 function toSession(row) {
-  return { id: row.id, contractId: row.contract_id, userId: row.user_id, date: row.date, start: row.start_time, end: row.end_time, unlinkedStart: row.unlinked_start, unlinkedEnd: row.unlinked_end, autoStopped: row.auto_stopped, autoNoticed: row.auto_noticed };
+  return { id: row.id, contractId: row.contract_id, userId: row.user_id, date: row.date, start: row.start_time, end: row.end_time, unlinkedStart: row.unlinked_start, unlinkedEnd: row.unlinked_end, autoStopped: row.auto_stopped, autoNoticed: row.auto_noticed, reworkReason: row.rework_reason };
 }
 
-async function insertTimeSession(db, { id, contractId, userId, date, start, end, autoStopped = false }) {
+async function insertTimeSession(db, { id, contractId, userId, date, start, end, autoStopped = false, reworkReason = null }) {
   await db.query(
-    'INSERT INTO time_sessions (id, contract_id, user_id, date, start_time, end_time, auto_stopped) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-    [id, contractId, userId, date, start, end, autoStopped]
+    'INSERT INTO time_sessions (id, contract_id, user_id, date, start_time, end_time, auto_stopped, rework_reason) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+    [id, contractId, userId, date, start, end, autoStopped, reworkReason]
   );
 }
 
@@ -60,9 +69,10 @@ async function markAutoNoticed(db, userId, ids) {
   await db.query('UPDATE time_sessions SET auto_noticed = true WHERE user_id = $1 AND id = ANY($2)', [userId, ids]);
 }
 
-// Committing a day counts as checking its auto clock-outs.
-async function clearAutoStopped(db, userId, date) {
-  await db.query('UPDATE time_sessions SET auto_stopped = false WHERE user_id = $1 AND date = $2', [userId, date]);
+// End times ('HH:MM:SS') of the day's auto clock-outs nobody has checked yet -- a day with any can't be committed.
+async function findUncheckedAutoStops(db, userId, date) {
+  const { rows } = await db.query('SELECT end_time FROM time_sessions WHERE user_id = $1 AND date = $2 AND auto_stopped ORDER BY end_time', [userId, date]);
+  return rows.map((row) => row.end_time);
 }
 
 // Everyone with a clock running or paused for a break: the people the
@@ -73,18 +83,23 @@ async function findScheduledClockUsers(db) {
 }
 
 /* A person's day as the clock schedule sees it, or null without working
- * times: clockOut is the later of users.auto_clock_out and the end of their
- * working day (GREATEST skips a NULL auto_clock_out); times are 'HH:MM:SS'. */
+ * times. clockOut is their own auto clock-out time (never before the end of
+ * their working day) or, without one, the end of their working day plus the
+ * default delay, capped at midnight; times are 'HH:MM:SS'. */
 async function findClockSchedule(db, userId) {
   const { rows } = await db.query(
-    `SELECT w.id, GREATEST(u.auto_clock_out, w."end") AS clock_out
-       FROM working_times w JOIN users u ON u.id = w.user_id
-      WHERE w.user_id = $1`,
+    `SELECT w.id, w."end", u.auto_clock_out, d.auto_clock_out_delay
+       FROM working_times w JOIN users u ON u.id = w.user_id CROSS JOIN default_working_times d
+      WHERE w.user_id = $1 AND d.id = 1`,
     [userId]
   );
   if (!rows[0]) return null;
-  const breaks = (await db.query('SELECT start, "end" FROM working_time_breaks WHERE working_time_id = $1 ORDER BY start', [rows[0].id])).rows;
-  return { clockOut: rows[0].clock_out, breaks: breaks.map((b) => ({ start: b.start, end: b.end })) };
+  const { id, end, auto_clock_out: own, auto_clock_out_delay: delay } = rows[0];
+  const clockOut = own
+    ? Math.max(timeToSeconds(own), timeToSeconds(end))
+    : Math.min(timeToSeconds(end) + delay * 60, 24 * 3600);
+  const breaks = (await db.query('SELECT start, "end" FROM working_time_breaks WHERE working_time_id = $1 ORDER BY start', [id])).rows;
+  return { clockOut: secondsToTime(clockOut), breaks: breaks.map((b) => ({ start: b.start, end: b.end })) };
 }
 
 async function deleteTimeSession(db, id) {
@@ -92,12 +107,12 @@ async function deleteTimeSession(db, id) {
 }
 
 async function findBreakState(db, userId) {
-  const { rows } = await db.query('SELECT contract_id, resume_at FROM user_break_state WHERE user_id = $1', [userId]);
-  return rows[0] ? { contractId: rows[0].contract_id, resumeAt: new Date(rows[0].resume_at).getTime() } : null;
+  const { rows } = await db.query('SELECT contract_id, resume_at, rework_reason FROM user_break_state WHERE user_id = $1', [userId]);
+  return rows[0] ? { contractId: rows[0].contract_id, resumeAt: new Date(rows[0].resume_at).getTime(), reworkReason: rows[0].rework_reason } : null;
 }
 
-async function setBreakState(db, userId, contractId, resumeAt) {
-  await db.query('INSERT INTO user_break_state (user_id, contract_id, resume_at) VALUES ($1, $2, $3)', [userId, contractId, new Date(resumeAt)]);
+async function setBreakState(db, userId, contractId, resumeAt, reworkReason = null) {
+  await db.query('INSERT INTO user_break_state (user_id, contract_id, resume_at, rework_reason) VALUES ($1, $2, $3, $4)', [userId, contractId, new Date(resumeAt), reworkReason]);
 }
 
 async function clearBreakState(db, userId) {
@@ -123,7 +138,7 @@ async function removeCommit(db, userId, date) {
  * can review and unlock anyone's times.
  */
 async function getClockState(db, userId, allUsers) {
-  const activeRows = (await db.query('SELECT user_id, contract_id, started_at FROM active_sessions')).rows;
+  const activeRows = (await db.query('SELECT user_id, contract_id, started_at, rework_reason FROM active_sessions')).rows;
   const activeSessions = {};
   activeRows.forEach((r) => {
     activeSessions[r.contract_id] = activeSessions[r.contract_id] || {};
@@ -141,13 +156,34 @@ async function getClockState(db, userId, allUsers) {
   const committedDates = (await db.query(`SELECT user_id, date FROM committed_dates ${scope[0]} ORDER BY date`, scope[1])).rows
     .map((r) => ({ userId: r.user_id, date: r.date }));
 
-  return { activeSessions, editSessions, committedDates, breakState: await findBreakState(db, userId) };
+  const own = activeRows.find((r) => r.user_id === userId);
+  return { activeSessions, editSessions, committedDates, breakState: await findBreakState(db, userId), activeReworkReason: own?.rework_reason || null };
+}
+
+/* Completed time blocks between two dates (inclusive) for Setup -> Data
+ * export, with the person and contract details spelled out. userId null
+ * means everyone. Running clocks aren't included until they are stopped. */
+async function findSessionsForExport(db, { from, to, userId }) {
+  const { rows } = await db.query(
+    `SELECT s.user_id, s.date, s.start_time, s.end_time, s.auto_stopped, s.rework_reason,
+            u.name AS user_name, u.email, u.cost_centre,
+            c.system, c.number, c.suffix, c.suffix_description, c.customer_name, c.machine_type,
+            (cd.user_id IS NOT NULL) AS committed
+       FROM time_sessions s
+       JOIN users u ON u.id = s.user_id
+       JOIN contracts c ON c.id = s.contract_id
+       LEFT JOIN committed_dates cd ON cd.user_id = s.user_id AND cd.date = s.date
+      WHERE s.date BETWEEN $1 AND $2 AND ($3::text IS NULL OR s.user_id = $3)
+      ORDER BY u.name, s.date, s.start_time`,
+    [from, to, userId]
+  );
+  return rows;
 }
 
 module.exports = {
-  lockUser, contractExists, findActive, setActive, clearActive,
+  lockUser, contractExists, findActive, setActive, clearActive, reworkReasonExists,
   insertTimeSession, findTimeSession, updateTimeSession, deleteTimeSession,
-  markAutoNoticed, clearAutoStopped, findScheduledClockUsers, findClockSchedule,
+  markAutoNoticed, findUncheckedAutoStops, findScheduledClockUsers, findClockSchedule,
   findBreakState, setBreakState, clearBreakState,
-  isCommitted, addCommit, removeCommit, getClockState,
+  isCommitted, addCommit, removeCommit, getClockState, findSessionsForExport,
 };

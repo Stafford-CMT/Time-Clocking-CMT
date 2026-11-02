@@ -38,7 +38,7 @@ async function closeActive(db, userId, endMs, { autoStopped = false } = {}) {
   if (!active) return null;
   const pieces = splitByDay(active.startedAt, endMs);
   for (const [index, piece] of pieces.entries()) {
-    await clockRepo.insertTimeSession(db, { id: uid('session'), contractId: active.contractId, userId, ...piece, autoStopped: autoStopped && index === pieces.length - 1 });
+    await clockRepo.insertTimeSession(db, { id: uid('session'), contractId: active.contractId, userId, ...piece, reworkReason: active.reworkReason, autoStopped: autoStopped && index === pieces.length - 1 });
   }
   await clockRepo.clearActive(db, userId);
   return active;
@@ -79,7 +79,7 @@ async function applyClockSchedule(db, userId, now) {
       if (!paused || paused.resumeAt > now) return;
       await clockRepo.clearBreakState(db, userId);
       if (!(await clockRepo.isCommitted(db, userId, localDate(new Date(paused.resumeAt))))) {
-        await clockRepo.setActive(db, userId, paused.contractId, new Date(paused.resumeAt));
+        await clockRepo.setActive(db, userId, paused.contractId, new Date(paused.resumeAt), paused.reworkReason);
       }
       continue;
     }
@@ -92,7 +92,7 @@ async function applyClockSchedule(db, userId, now) {
     if (nextBreak && nextBreak.start <= now) {
       const resumes = nextBreak.end < cutoff;
       await closeActive(db, userId, nextBreak.start, { autoStopped: !resumes });
-      if (resumes) await clockRepo.setBreakState(db, userId, active.contractId, nextBreak.end);
+      if (resumes) await clockRepo.setBreakState(db, userId, active.contractId, nextBreak.end, active.reworkReason);
       continue;
     }
     if (cutoff <= now) {
@@ -121,17 +121,26 @@ function startClockSchedule() {
 // Starting one contract stops whatever else this user had running, exactly
 // like the prototype's toggleClock. A manual start also cancels any pending
 // break resume, so the break can't later restart a second clock.
-async function start(actor, contractId) {
+// reworkReason (optional, from Lists -> Rework reasons) starts it as rework:
+// every block it records carries the reason. Only for this one start -- the
+// next start is ordinary time unless the tile's Rework button is used again.
+async function start(actor, contractId, reworkReason = null) {
+  if (reworkReason != null && typeof reworkReason !== 'string') throw new ApiError(400, 'reworkReason must be text');
+  const reason = reworkReason ? reworkReason.trim() : null;
   await withTransaction(async (db) => {
     await clockRepo.lockUser(db, actor.id);
     if (!(await clockRepo.contractExists(db, contractId))) throw new ApiError(404, 'Contract not found');
+    if (reason) {
+      if (contractId === 'non-contract') throw new ApiError(400, "Non-contract time can't be rework");
+      if (!(await clockRepo.reworkReasonExists(db, reason))) throw new ApiError(400, `"${reason}" is not in the rework reasons list`);
+    }
     await assertNotCommitted(db, actor, actor.id, localDate(new Date()));
     const now = Date.now();
     await applyClockSchedule(db, actor.id, now); // a missed break or clock-out is recorded first, at its own time
     const active = await clockRepo.findActive(db, actor.id);
-    if (active && active.contractId === contractId) return;
+    if (active && active.contractId === contractId && (active.reworkReason || null) === reason) return;
     await closeActive(db, actor.id, now);
-    await clockRepo.setActive(db, actor.id, contractId, new Date(now));
+    await clockRepo.setActive(db, actor.id, contractId, new Date(now), reason);
     await clockRepo.clearBreakState(db, actor.id);
   });
   return getState(actor);
@@ -196,7 +205,7 @@ async function restoreSession(actor, session) {
     if (!(await clockRepo.contractExists(db, contractId))) throw new ApiError(404, 'Contract not found');
     if (await clockRepo.findTimeSession(db, id)) throw new ApiError(409, 'That time block is already there');
     await assertNotCommitted(db, actor, userId, date);
-    await clockRepo.insertTimeSession(db, { id, contractId, userId, date, start, end });
+    await clockRepo.insertTimeSession(db, { id, contractId, userId, date, start, end, reworkReason: typeof session.reworkReason === 'string' && session.reworkReason ? session.reworkReason : null });
     await clockRepo.updateTimeSession(db, id, { start, end, unlinkedStart: session.unlinkedStart === true, unlinkedEnd: session.unlinkedEnd === true, autoStopped: false });
   });
   return getState(actor);
@@ -221,8 +230,14 @@ async function commit(actor, userId, date) {
   // only those days are blocked -- a committed day can never gain time later.
   const active = await clockRepo.findActive(db, userId);
   if (active && localDate(new Date(active.startedAt)) <= date) throw new ApiError(409, 'Stop the running clock before committing');
+  // An auto clock-out ends at the clock-out time, not when the person stopped: it must be corrected or
+  // confirmed (Edit times) first, so a day is never committed with a time nobody looked at. Admins too.
+  const unchecked = await clockRepo.findUncheckedAutoStops(db, userId, date);
+  if (unchecked.length) {
+    const times = [...new Set(unchecked.map((t) => t.slice(0, 5)))].join(' and ');
+    throw new ApiError(409, `Check the auto clock-out at ${times} first: drag the end of the time to when work stopped, or click its clock badge to keep it`);
+  }
   await clockRepo.addCommit(db, userId, date);
-  await clockRepo.clearAutoStopped(db, userId, date); // the browser asked first if any were unchecked
   return getState(actor);
 }
 

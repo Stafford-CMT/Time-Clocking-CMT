@@ -120,16 +120,17 @@ async function setCostCentre(id, costCentre) {
 }
 
 // Anyone can move their own auto clock-out time; an admin can move anyone's.
-// A time at or before the end of their working day is stored as NULL ("at the
-// end of the working day"), so it keeps following that end if it changes.
+// '' (or a time before the end of their working day) is stored as NULL: "the
+// default" -- the end of their working day plus the default delay from
+// Default working times, so it keeps following both if they change.
 async function setAutoClockOut(actor, id, autoClockOut) {
   if (actor.id !== id && actor.userType !== 'admin') throw new ApiError(403, 'You can only change your own auto clock-out time');
   if (autoClockOut != null && autoClockOut !== '' && (typeof autoClockOut !== 'string' || !TIME_RE.test(autoClockOut) || autoClockOut.startsWith('24'))) {
     throw new ApiError(400, 'autoClockOut must be HH:MM');
   }
   const dayEnd = await usersRepo.workingDayEnd(id);
-  const later = autoClockOut && (!dayEnd || timeToSeconds(autoClockOut) > timeToSeconds(dayEnd));
-  const user = await usersRepo.setAutoClockOut(id, later ? autoClockOut : null);
+  const notBeforeEnd = autoClockOut && (!dayEnd || timeToSeconds(autoClockOut) >= timeToSeconds(dayEnd));
+  const user = await usersRepo.setAutoClockOut(id, notBeforeEnd ? autoClockOut : null);
   if (!user) throw new ApiError(404, 'User not found');
   return { id: user.id, autoClockOut: user.auto_clock_out ? user.auto_clock_out.slice(0, 5) : '' };
 }

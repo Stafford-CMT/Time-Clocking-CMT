@@ -25,6 +25,7 @@
             <button class="nav-item nav-child" data-view="working-times" type="button">Working times</button>
             <button class="nav-item nav-child" data-view="contract-information" type="button">Contract information</button>
             <button class="nav-item nav-child" id="nav-lists-open" type="button">Lists</button>
+            <button class="nav-item nav-child" id="nav-data-export" data-view="data-export" type="button">Data export</button>
             <button class="nav-item nav-child is-hidden" id="nav-configuration" data-view="configuration" type="button">Configuration</button>
           </div>
         </div>
@@ -99,7 +100,7 @@
         <div class="schedule-card zoomable edit-times-card" id="edit-times-card">
           <div class="schedule-toolbar"><div class="edit-user-block"><div class="edit-user-text"><strong id="edit-user-name"></strong><select id="edit-user-select" class="current-user-select edit-user-select is-hidden" aria-label="Show times for user"></select><span>Showing times for</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button><div class="undo-redo" role="group" aria-label="Undo and redo"><button class="undo-redo-button" id="edit-undo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 2.5 6.5l3 3"/><path d="M2.5 6.5h7a4 4 0 0 1 0 8H7"/></svg></button><button class="undo-redo-button" id="edit-redo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m10.5 3.5 3 3-3 3"/><path d="M13.5 6.5h-7a4 4 0 0 0 0 8H9"/></svg></button></div></div><label class="admin-toggle-label is-hidden"><input type="checkbox" id="admin-mode-toggle">Admin mode</label></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading edit-column-heading"><span>Contract</span><span>Total</span></div><div class="timeline-heading" id="edit-timeline-heading"></div></div><div id="edit-time-rows"></div></div><p class="empty-state is-hidden" id="edit-empty-state">No time booked on this day.</p>
-          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch non-contract-swatch"></i>Non-contract time</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span><span class="legend-tips">Tips: drag a block's ends to change its times · hold an end to unlink it · double-click a block to delete it · Ctrl+Z to undo</span></div>
+          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch non-contract-swatch"></i>Non-contract time</span><span><i class="legend-swatch rework-swatch"></i>Rework (hover for the reason)</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span><span class="legend-tips">Tips: drag a block's ends to change its times · hold an end to unlink it · double-click a block to delete it · Ctrl+Z to undo</span></div>
         </div>
       </section>
 
@@ -133,6 +134,29 @@
           </div>
           <p class="config-updated" id="config-updated"></p>
         </form>
+      </section>
+      <section class="view is-hidden" data-view-panel="data-export">
+        <div class="section-heading">
+          <div><span class="section-kicker">Check, then download for Excel</span><h2>Data export</h2></div>
+          <div class="section-heading-actions">
+            <button class="secondary-button" id="export-preview" type="button" title="Download every time block in these dates without marking anything as exported">Preview .xlsx</button>
+            <button class="add-button is-hidden" id="export-download" type="button">Export committed days</button>
+          </div>
+        </div>
+        <form class="export-range" id="export-form" autocomplete="off">
+          <label>From<input id="export-from" type="date" required></label>
+          <label>To<input id="export-to" type="date" required></label>
+          <div class="export-quick" role="group" aria-label="Quick dates"><button type="button" data-export-range="last-week">Last week</button><button type="button" data-export-range="this-week">This week</button><button type="button" data-export-range="last-month">Last month</button><button type="button" data-export-range="this-month">This month</button></div>
+        </form>
+        <div class="export-summary" id="export-summary" role="status"><p id="export-summary-text"></p><button class="secondary-button is-hidden" id="export-remind" type="button">Email reminders</button></div>
+        <div class="table-card">
+          <div class="export-grid-scroll"><table class="export-grid" id="export-grid"></table></div>
+          <div class="schedule-legend"><span><i class="legend-swatch export-swatch-uncommitted"></i>Not committed</span><span><i class="legend-swatch export-swatch-committed"></i>Committed, waiting to export</span><span><i class="legend-swatch export-swatch-exported"></i>Exported</span><span><i class="legend-swatch export-swatch-changed"></i>Changed since export</span><span class="legend-tips">Hours shown as h:mm · click a day to open it in Edit times</span></div>
+        </div>
+        <div class="table-card export-batches is-hidden" id="export-batches">
+          <div class="table-intro"><div><strong>Exports</strong><span>Each export holds the committed days it took. Undo one to let its days be exported again.</span></div></div>
+          <div class="table-scroll"><table><thead><tr><th>Exported</th><th>By</th><th>Dates</th><th>Days</th><th></th></tr></thead><tbody id="export-batch-rows"></tbody></table></div>
+        </div>
       </section>
       <section class="view is-hidden" data-view-panel="contract-information">
         <div class="section-heading">
@@ -183,6 +207,7 @@
         <button class="modal-tab" data-list-tab="customers" type="button">Customers</button>
         <button class="modal-tab" data-list-tab="users" data-admin-only type="button">Users</button>
         <button class="modal-tab" data-list-tab="cost-centres" data-admin-only type="button">Cost centre</button>
+        <button class="modal-tab" data-list-tab="rework-reasons" data-admin-only type="button">Rework reasons</button>
       </div>
       <form class="modal-tab-panel" id="machine-type-panel" data-list-panel="machine-type">
         <label>Machine type
@@ -212,17 +237,24 @@
             <label>Break 1 ends<input id="default-wt-break1-end" type="time"></label>
             <label>Break 2 starts<input id="default-wt-break2-start" type="time"></label>
             <label>Break 2 ends<input id="default-wt-break2-end" type="time"></label>
+            <label class="default-wt-wide">Auto clock-out after work ends<span class="range-field"><input id="default-wt-delay" type="range" min="0" max="300" step="15" aria-describedby="default-wt-delay-value"><output id="default-wt-delay-value" for="default-wt-delay"></output></span></label>
           </div>
         </div>
         <div class="users-panel-header"><span id="users-heading">People in Time Slide</span><div class="directory-tools is-hidden" id="directory-tools"><input id="directory-search" type="search" placeholder="Search name, email or department" aria-label="Search staff"><select id="directory-filter" aria-label="Show"><option value="all">Everyone</option><option value="in">In Time Slide</option><option value="out">Not in Time Slide</option></select><button class="directory-sync-button" id="directory-sync" type="button">Sync now</button></div></div>
         <p class="directory-status is-hidden" id="directory-status"></p>
-        <div class="table-scroll"><table class="users-table"><thead><tr><th class="directory-col is-hidden">In Time Slide</th><th>Name</th><th>Email</th><th class="directory-col is-hidden">Department</th><th>User type</th><th>Cost centre</th></tr></thead><tbody id="user-rows"></tbody></table></div>
+        <div class="table-scroll"><table class="users-table"><thead><tr><th class="directory-col is-hidden">In Time Slide</th><th>Name</th><th>Email</th><th class="directory-col is-hidden">Department</th><th>User type</th><th><span class="th-with-action" id="users-cost-centre-heading"><span>Cost centre</span><button class="th-add-button" id="users-add-cost-centre" type="button" title="Add a cost centre" aria-label="Add a cost centre"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v6M5 8h6"/></svg></button></span></th></tr></thead><tbody id="user-rows"></tbody></table></div>
       </div>
       <form class="modal-tab-panel is-hidden" id="cost-centres-panel" data-list-panel="cost-centres">
         <label>Cost centre
           <div class="list-add-row"><input id="cost-centre-input" type="text" placeholder="e.g. CC-100 Groundworks"><button class="add-button" type="submit">+ Add cost centre</button></div>
         </label>
         <ul class="list-items" id="cost-centre-list"></ul>
+      </form>
+      <form class="modal-tab-panel is-hidden" id="rework-reasons-panel" data-list-panel="rework-reasons">
+        <label>Rework reason
+          <div class="list-add-row"><input id="rework-reason-input" type="text" maxlength="100" placeholder="e.g. Drawing error"><button class="add-button" type="submit">+ Add rework reason</button></div>
+        </label>
+        <ul class="list-items" id="rework-reason-list"></ul>
       </form>
     </div>
   </div>
@@ -233,6 +265,13 @@
       <div class="find-tiles-count" id="find-tiles-count" aria-live="polite"></div>
       <ul class="find-tiles-list" id="find-tiles-list"></ul>
       <div class="modal-actions find-tiles-actions"><button class="secondary-button" id="find-tiles-new" type="button">+ Add a new tile</button><button class="add-button" id="find-tiles-add" type="button" disabled>Add to dashboard</button></div>
+    </div>
+  </div>
+  <div class="modal-backdrop is-hidden" id="rework-modal" role="presentation">
+    <div class="modal rework-modal" role="dialog" aria-labelledby="rework-modal-title">
+      <div class="modal-header"><div><span class="section-kicker" id="rework-modal-tile"></span><h2 id="rework-modal-title">Why is this rework?</h2></div><button class="modal-close" id="close-rework-modal" type="button" aria-label="Close rework reasons">&times;</button></div>
+      <p class="rework-modal-hint">Pick a reason, then press <strong>Start rework</strong> on the tile. It applies to that one start only.</p>
+      <ul class="rework-reason-options" id="rework-reason-options"></ul>
     </div>
   </div>
   <div class="modal-backdrop is-hidden" id="confirm-modal" role="alertdialog" aria-labelledby="confirm-modal-message">

@@ -55,6 +55,12 @@ module.exports = {
   directorySyncMinutes: Number(process.env.DIRECTORY_SYNC_MINUTES) || 30,
   port: Number(process.env.PORT) || 4100,
 
+  // Commit reminder emails (Setup -> Data export): the mailbox they are sent
+  // from, and the address people are pointed to (defaults to the sign-in
+  // address's site).
+  mailFrom: (process.env.MAIL_FROM || '').trim(),
+  appUrl: (process.env.APP_URL || '').trim() || (() => { try { return new URL(process.env.AZURE_REDIRECT_URI).origin; } catch { return ''; } })(),
+
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT) || 5432,
