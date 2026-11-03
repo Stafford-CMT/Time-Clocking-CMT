@@ -161,14 +161,13 @@
       <section class="view is-hidden" data-view-panel="contract-information">
         <div class="section-heading">
           <div><span class="section-kicker">Dashboard setup</span><h2>Contract information</h2></div>
-          <button class="add-button" id="add-contract-info" type="button"><span>+</span> Add contract</button>
         </div>
         <div class="table-card">
-          <div class="table-intro"><div><strong>Reference contracts</strong><span>Master contract details used elsewhere in the app</span></div></div>
+          <div class="table-intro"><div><strong>Reference contracts</strong><span>Master contract details used elsewhere in the app</span></div><button class="add-button" id="add-contract-info" type="button"><span>+</span> Add contract</button></div>
           <div class="table-scroll">
             <table class="contract-info-table">
               <thead>
-                <tr><th>Contract number</th><th>Machine type</th><th class="col-wide">Customer name</th><th>Sales Release</th><th>Order Confirmation</th><th class="col-icon"></th><th class="col-icon"></th></tr>
+                <tr><th>Contract number</th><th><span class="th-with-action"><span>Machine type</span><button class="th-add-button" data-heading-add="machineType" type="button" title="Add a machine type" aria-label="Add a machine type"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v6M5 8h6"/></svg></button></span></th><th class="col-wide"><span class="th-with-action"><span>Customer name</span><button class="th-add-button" data-heading-add="customer" type="button" title="Add a customer" aria-label="Add a customer"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v6M5 8h6"/></svg></button></span></th><th>Sales Release</th><th>Order Confirmation</th><th class="col-icon"></th><th class="col-icon"></th></tr>
               </thead>
               <tbody id="contract-info-rows"></tbody>
             </table>
@@ -211,19 +210,19 @@
       </div>
       <form class="modal-tab-panel" id="machine-type-panel" data-list-panel="machine-type">
         <label>Machine type
-          <div class="list-add-row"><input id="machine-type-input" type="text" placeholder="e.g. Excavator"><button class="add-button" type="submit">+ Add machine type</button></div>
+          <div class="list-add-row"><input id="machine-type-input" type="text" placeholder="Add a machine type"><button class="add-button" type="submit">+ Add machine type</button></div>
         </label>
         <ul class="list-items" id="machine-type-list"></ul>
       </form>
       <form class="modal-tab-panel is-hidden" id="suffix-description-panel" data-list-panel="suffix-description">
         <label>Suffix description
-          <div class="list-add-row"><input id="suffix-description-input" type="text" placeholder="e.g. Ground floor works"><button class="add-button" type="submit">+ Add suffix description</button></div>
+          <div class="list-add-row"><input id="suffix-description-input" type="text" placeholder="Add a suffix description"><button class="add-button" type="submit">+ Add suffix description</button></div>
         </label>
         <ul class="list-items" id="suffix-description-list"></ul>
       </form>
       <form class="modal-tab-panel is-hidden" id="customers-panel" data-list-panel="customers">
         <label>Customer name
-          <div class="list-add-row"><input id="customer-input" type="text" placeholder="e.g. Meridian House"><button class="add-button" type="submit">+ Add customer</button></div>
+          <div class="list-add-row"><input id="customer-input" type="text" placeholder="Add a customer"><button class="add-button" type="submit">+ Add customer</button></div>
         </label>
         <ul class="list-items" id="customer-list"></ul>
       </form>
@@ -242,11 +241,11 @@
         </div>
         <div class="users-panel-header"><span id="users-heading">People in Time Slide</span><div class="directory-tools is-hidden" id="directory-tools"><input id="directory-search" type="search" placeholder="Search name, email or department" aria-label="Search staff"><select id="directory-filter" aria-label="Show"><option value="all">Everyone</option><option value="in">In Time Slide</option><option value="out">Not in Time Slide</option></select><button class="directory-sync-button" id="directory-sync" type="button">Sync now</button></div></div>
         <p class="directory-status is-hidden" id="directory-status"></p>
-        <div class="table-scroll"><table class="users-table"><thead><tr><th class="directory-col is-hidden">In Time Slide</th><th>Name</th><th>Email</th><th class="directory-col is-hidden">Department</th><th>User type</th><th><span class="th-with-action" id="users-cost-centre-heading"><span>Cost centre</span><button class="th-add-button" id="users-add-cost-centre" type="button" title="Add a cost centre" aria-label="Add a cost centre"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v6M5 8h6"/></svg></button></span></th></tr></thead><tbody id="user-rows"></tbody></table></div>
+        <div class="table-scroll"><table class="users-table"><thead><tr><th class="directory-col is-hidden">In Time Slide</th><th>Name</th><th>Email</th><th class="directory-col is-hidden">Department</th><th>User type</th><th><span class="th-with-action"><span>Cost centre</span><button class="th-add-button" data-heading-add="costCentre" type="button" title="Add a cost centre" aria-label="Add a cost centre"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v6M5 8h6"/></svg></button></span></th></tr></thead><tbody id="user-rows"></tbody></table></div>
       </div>
       <form class="modal-tab-panel is-hidden" id="cost-centres-panel" data-list-panel="cost-centres">
         <label>Cost centre
-          <div class="list-add-row"><input id="cost-centre-input" type="text" placeholder="e.g. CC-100 Groundworks"><button class="add-button" type="submit">+ Add cost centre</button></div>
+          <div class="list-add-row"><input id="cost-centre-input" type="text" placeholder="Add a cost centre"><button class="add-button" type="submit">+ Add cost centre</button></div>
         </label>
         <ul class="list-items" id="cost-centre-list"></ul>
       </form>

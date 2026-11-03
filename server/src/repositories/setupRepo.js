@@ -43,9 +43,9 @@ async function getSetup(db, userId) {
   const nonWorking = (await db.query('SELECT id, date, category, start_time, end_time FROM non_working ORDER BY date')).rows
     .map((r) => ({ id: r.id, date: r.date, category: r.category, start: timeToHm(r.start_time), end: timeToHm(r.end_time) }));
 
-  const machineTypes = (await db.query('SELECT name FROM machine_types ORDER BY sort_order')).rows.map((r) => r.name);
-  const suffixDescriptions = (await db.query('SELECT name FROM suffix_descriptions ORDER BY sort_order')).rows.map((r) => r.name);
-  const customers = (await db.query('SELECT name FROM customers ORDER BY sort_order')).rows.map((r) => r.name);
+  const machineTypes = (await db.query('SELECT name FROM machine_types ORDER BY lower(name), name')).rows.map((r) => r.name);
+  const suffixDescriptions = (await db.query('SELECT name FROM suffix_descriptions ORDER BY lower(name), name')).rows.map((r) => r.name);
+  const customers = (await db.query('SELECT name FROM customers ORDER BY lower(name), name')).rows.map((r) => r.name);
   const costCentres = await listCostCentres(db); // A-Z
   const reworkReasons = (await db.query('SELECT name FROM rework_reasons ORDER BY lower(name), name')).rows.map((x) => x.name);
 
