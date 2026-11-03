@@ -31,9 +31,10 @@ const DEMO_TILES = "NOT system AND id IN ('meridian', 'northline', 'harbour', 'c
 const CLEANUP_SQL = `
 -- Added by make-live-copy: the live system starts without development test
 -- accounts, sample staff or the placeholder demo tiles (their tile settings
--- and working times go with them).
-DELETE FROM users WHERE ${DEV_USERS};
-DELETE FROM contracts WHERE ${DEMO_TILES};
+-- and working times go with them). Schema-qualified: the dump above sets an
+-- empty search_path.
+DELETE FROM public.users WHERE ${DEV_USERS};
+DELETE FROM public.contracts WHERE ${DEMO_TILES};
 `;
 
 const connection = {

@@ -20,7 +20,8 @@ is written to the database the moment it happens, timed by the server.
 Runs against a local PostgreSQL 16 (migrations, sign-in sessions and the
 full API test all pass). Sign-in and sign-out with the real Azure AD app
 registration work at `http://localhost:4100` (tested 2026-11-02), and the
-staff sync reads Entra ID. Not yet deployed to the server. See "Known gaps".
+staff sync reads Entra ID. Live at https://timeslide.cliffeng.com since
+2026-11-03 (see "Deployment (live server)"). See "Known gaps".
 
 ## One-time setup
 
@@ -201,24 +202,61 @@ The Syspro passwords in Configuration are encrypted with
 needs the same key. None were saved on 2026-11-02, so the live server can
 have its own key and the passwords are entered there.
 
-## Deployment (PM2)
+## Deployment (live server)
+
+Live since 2026-11-03 at **https://timeslide.cliffeng.com** on CMTDC01 (hostname
+CMT-DC), set up the same way as IO Buddy, Gantt, MecHub and Training Matrix:
+
+- Code: `C:\TIME SLIDE\server`. Its `.env` holds the live settings and is
+  never copied anywhere.
+- Runs as the Windows service **`TimeSlideApp`** through NSSM
+  (`C:\nssm\nssm.exe`), as LocalService, starting automatically, restarting
+  if it stops, with `NODE_ENV=production`. This server does **not** use PM2
+  (`ecosystem.config.js` is only for a PM2 setup elsewhere).
+- Logs: `C:\TIME SLIDE\server\logs\service-out.log` and `service-error.log`.
+- Port 4004, behind the shared Caddy (service `Caddy`), whose Caddyfile is
+  `C:\IO BUDDY\IO Buddy - Eplan database import export\server\Caddyfile`. The
+  Time Slide block is at its end; Caddy gets the certificate from Let's
+  Encrypt by itself.
+- Database `time_clocking` (login `time_clocking_app`) on the server's
+  PostgreSQL 18.
+
+Useful commands on the server (PowerShell as administrator):
 
 ```
-pm2 start ecosystem.config.js
-pm2 save
+Restart-Service TimeSlideApp
+Get-Service TimeSlideApp
+Get-Content "C:\TIME SLIDE\server\logs\service-out.log" -Tail 30
+Get-Content "C:\TIME SLIDE\server\logs\service-error.log" -Tail 30
 ```
 
-This only adds `time-clocking-server` to whatever else PM2 is already
-running on this server — it does not touch your other apps' processes.
-Updating a running deployment:
+Updating it after a change (copy files over Remote Desktop; never copy
+`node_modules` or a development `.env`):
 
 | Changed | Steps |
 |---|---|
 | Frontend files only (`public/`) | Copy the file(s) over; refresh the browser. No restart. |
-| Backend (`src/**`) | Copy the file(s) over; `pm2 restart time-clocking-server`. |
-| `package.json` changed | `npm ci --omit=dev` on the server first, then restart. |
-| Database schema | Add a new numbered file to `db/migrations/`, copy it over, run `npm run migrate`. Never hand-edit the live schema. |
-| `ecosystem.config.js` itself changed | `pm2 delete time-clocking-server` then `pm2 start ecosystem.config.js` — a plain restart won't pick up config changes. |
+| Backend (`src/**`) | Copy the file(s) over; `Restart-Service TimeSlideApp`. |
+| `package.json` changed | `npm ci --omit=dev` in `C:\TIME SLIDE\server` first, then restart. |
+| Database schema | Copy the new numbered file in `db/migrations/` over, run `npm run migrate`, then restart. Never hand-edit the live schema. |
+| Caddy block | Edit the Caddyfile, run `C:\Caddy\caddy.exe validate --config Caddyfile` in its folder, then `C:\Caddy\caddy.exe reload --config Caddyfile` (the other sites stay up). |
+
+How the service was created (same settings as `GanttApp`):
+
+```
+C:\nssm\nssm.exe install TimeSlideApp "C:\Program Files\nodejs\node.exe"
+C:\nssm\nssm.exe set TimeSlideApp AppParameters src\index.js
+C:\nssm\nssm.exe set TimeSlideApp AppDirectory "C:\TIME SLIDE\server"
+C:\nssm\nssm.exe set TimeSlideApp AppExit Default Restart
+C:\nssm\nssm.exe set TimeSlideApp AppEnvironmentExtra :NODE_ENV=production
+C:\nssm\nssm.exe set TimeSlideApp AppStdout "C:\TIME SLIDE\server\logs\service-out.log"
+C:\nssm\nssm.exe set TimeSlideApp AppStderr "C:\TIME SLIDE\server\logs\service-error.log"
+C:\nssm\nssm.exe set TimeSlideApp ObjectName "NT Authority\LocalService"
+C:\nssm\nssm.exe set TimeSlideApp Start SERVICE_AUTO_START
+```
+
+LocalService has read access to `C:\TIME SLIDE\server` and modify access to
+its `logs` folder (`icacls ... /grant "NT AUTHORITY\LOCAL SERVICE:..."`).
 
 ## API
 
@@ -266,9 +304,12 @@ unticked — nobody is ever auto-admin, auto-manager or let in automatically.
   admin-only; tile layout (pinned/hidden/order) is per person. Saves send
   only changed sections, so stale browsers don't wipe other sections, but
   two people editing the same section at once is still last-write-wins.
-- **Commit reminder emails need IT:** `MAIL_FROM` plus Microsoft Graph
-  `Mail.Send` (preferably limited to that one mailbox). Until then the
-  Email reminders button explains what is missing and sends nothing.
+- **Commit reminder emails need IT:** the mailbox `timeslide@cliffeng.com`
+  exists; set `MAIL_FROM=timeslide@cliffeng.com` in the live `.env` and
+  `pm2 restart time-clocking-server`. Microsoft Graph `Mail.Send` (with
+  admin consent, preferably limited to that one mailbox) is still needed.
+  Until then the Email reminders button explains what is missing and sends
+  nothing.
 - `state.nonWorking` has a table (`non_working`) and is round-tripped, but
   nothing in the current frontend renders or edits it — this is the
   root README's still-planned "Non-working time table" feature.

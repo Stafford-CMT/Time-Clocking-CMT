@@ -1,46 +1,44 @@
-This is NOT a standalone Caddyfile -- if this app is going on a server that
-already runs a shared Caddy instance for other apps (e.g. CMTDC01, which runs
-IO Buddy and the Design Plan Gantt board), add a block to that EXISTING
-Caddyfile rather than starting a second Caddy process (a second one would
-fight the existing one for ports 80/443).
+This is NOT a standalone Caddyfile. CMTDC01 (hostname CMT-DC) runs one shared
+Caddy for all its apps, as the Windows service `Caddy` (through NSSM). Its
+Caddyfile is:
 
-Pick a port this app's PM2 process doesn't collide with (check the existing
-Caddyfile / `pm2 list` / `netstat -ano | findstr :4004` for ports already in
-use -- IO Buddy 4000, Gantt 4001, MecHub 4002, Training Matrix 4003; this app
-uses 4004 on the live server, set by PORT in its .env).
+    C:\IO BUDDY\IO Buddy - Eplan database import export\server\Caddyfile
 
-Add a block like:
+Time Slide's block is at the end of that file (added 2026-11-03, live). Never
+start a second Caddy -- it would fight the existing one for ports 80/443.
+
+Ports on this server: IO Buddy 4000, Gantt 4001, MecHub 4002, Training Matrix
+4003, Time Slide 4004 (PORT in C:\TIME SLIDE\server\.env). Check a port is
+free with `netstat -ano | findstr :<port>`.
+
+The block:
 
     timeslide.cliffeng.com {
         reverse_proxy localhost:4004
     }
 
 No `tls` line, same as the iobuddy.cliffeng.com block: Caddy gets a public
-Let's Encrypt certificate by itself. That needs the public DNS for
-timeslide.cliffeng.com to point at the same public address as iobuddy, and
-ports 80/443 reaching this server, exactly as they already do for IO Buddy.
+Let's Encrypt certificate by itself (it did, 2026-11-03). That needs the
+public DNS for timeslide.cliffeng.com to point at the same public address as
+iobuddy, and ports 80/443 reaching this server, exactly as for IO Buddy.
 (`tls internal` is only for internal-only names like the Gantt board's
 `designplan`.)
 
-Then reload Caddy (picks up config changes without dropping other apps'
-sites or restarting that process):
+Changing the Caddyfile, in PowerShell as administrator in its folder:
 
-    pm2 reload caddy
+    Copy-Item Caddyfile Caddyfile.backup
+    notepad Caddyfile
+    C:\Caddy\caddy.exe validate --config Caddyfile
+    C:\Caddy\caddy.exe reload --config Caddyfile
 
-Steps for the DNS name itself:
-  1. Add DNS for timeslide.cliffeng.com exactly like iobuddy.cliffeng.com's
-     (checked 2026-11-02 with nslookup):
-       - internal, on CMT-DC: A record -> 10.0.0.254 (this server)
-       - public cliffeng.com DNS: A record -> 41.223.246.128 (or CNAME to
-         iobuddy.cliffeng.com); the firewall already passes 80/443 here
-  2. Append the block above to the existing Caddyfile
-  3. `pm2 reload caddy`
-  4. Add "https://timeslide.cliffeng.com/auth/callback" (and .../login.html) as Web redirect URIs on this
-     app's own Azure AD app registration
-  5. No separate `caddy trust`/AD-publish step needed if the CA is already
-     trusted domain-wide from a previous app's setup -- any new cert it
-     issues (for any hostname) is automatically trusted too.
+`validate` must say "Valid configuration" before you `reload`. The reload is
+live: the other sites stay up. Ignore its "not formatted" warning and never
+run `caddy fmt --overwrite` -- it rewrites the other apps' blocks.
 
-If this is the FIRST app going on this particular server (no shared Caddy
-yet), follow ../Windows App Deployment Runbook.md section 7 instead to set
-up Caddy itself first.
+DNS (done 2026-11-03, checked with nslookup):
+  - internal, on CMT-DC: A record timeslide.cliffeng.com -> 10.0.0.254
+  - public cliffeng.com DNS: A record -> 41.223.246.128 (same as iobuddy)
+Microsoft sign-in return addresses on the Time Slide app registration:
+  https://timeslide.cliffeng.com/auth/callback and .../login.html
+
+To take Time Slide off the address: remove its block, validate, reload.
