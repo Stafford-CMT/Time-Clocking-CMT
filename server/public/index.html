@@ -180,10 +180,11 @@
   <div class="modal-backdrop is-hidden" id="contract-modal" role="presentation">
     <form class="modal" id="contract-form" aria-labelledby="contract-modal-title">
       <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="contract-modal-title">Add tile</h2></div><button class="modal-close" id="close-contract-modal" type="button" aria-label="Close add tile form">&times;</button></div>
-      <label>Customer name<select id="contract-customer-name" class="force-uppercase" name="customerName" required><option value="">Select customer</option></select></label>
+      <p class="contract-linked-hint is-hidden" id="contract-linked-hint"></p>
+      <div id="contract-detail-fields"><label>Customer name<select id="contract-customer-name" class="force-uppercase" name="customerName" required><option value="">Select customer</option></select></label>
       <div class="form-row"><label>Contract number<select id="contract-number" class="force-uppercase" name="number" required><option value="">Select contract number</option></select></label><label>Suffix<select id="contract-suffix" class="force-uppercase" name="suffix"><option value="">Select suffix</option></select></label></div>
       <label>Suffix description<input id="contract-suffix-description" name="suffixDescription" readonly placeholder="Auto-filled from suffix"></label>
-      <label>Machine type<input id="contract-machine-type" name="machineType" readonly placeholder="Auto-filled from contract"></label>
+      <label>Machine type<input id="contract-machine-type" name="machineType" readonly placeholder="Auto-filled from contract"></label></div>
       <label>Image<span class="modal-image-preview" id="contract-image-preview"></span><input id="contract-image" name="image" type="file" accept="image/*"></label>
       <div class="modal-actions"><button class="add-button" id="contract-submit" type="submit"><span>+</span> Add tile</button></div>
     </form>
@@ -194,7 +195,7 @@
       <label>User's name<select id="schedule-user-name" name="userId" required><option value="">Select user</option></select></label>
       <div class="form-row"><label>Work starts<input id="schedule-start" name="start" type="time" value="06:00" required></label><label>Work ends<input id="schedule-end" name="end" type="time" value="15:00" required></label></div>
       <div id="schedule-break-rows"></div>
-      <div class="modal-actions"><button class="add-button" type="submit">Save</button></div>
+      <div class="modal-actions"><button class="add-button add-break-row" id="schedule-add-break" type="button">+ Add break</button><button class="add-button" type="submit">Save</button></div>
     </form>
   </div>
   <div class="modal-backdrop is-hidden" id="lists-modal" role="presentation">

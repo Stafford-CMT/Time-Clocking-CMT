@@ -12,6 +12,7 @@
  */
 const usersRepo = require('./usersRepo');
 const { uid } = require('../utils/ids');
+const ApiError = require('../utils/ApiError');
 
 function timeToHm(value) {
   // pg returns TIME columns as 'HH:MM:SS' -- the setup screens use HH:MM.
@@ -37,8 +38,10 @@ async function getSetup(db, userId) {
     pinned: c.my_pinned ?? false,
     hidden: c.system ? false : c.my_hidden ?? true,
     system: c.system, // the built-in Non-contract clock: never a tile
+    linked: c.contract_info_suffix_id !== null, // made from a Contract information suffix: only its image is edited on the tile
+    retired: c.retired, // its suffix was removed but time is clocked on it: on no dashboard, its time still counts
   }));
-  const order = contracts.filter((c) => !c.system).map((c) => c.id);
+  const order = contracts.filter((c) => !c.system && !c.retired).map((c) => c.id);
 
   const nonWorking = (await db.query('SELECT id, date, category, start_time, end_time FROM non_working ORDER BY date')).rows
     .map((r) => ({ id: r.id, date: r.date, category: r.category, start: timeToHm(r.start_time), end: timeToHm(r.end_time) }));
@@ -97,7 +100,9 @@ async function getSetup(db, userId) {
  * browser holding a stale contract list can't destroy anyone's time.
  * `image` is only overwritten when the key is present, so pin/hide/reorder
  * saves don't have to re-upload every tile's picture. A new contract goes to
- * the end of the shared creation order.
+ * the end of the shared creation order. A tile made from Contract
+ * information keeps the details syncContractTiles gave it; only its image
+ * is taken from here.
  */
 async function upsertContract(db, c) {
   const params = [c.id, c.customerName || '', c.number || '', c.suffix || '', c.suffixDescription || '', c.machineType || ''];
@@ -106,8 +111,12 @@ async function upsertContract(db, c) {
   await db.query(
     `INSERT INTO contracts (id, customer_name, number, suffix, suffix_description, machine_type, sort_order${hasImage ? ', image' : ''})
      VALUES ($1,$2,$3,$4,$5,$6,(SELECT COALESCE(MAX(sort_order) + 1, 0) FROM contracts)${hasImage ? ',$7' : ''})
-     ON CONFLICT (id) DO UPDATE SET customer_name = EXCLUDED.customer_name, number = EXCLUDED.number, suffix = EXCLUDED.suffix,
-       suffix_description = EXCLUDED.suffix_description, machine_type = EXCLUDED.machine_type${hasImage ? ', image = EXCLUDED.image' : ''}
+     ON CONFLICT (id) DO UPDATE SET
+       customer_name = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.customer_name ELSE contracts.customer_name END,
+       number = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.number ELSE contracts.number END,
+       suffix = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.suffix ELSE contracts.suffix END,
+       suffix_description = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.suffix_description ELSE contracts.suffix_description END,
+       machine_type = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.machine_type ELSE contracts.machine_type END${hasImage ? ', image = EXCLUDED.image' : ''}
      WHERE NOT contracts.system`,
     params
   );
@@ -211,6 +220,52 @@ async function replaceContractInfo(db, records) {
   }
 }
 
+/* Tiles follow Contract information (see migration 013): each suffix row
+ * with a letter, on a contract with a number, has one tile showing its
+ * contract's customer, number and machine type and its own letter and
+ * description. A new tile is on no one's dashboard until they add it from
+ * + Add tile. When a suffix row (or its contract) is removed, its tile is
+ * deleted, or retired if time was clocked on it -- the time is kept. A tile
+ * whose clock is running or paused for a break can't go: that is refused,
+ * so the whole save is undone. Runs after every Contract information save,
+ * and at start-up for suffixes that existed before tiles were linked.
+ */
+async function syncContractTiles(db) {
+  const live = `FROM contract_info_suffixes s JOIN contract_info i ON i.id = s.contract_info_id`;
+  await db.query(
+    `UPDATE contracts c SET customer_name = i.customer_name, number = i.number, suffix = s.letter,
+       suffix_description = s.description, machine_type = i.machine_type, retired = false
+     ${live} WHERE c.contract_info_suffix_id = s.id`
+  );
+  await db.query(
+    `INSERT INTO contracts (id, customer_name, number, suffix, suffix_description, machine_type, contract_info_suffix_id, sort_order)
+     SELECT 'tile-' || s.id, i.customer_name, i.number, s.letter, s.description, i.machine_type, s.id,
+       (SELECT COALESCE(MAX(sort_order), -1) FROM contracts) + row_number() OVER (ORDER BY i.sort_order, s.sort_order)
+     ${live}
+     WHERE trim(i.number) <> '' AND trim(s.letter) <> ''
+       AND NOT EXISTS (SELECT 1 FROM contracts c WHERE c.contract_info_suffix_id = s.id)
+     ON CONFLICT (id) DO NOTHING`
+  );
+  const gone = (await db.query(
+    `SELECT c.id, c.number, c.suffix,
+       EXISTS (SELECT 1 FROM active_sessions a WHERE a.contract_id = c.id)
+         OR EXISTS (SELECT 1 FROM user_break_state b WHERE b.contract_id = c.id) AS clock_on,
+       EXISTS (SELECT 1 FROM time_sessions t WHERE t.contract_id = c.id) AS has_time
+     FROM contracts c
+     WHERE c.contract_info_suffix_id IS NOT NULL AND NOT c.retired
+       AND NOT EXISTS (SELECT 1 FROM contract_info_suffixes s WHERE s.id = c.contract_info_suffix_id)`
+  )).rows;
+  const running = gone.filter((c) => c.clock_on);
+  if (running.length) {
+    const names = running.map((c) => `${c.number}${c.suffix ? ` ${c.suffix}` : ''}`).join(', ');
+    throw new ApiError(409, `A clock is running on ${names}. Stop it before removing ${running.length === 1 ? 'that suffix' : 'those suffixes'}.`);
+  }
+  const retire = gone.filter((c) => c.has_time).map((c) => c.id);
+  const remove = gone.filter((c) => !c.has_time).map((c) => c.id);
+  if (retire.length) await db.query('UPDATE contracts SET retired = true WHERE id = ANY($1)', [retire]);
+  if (remove.length) await db.query('DELETE FROM contracts WHERE id = ANY($1)', [remove]); // no time on them, so nothing else is lost
+}
+
 async function listWorkingTimes(db) {
   const wtBreakRows = (await db.query('SELECT * FROM working_time_breaks ORDER BY sort_order')).rows;
   const breaksByWt = {};
@@ -264,6 +319,6 @@ async function addDefaultWorkingTimes(db, userId) {
 
 module.exports = {
   getSetup, upsertContract, setTileSettings, setTileOrder, replaceNameList, replaceNonWorking,
-  replaceDefaultWorkingTimes, replaceContractInfo, listWorkingTimes, replaceWorkingTimes, addDefaultWorkingTimes,
+  replaceDefaultWorkingTimes, replaceContractInfo, syncContractTiles, listWorkingTimes, replaceWorkingTimes, addDefaultWorkingTimes,
   listCostCentres, costCentreUsage, renameCostCentre, deleteCostCentre,
 };

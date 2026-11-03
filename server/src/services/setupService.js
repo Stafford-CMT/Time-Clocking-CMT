@@ -36,6 +36,7 @@ function demoSeedPatch() {
 }
 
 async function ensureSeeded() {
+  await withTransaction((db) => setupRepo.syncContractTiles(db)); // tiles for suffixes saved before tiles followed Contract information
   const { rows } = await getPool().query('SELECT COUNT(*)::int AS n FROM contracts WHERE NOT system');
   if (rows[0].n === 0) {
     await applyPatch(demoSeedPatch());
@@ -101,7 +102,10 @@ async function applyPatch(patch, actor) {
     }
     if (patch.nonWorking) await setupRepo.replaceNonWorking(db, patch.nonWorking);
     if (patch.defaultWorkingTimes) await setupRepo.replaceDefaultWorkingTimes(db, patch.defaultWorkingTimes);
-    if (patch.contractInfo) await setupRepo.replaceContractInfo(db, patch.contractInfo);
+    if (patch.contractInfo) {
+      await setupRepo.replaceContractInfo(db, patch.contractInfo);
+      await setupRepo.syncContractTiles(db);
+    }
     if (patch.workingTimes) {
       const entries = actor && actor.userType !== 'admin' ? ownRowOnly(await setupRepo.listWorkingTimes(db), patch.workingTimes, actor.id) : patch.workingTimes;
       await setupRepo.replaceWorkingTimes(db, entries);

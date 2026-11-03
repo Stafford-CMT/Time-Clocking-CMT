@@ -466,6 +466,31 @@ table.export-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 .modal-image-preview #contract-image-undo:hover { border-color: var(--teal); background: var(--mint); }
 .modal-image-preview .image-remove-note { color: #8c3a27 !important; font-size: 11px !important; }
 
-/* Tile images: show the whole picture (fit inside the box, never cropped); click still opens the large viewer */
-.tile-image img { object-fit: contain; padding: 4px; box-sizing: border-box; }
-.tile-image:has(img) { background: #f6f8f7; }
+/* Tile images: show the whole picture (fit inside the box, never cropped); click still opens the large viewer.
+   Tiles are about 30% taller than before (252px -> 328px) and the image box is 16:9; the image is pinned to the box,
+   because inside the grid its 100% height grew to the picture's own height and was cropped. */
+.tile { min-height: 328px; }
+.tile-image { height: auto; aspect-ratio: 16 / 9; max-height: 220px; } /* max-height: a one-column tile on a narrow screen would otherwise get a very tall image */
+.tile-image:has(img) { position: relative; background: #f6f8f7; }
+.tile-image img { position: absolute; inset: 0; object-fit: contain; padding: 4px; box-sizing: border-box; }
+
+/* Edit tile for a tile made from Contract information: only the image is changed here */
+.contract-linked-hint { margin: -8px 0 16px; color: var(--muted); font-size: 12px; }
+
+/* Tile pencil (change image) sits in the image's top-right corner */
+.tile-image { position: relative; }
+.tile-image .edit-contract { position: absolute; top: 5px; right: 5px; z-index: 1; background: rgba(255, 255, 255, .9); box-shadow: 0 1px 3px rgba(23, 40, 45, .15); }
+.tile-image .edit-contract:hover { background: #fff5d9; }
+
+/* Tile x: turns red on hover with no background, like the other remove x's (Contract information, Lists) */
+.tile-action.delete-contract:hover { background: transparent; color: var(--coral); }
+.user-name-line .remove-user { color: #b3bfbd; }
+.user-name-line .remove-user:hover { background: transparent; color: var(--coral); }
+.break-row-action.remove-break-row { background: transparent; color: #b3bfbd; font-size: 17px; font-weight: 400; }
+.break-row-action.remove-break-row:hover { color: var(--coral); }
+/* Working times form: + Add break at the left of the Save line */
+#schedule-add-break { margin-right: auto; }
+.break-rows-empty { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+/* The x lines up with the time fields: same height as them, and the same 16px below as their labels have */
+.break-row-action.remove-break-row { align-self: end; height: 42px; margin-bottom: 16px; }
+.modal .break-row { margin-bottom: 0; } /* the labels already leave 16px below, like every other row in the form */
