@@ -494,3 +494,25 @@ table.export-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 /* The x lines up with the time fields: same height as them, and the same 16px below as their labels have */
 .break-row-action.remove-break-row { align-self: end; height: 42px; margin-bottom: 16px; }
 .modal .break-row { margin-bottom: 0; } /* the labels already leave 16px below, like every other row in the form */
+
+/* Change image / Add tile: chosen picture, the picture library, and Upload a new picture */
+.image-field { display: grid; gap: 7px; margin-bottom: 16px; }
+.image-field-label { color: var(--muted); font-size: 11px; font-weight: 700; }
+.image-field .modal-image-preview { min-height: 36px; }
+.image-field .modal-image-preview img { width: 64px; height: 36px; object-fit: contain; background: #f6f8f7; }
+.image-field .modal-image-preview span { font-size: 11px; }
+.image-library { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-height: 172px; margin: 0; padding: 2px; overflow-y: auto; list-style: none; }
+.image-library li { position: relative; }
+.image-library-item { display: block; width: 100%; aspect-ratio: 16 / 9; padding: 2px; border: 1px solid var(--line); border-radius: 7px; background: #f6f8f7; cursor: pointer; }
+.image-library-item img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.image-library-item:hover { border-color: var(--teal); }
+.image-library-item.is-chosen { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal); }
+.image-library-delete { position: absolute; top: 0; right: 2px; border: 0; background: transparent; color: #b3bfbd; font-size: 15px; line-height: 1; cursor: pointer; }
+.image-library-delete:hover { color: var(--coral); }
+.image-library-empty { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
+.modal label.image-upload { margin: 4px 0 0; }
+.image-upload-status { color: var(--muted); font-size: 11px; font-weight: 500; }
+/* Upload a new picture: the whole bar is one button (the browser's own file button is hidden) */
+.modal label.image-upload-button { display: flex; justify-content: center; margin: 0; color: #fff; font-size: 13px; cursor: pointer; }
+.image-upload-button input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.image-upload-button:focus-within { box-shadow: 0 0 0 3px rgba(20, 125, 120, .25); }

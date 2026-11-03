@@ -185,7 +185,7 @@
       <div class="form-row"><label>Contract number<select id="contract-number" class="force-uppercase" name="number" required><option value="">Select contract number</option></select></label><label>Suffix<select id="contract-suffix" class="force-uppercase" name="suffix"><option value="">Select suffix</option></select></label></div>
       <label>Suffix description<input id="contract-suffix-description" name="suffixDescription" readonly placeholder="Auto-filled from suffix"></label>
       <label>Machine type<input id="contract-machine-type" name="machineType" readonly placeholder="Auto-filled from contract"></label></div>
-      <label>Image<span class="modal-image-preview" id="contract-image-preview"></span><input id="contract-image" name="image" type="file" accept="image/*"></label>
+      <div class="image-field"><span class="image-field-label">Image</span><div class="modal-image-preview" id="contract-image-preview"></div><span class="image-field-label">Picture library: click one to use it</span><ul class="image-library" id="image-library"></ul><span class="image-field-label">Upload a new picture <span class="image-upload-status" id="contract-image-status"></span></span><label class="add-button image-upload-button">Choose file<input id="contract-image" type="file" accept="image/*"></label></div>
       <div class="modal-actions"><button class="add-button" id="contract-submit" type="submit"><span>+</span> Add tile</button></div>
     </form>
   </div>

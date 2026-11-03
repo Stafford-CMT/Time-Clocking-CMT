@@ -1,6 +1,7 @@
 'use strict';
 
 const setupRepo = require('../repositories/setupRepo');
+const imagesRepo = require('../repositories/imagesRepo');
 const clockService = require('./clockService');
 const costCentreService = require('./costCentreService');
 const { getPool, withTransaction } = require('../config/db');
@@ -73,11 +74,7 @@ async function applyPatch(patch, actor) {
   ARRAY_SECTIONS.forEach((key) => {
     if (key in patch && !Array.isArray(patch[key])) throw new ApiError(400, `${key} must be an array`);
   });
-  // Images and links end up in src/href attributes, so only let through the
-  // kinds the app itself produces (uploaded images, web links).
-  (patch.contracts?.upsert || []).forEach((contract) => {
-    if (contract.image && !/^data:image\//i.test(contract.image)) throw new ApiError(400, 'Tile image must be an uploaded image');
-  });
+  // Links end up in href attributes, so only let through web links.
   (patch.contractInfo || []).forEach((record) => {
     ['oneDriveLink', 'orderConfirmationLink'].forEach((field) => {
       if (record[field] && !/^https?:\/\//i.test(record[field])) throw new ApiError(400, 'Links must start with http:// or https://');
@@ -88,6 +85,7 @@ async function applyPatch(patch, actor) {
     if (patch.contracts) {
       for (const contract of patch.contracts.upsert || []) {
         if (!contract.id) throw new ApiError(400, 'Every contract needs an id');
+        if (contract.imageId && !(await imagesRepo.exists(db, contract.imageId))) throw new ApiError(400, 'That picture is no longer in the library');
         await setupRepo.upsertContract(db, contract);
         if (actor) await setupRepo.setTileSettings(db, actor.id, contract);
       }

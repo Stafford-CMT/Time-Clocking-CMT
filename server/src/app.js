@@ -43,7 +43,7 @@ app.use(helmet({
     },
   },
 }));
-app.use(express.json({ limit: '15mb' })); // contract tile images ride as data: URLs, same limit as the localStorage prototype allowed
+app.use(express.json({ limit: '5mb' })); // a tile picture is uploaded as a data: URL (shrunk by the browser first; 3 MB at most, see imagesService)
 app.use(sessionMiddleware);
 
 // Development sign-in is exempt: switching between test accounts would

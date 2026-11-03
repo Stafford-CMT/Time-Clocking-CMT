@@ -23,7 +23,8 @@ function timeToHm(value) {
 // caller has no settings row for (one someone else added) is hidden for them.
 async function getSetup(db, userId) {
   const contracts = (await db.query(
-    `SELECT c.*, s.hidden AS my_hidden, s.pinned AS my_pinned FROM contracts c
+    `SELECT c.id, c.customer_name, c.number, c.suffix, c.suffix_description, c.machine_type, c.image_id, c.system,
+       c.contract_info_suffix_id, c.retired, s.hidden AS my_hidden, s.pinned AS my_pinned FROM contracts c
      LEFT JOIN user_tile_settings s ON s.contract_id = c.id AND s.user_id = $1
      ORDER BY s.sort_order NULLS LAST, c.sort_order`,
     [userId]
@@ -34,7 +35,7 @@ async function getSetup(db, userId) {
     suffix: c.suffix,
     suffixDescription: c.suffix_description,
     machineType: c.machine_type,
-    image: c.image,
+    imageId: c.image_id, // the picture is fetched from /api/images/:id, not sent here
     pinned: c.my_pinned ?? false,
     hidden: c.system ? false : c.my_hidden ?? true,
     system: c.system, // the built-in Non-contract clock: never a tile
@@ -98,25 +99,25 @@ async function getSetup(db, userId) {
 /* Contracts are upserted, never deleted: deleting one cascades away every
  * clocked session against it, and the frontend only ever hides tiles. So a
  * browser holding a stale contract list can't destroy anyone's time.
- * `image` is only overwritten when the key is present, so pin/hide/reorder
- * saves don't have to re-upload every tile's picture. A new contract goes to
+ * `imageId` (a picture in the library) is only overwritten when the key is
+ * present. A new contract goes to
  * the end of the shared creation order. A tile made from Contract
  * information keeps the details syncContractTiles gave it; only its image
  * is taken from here.
  */
 async function upsertContract(db, c) {
   const params = [c.id, c.customerName || '', c.number || '', c.suffix || '', c.suffixDescription || '', c.machineType || ''];
-  const hasImage = Object.prototype.hasOwnProperty.call(c, 'image');
-  if (hasImage) params.push(c.image || null);
+  const hasImage = Object.prototype.hasOwnProperty.call(c, 'imageId');
+  if (hasImage) params.push(c.imageId || null);
   await db.query(
-    `INSERT INTO contracts (id, customer_name, number, suffix, suffix_description, machine_type, sort_order${hasImage ? ', image' : ''})
+    `INSERT INTO contracts (id, customer_name, number, suffix, suffix_description, machine_type, sort_order${hasImage ? ', image_id' : ''})
      VALUES ($1,$2,$3,$4,$5,$6,(SELECT COALESCE(MAX(sort_order) + 1, 0) FROM contracts)${hasImage ? ',$7' : ''})
      ON CONFLICT (id) DO UPDATE SET
        customer_name = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.customer_name ELSE contracts.customer_name END,
        number = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.number ELSE contracts.number END,
        suffix = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.suffix ELSE contracts.suffix END,
        suffix_description = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.suffix_description ELSE contracts.suffix_description END,
-       machine_type = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.machine_type ELSE contracts.machine_type END${hasImage ? ', image = EXCLUDED.image' : ''}
+       machine_type = CASE WHEN contracts.contract_info_suffix_id IS NULL THEN EXCLUDED.machine_type ELSE contracts.machine_type END${hasImage ? ', image_id = EXCLUDED.image_id' : ''}
      WHERE NOT contracts.system`,
     params
   );

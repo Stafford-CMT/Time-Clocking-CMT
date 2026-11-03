@@ -16,6 +16,7 @@ const usersController = require('../controllers/usersController');
 const configController = require('../controllers/configController');
 const exportController = require('../controllers/exportController');
 const costCentreController = require('../controllers/costCentreController');
+const imagesController = require('../controllers/imagesController');
 
 const router = express.Router();
 
@@ -23,6 +24,11 @@ router.get('/whoami', authController.whoami); // any logged-in session
 
 router.get('/state', setupController.getState); // any logged-in session
 router.patch('/setup', setupController.patchSetup); // any logged-in session -- see setupController's comment
+
+router.get('/images', imagesController.list); // any logged-in session -- the tile picture library
+router.get('/images/:id', imagesController.file); // any logged-in session
+router.post('/images', imagesController.add); // any logged-in session
+router.delete('/images/:id', imagesController.remove); // any logged-in session; refused while a tile uses it
 
 router.post('/clock/:contractId/start', clockController.start); // own clock
 router.post('/clock/:contractId/stop', clockController.stop); // own clock
