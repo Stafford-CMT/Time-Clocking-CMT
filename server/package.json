@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "migrate": "node db/scripts/migrate.js",
     "promote-admin": "node db/scripts/promote-admin.js",
-    "make-live-copy": "node db/scripts/make-live-copy.js"
+    "make-live-copy": "node db/scripts/make-live-copy.js",
+    "make-update": "node db/scripts/make-update.js"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -230,7 +230,28 @@ Get-Content "C:\TIME SLIDE\server\logs\service-out.log" -Tail 30
 Get-Content "C:\TIME SLIDE\server\logs\service-error.log" -Tail 30
 ```
 
-Updating it after a change (copy files over Remote Desktop; never copy
+### Updating the live server
+
+1. Commit and push to GitHub, then on this PC, in `server/`:
+   `npm run make-update`. It saves `deploy-kit/update-<date_time>/` (gitignored):
+   the whole app as one zip (never `node_modules`, any `.env` or live-copy
+   data, with a `VERSION.txt` naming the commit), the server script and
+   `HOW-TO-UPDATE.txt`.
+2. Copy that folder to the server as `C:\TIME SLIDE\update` and run, in
+   PowerShell as administrator:
+   ```
+   powershell -ExecutionPolicy Bypass -File "C:\TIME SLIDE\update\update-timeslide.ps1"
+   ```
+   `deploy/update-timeslide.ps1` stops unless it is on CMT-DC; backs the app up
+   to `C:\TIME SLIDE\backups\<date_time>` (without `node_modules` and logs);
+   copies the new files in, never the server's `.env` or logs; runs `npm ci`
+   only if `package-lock.json` changed; runs `npm run migrate`; restarts
+   `TimeSlideApp` and waits for the start-up log line and a 200 from
+   `/login.html`. Any failure puts the backup back and restarts. It ends with
+   `[OK]` or `[FAILED]`. Note: a migration that ran is not undone by the
+   automatic restore -- write migrations so the previous version still runs.
+
+Doing it by hand instead (copy files over Remote Desktop; never copy
 `node_modules` or a development `.env`):
 
 | Changed | Steps |
