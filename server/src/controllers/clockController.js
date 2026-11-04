@@ -19,6 +19,5 @@ module.exports = {
   removeSession: handle((req) => clockService.removeSession(req.session.user, req.params.id)),
   restoreSession: handle((req) => clockService.restoreSession(req.session.user, req.body && req.body.session)),
   commit: handle((req) => clockService.commit(req.session.user, req.params.userId, req.params.date)),
-  uncommit: handle((req) => clockService.uncommit(req.session.user, req.params.userId, req.params.date)),
   markAutoNoticed: handle((req) => clockService.markAutoNoticed(req.session.user, req.body && req.body.ids)),
 };

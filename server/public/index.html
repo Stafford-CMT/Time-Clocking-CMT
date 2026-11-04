@@ -78,13 +78,13 @@
 
       <section class="view is-hidden" data-view-panel="working-times">
         <div class="section-heading">
-          <div><span class="section-kicker">Daily schedule template</span><h2>Working times</h2></div>
+          <div><span class="section-kicker">From each person's working pattern</span><h2>Working times</h2></div>
           <div class="section-heading-actions"><div class="zoom-bar" role="group" aria-label="Zoom timeline"><button class="zoom-button" id="wt-zoom-out" type="button" title="Zoom out" aria-label="Zoom out">&#8722;</button><input id="wt-zoom-range" type="range" min="0.5" max="24" step="0.25" value="1" aria-label="Zoom level"><button class="zoom-button" id="wt-zoom-in" type="button" title="Zoom in" aria-label="Zoom in">&#43;</button><button class="zoom-value" id="wt-zoom-value" type="button" title="Reset to 05:00 - 18:00">1x</button></div></div>
         </div>
         <div class="schedule-card zoomable" id="working-times-card">
-          <div class="schedule-toolbar"></div>
+          <div class="schedule-toolbar"><div class="day-tabs" id="wt-day-tabs" role="tablist" aria-label="Day of the week"></div><span class="schedule-toolbar-note">Hours and breaks come from each person's working pattern (Manage lists &rarr; Working patterns).</span></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading">Team member</div><div class="timeline-heading" id="timeline-heading"></div></div><div id="working-time-rows"></div></div>
-          <p class="empty-state is-hidden" id="empty-state">No registered users yet. Add a user to build the schedule.</p>
+          <p class="empty-state is-hidden" id="empty-state">Nobody is in Time Slide yet.</p>
           <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Scheduled work</span><span><i class="legend-swatch break-swatch"></i>Break</span><span><i class="legend-swatch auto-clock-out-swatch"></i>Auto clock-out (drag your own line to change it)</span></div>
         </div>
       </section>
@@ -146,12 +146,20 @@
         <form class="export-range" id="export-form" autocomplete="off">
           <label>From<input id="export-from" type="date" required></label>
           <label>To<input id="export-to" type="date" required></label>
-          <div class="export-quick" role="group" aria-label="Quick dates"><button type="button" data-export-range="last-week">Last week</button><button type="button" data-export-range="this-week">This week</button><button type="button" data-export-range="last-month">Last month</button><button type="button" data-export-range="this-month">This month</button></div>
+          <div class="export-quick" role="group" aria-label="Quick dates"><button type="button" data-export-range="last-week">Last week</button><button type="button" data-export-range="last-7-days" title="Today and the six days before it">Last 7 days</button><button type="button" data-export-range="this-week">This week</button><button type="button" data-export-range="last-month">Last month</button><button type="button" data-export-range="this-month">This month</button></div>
         </form>
         <div class="export-summary" id="export-summary" role="status"><p id="export-summary-text"></p><button class="secondary-button is-hidden" id="export-remind" type="button">Email reminders</button></div>
         <div class="table-card">
           <div class="export-grid-scroll"><table class="export-grid" id="export-grid"></table></div>
           <div class="schedule-legend"><span><i class="legend-swatch export-swatch-uncommitted"></i>Not committed</span><span><i class="legend-swatch export-swatch-committed"></i>Committed, waiting to export</span><span><i class="legend-swatch export-swatch-exported"></i>Exported</span><span><i class="legend-swatch export-swatch-changed"></i>Changed since export</span><span class="legend-tips">Hours shown as h:mm · click a day to open it in Edit times</span></div>
+        </div>
+        <div class="table-card export-preview-card" id="export-preview-card">
+          <div class="table-intro"><div><strong>Preview</strong><span>Every stopped time block in these dates that you may see: your own, your team's (managers) or everyone's (admins). Filter and group it here; Preview .xlsx downloads just what the filters show.</span></div></div>
+          <div class="preview-controls">
+            <div class="preview-filters" id="preview-filters"></div>
+            <div class="preview-bar"><label>Group by<select id="preview-group"><option value="contractSuffix">Contract and suffix</option><option value="contract">Contract</option><option value="person">Person</option><option value="department">Department</option><option value="costCentre">Cost centre</option><option value="customer">Customer</option><option value="machineType">Machine type</option><option value="day">Day</option></select></label><span class="preview-count" id="preview-count"></span><button class="secondary-button" id="preview-clear" type="button">Clear filters</button></div>
+          </div>
+          <div class="table-scroll"><table class="preview-table" id="preview-table"></table></div>
         </div>
         <div class="table-card export-batches is-hidden" id="export-batches">
           <div class="table-intro"><div><strong>Exports</strong><span>Each export holds the committed days it took. Undo one to let its days be exported again.</span></div></div>
@@ -189,20 +197,11 @@
       <div class="modal-actions"><button class="add-button" id="contract-submit" type="submit"><span>+</span> Add tile</button></div>
     </form>
   </div>
-  <div class="modal-backdrop is-hidden" id="schedule-modal" role="presentation">
-    <form class="modal" id="schedule-form" aria-labelledby="schedule-modal-title">
-      <div class="modal-header"><div><span class="section-kicker">Working times</span><h2 id="schedule-modal-title">Add user</h2></div><button class="modal-close" id="close-schedule-modal" type="button" aria-label="Close working times form">&times;</button></div>
-      <label>User's name<select id="schedule-user-name" name="userId" required><option value="">Select user</option></select></label>
-      <div class="form-row"><label>Work starts<input id="schedule-start" name="start" type="time" value="06:00" required></label><label>Work ends<input id="schedule-end" name="end" type="time" value="15:00" required></label></div>
-      <div id="schedule-break-rows"></div>
-      <div class="modal-actions"><button class="add-button add-break-row" id="schedule-add-break" type="button">+ Add break</button><button class="add-button" type="submit">Save</button></div>
-    </form>
-  </div>
   <!-- What each user type can do. Opened from the (i) beside User type in Manage lists -> Users; closes with its x only. -->
   <div class="modal-backdrop is-hidden" id="role-matrix-modal" role="presentation">
     <div class="modal role-matrix-modal" role="dialog" aria-modal="true" aria-labelledby="role-matrix-title">
       <div class="modal-header"><div><span class="section-kicker">Users</span><h2 id="role-matrix-title">What each user type can do</h2></div><button class="modal-close" id="close-role-matrix" type="button" aria-label="Close what each user type can do">&times;</button></div>
-      <p class="role-matrix-note">A <strong>Manager</strong> is set here by an admin. Their team is everyone below them in Microsoft's reporting chain (their direct reports, those people's reports, and so on). A committed day is locked for everyone until an admin uncommits it.</p>
+      <p class="role-matrix-note">A <strong>Manager</strong> is set here by an admin. Their team is everyone below them in Microsoft's reporting chain (their direct reports, those people's reports, and so on). A committed day is final: nobody, admins included, can change or uncommit it.</p>
       <div class="table-scroll">
         <table class="role-matrix">
           <thead><tr><th scope="col">What you can do</th><th scope="col">User</th><th scope="col">Manager</th><th scope="col">Admin</th></tr></thead>
@@ -211,7 +210,6 @@
             <tr><th scope="row">Start and stop clocks on your tiles</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Change your own times (uncommitted days)</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Commit your own days</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
-            <tr><th scope="row">Uncommit a committed day</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr class="role-group"><th colspan="4" scope="colgroup">Other people's time</th></tr>
             <tr><th scope="row">See other people's times (Edit times, Data export)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-some">Their team, view only</td><td class="role-some">Everyone</td></tr>
             <tr><th scope="row">Change other people's times (uncommitted days)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
@@ -223,12 +221,14 @@
             <tr><th scope="row">Add tiles, pin them, change their image</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Contract information</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Lists: machine types, suffix descriptions, customers</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
-            <tr><th scope="row">Your own working times</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
-            <tr><th scope="row">Other people's working times</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Move your own auto clock-out line (Working times)</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Move other people's auto clock-out line</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr class="role-group"><th colspan="4" scope="colgroup">Company settings</th></tr>
             <tr><th scope="row">Add or remove people in Time Slide</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-some">Their team (remove Users only)</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Users: user type, cost centre</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
-            <tr><th scope="row">Cost centres, rework reasons, default working times</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Put people on a working pattern</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-some">Their team</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Working patterns (add, change, delete) and the auto clock-out delay</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Cost centres, rework reasons</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Configuration (Syspro connection)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
           </tbody>
         </table>
@@ -243,6 +243,7 @@
         <button class="modal-tab" data-list-tab="suffix-description" type="button">Suffix description</button>
         <button class="modal-tab" data-list-tab="customers" type="button">Customers</button>
         <button class="modal-tab" data-list-tab="users" data-admin-only data-manager-ok type="button">Users</button>
+        <button class="modal-tab" data-list-tab="working-patterns" data-admin-only data-manager-ok type="button">Working patterns</button>
         <button class="modal-tab" data-list-tab="cost-centres" data-admin-only type="button">Cost centre</button>
         <button class="modal-tab" data-list-tab="rework-reasons" data-admin-only type="button">Rework reasons</button>
       </div>
@@ -265,21 +266,28 @@
         <ul class="list-items" id="customer-list"></ul>
       </form>
       <div class="modal-tab-panel is-hidden" id="users-panel" data-list-panel="users">
-        <div class="default-working-times">
-          <span class="default-working-times-label">Default working times for new users</span>
-          <div class="default-working-times-grid">
-            <label>Work starts<input id="default-wt-start" type="time"></label>
-            <label>Work ends<input id="default-wt-end" type="time"></label>
-            <label>Break 1 starts<input id="default-wt-break1-start" type="time"></label>
-            <label>Break 1 ends<input id="default-wt-break1-end" type="time"></label>
-            <label>Break 2 starts<input id="default-wt-break2-start" type="time"></label>
-            <label>Break 2 ends<input id="default-wt-break2-end" type="time"></label>
-            <label class="default-wt-wide">Auto clock-out after work ends<span class="range-field"><input id="default-wt-delay" type="range" min="0" max="300" step="15" aria-describedby="default-wt-delay-value"><output id="default-wt-delay-value" for="default-wt-delay"></output></span></label>
-          </div>
-        </div>
         <div class="users-panel-header"><span id="users-heading">People in Time Slide</span><div class="directory-tools is-hidden" id="directory-tools"><input id="directory-search" type="search" placeholder="Search name, email or department" aria-label="Search staff"><select id="directory-filter" aria-label="Show"><option value="all">Everyone</option><option value="in">In Time Slide</option><option value="out">Not in Time Slide</option></select><button class="directory-sync-button" id="directory-sync" type="button">Sync now</button></div></div>
         <p class="directory-status is-hidden" id="directory-status"></p>
-        <div class="table-scroll"><table class="users-table"><thead><tr><th class="directory-col is-hidden">In Time Slide</th><th>Name</th><th>Email</th><th class="directory-col is-hidden">Department</th><th><span class="th-with-action"><span>User type</span><button class="th-info-button" id="open-role-matrix" type="button" title="What each user type can do" aria-label="What each user type can do"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4"/><circle class="th-info-dot" cx="8" cy="4.9" r=".55"/></svg></button></span></th><th><span class="th-with-action"><span>Cost centre</span><button class="th-add-button" data-heading-add="costCentre" type="button" title="Add a cost centre" aria-label="Add a cost centre"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v6M5 8h6"/></svg></button></span></th></tr></thead><tbody id="user-rows"></tbody></table></div>
+        <div class="table-scroll"><table class="users-table"><thead><tr><th class="directory-col is-hidden">In Time Slide</th><th>Name</th><th>Email</th><th class="directory-col is-hidden">Department</th><th><span class="th-with-action"><span>User type</span><button class="th-info-button" id="open-role-matrix" type="button" title="What each user type can do" aria-label="What each user type can do"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4"/><circle class="th-info-dot" cx="8" cy="4.9" r=".55"/></svg></button></span></th><th><span class="th-with-action"><span>Cost centre</span><button class="th-add-button" data-heading-add="costCentre" type="button" title="Add a cost centre" aria-label="Add a cost centre"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v6M5 8h6"/></svg></button></span></th><th>Working pattern</th></tr></thead><tbody id="user-rows"></tbody></table></div>
+      </div>
+      <div class="modal-tab-panel is-hidden" id="working-patterns-panel" data-list-panel="working-patterns">
+        <div class="pattern-bar">
+          <label>Pattern<span class="pattern-select-field"><select id="pattern-select"></select><button class="pattern-delete" id="pattern-delete" type="button" title="Delete this pattern" aria-label="Delete this pattern"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></span></label>
+          <label>Name<input id="pattern-name" type="text" maxlength="60"></label>
+          <div class="pattern-bar-actions"><span class="pattern-default-badge is-hidden" id="pattern-default-badge">Pattern for new people</span><button class="pattern-link" id="pattern-make-default" type="button">Make this the pattern for new people</button></div>
+        </div>
+        <p class="pattern-people" id="pattern-people"></p>
+        <div class="day-tabs" id="pattern-day-tabs" role="tablist" aria-label="Day of the week"></div>
+        <div class="pattern-day" id="pattern-day"></div>
+        <div class="modal-actions"><button class="add-button add-break-row" id="pattern-add-break" type="button">+ Add break</button><button class="add-button" id="pattern-save" type="button" disabled>Save pattern</button></div>
+        <div class="pattern-section">
+          <span class="pattern-section-label">Add a pattern</span>
+          <div class="list-add-row"><input id="new-pattern-name" type="text" maxlength="60" placeholder="Name, e.g. Late start (starts as a copy of the pattern above)"><button class="add-button" id="pattern-add" type="button">+ Add pattern</button></div>
+        </div>
+        <div class="pattern-section">
+          <label class="pattern-section-label" for="default-wt-delay">Auto clock-out after work ends (every pattern)</label>
+          <span class="range-field"><input id="default-wt-delay" type="range" min="0" max="300" step="15" aria-describedby="default-wt-delay-value"><output id="default-wt-delay-value" for="default-wt-delay"></output></span>
+        </div>
       </div>
       <form class="modal-tab-panel is-hidden" id="cost-centres-panel" data-list-panel="cost-centres">
         <label>Cost centre

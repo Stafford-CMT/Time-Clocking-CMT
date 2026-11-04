@@ -15,10 +15,11 @@ const NAME_LISTS = {
   costCentres: 'cost_centres',
   reworkReasons: 'rework_reasons',
 };
-const ARRAY_SECTIONS = ['nonWorking', 'contractInfo', 'workingTimes', ...Object.keys(NAME_LISTS)];
-const SECTIONS = ['contracts', 'defaultWorkingTimes', ...ARRAY_SECTIONS];
-// Company-wide settings only an admin may change (the Users, Cost centre and Rework reasons tabs).
-const ADMIN_SECTIONS = ['defaultWorkingTimes', 'costCentres', 'reworkReasons'];
+const ARRAY_SECTIONS = ['nonWorking', 'contractInfo', ...Object.keys(NAME_LISTS)];
+const SECTIONS = ['contracts', 'autoClockOutDelay', ...ARRAY_SECTIONS];
+// Company-wide settings only an admin may change (the Cost centre and Rework reasons tabs), and the
+// auto clock-out delay (Working patterns tab), which managers may change too.
+const ADMIN_SECTIONS = ['costCentres', 'reworkReasons'];
 
 // Placeholder tiles for a brand-new, empty database only (dev/test
 // convenience) -- delete them in the app once real contracts are entered.
@@ -55,24 +56,19 @@ async function getFullState(actor) {
   return { ...setup, ...clock, teamUserIds, currentUser: actor };
 }
 
-/* Working times are saved as the whole list, but anyone other than an admin
- * may only change their own row: everyone else's rows are kept exactly as
- * they are in the database, and no row can be added or removed. */
-function ownRowOnly(current, submitted, userId) {
-  const mine = submitted.find((entry) => entry && entry.userId === userId);
-  return current.map((entry) => (entry.userId === userId && mine ? { ...mine, id: entry.id, userId } : entry));
-}
-
 /* Applies only the sections present in `patch` -- the frontend sends just
  * what changed, so one person's edit to (say) the customer list can't
- * overwrite another's newer working-times change with a stale copy.
+ * overwrite another's newer contract-information change with a stale copy.
  * Tile hidden/pinned/order are saved for `actor` only (the demo seed has none).
  */
 async function applyPatch(patch, actor) {
   if (!patch || typeof patch !== 'object') throw new ApiError(400, 'Expected a JSON object');
   const unknown = Object.keys(patch).filter((key) => !SECTIONS.includes(key));
   if (unknown.length) throw new ApiError(400, `Unknown setup section(s): ${unknown.join(', ')}`);
-  if (actor && actor.userType !== 'admin' && ADMIN_SECTIONS.some((key) => key in patch)) throw new ApiError(403, 'Only an admin can change default working times, cost centres or rework reasons');
+  if (actor && actor.userType !== 'admin' && ADMIN_SECTIONS.some((key) => key in patch)) throw new ApiError(403, 'Only an admin can change cost centres or rework reasons');
+  if (actor && !['admin', 'manager'].includes(actor.userType) && 'autoClockOutDelay' in patch) throw new ApiError(403, 'Only an admin or a manager can change the auto clock-out delay');
+  // Whole minutes after the end of the working day, 0 to 5 hours.
+  if ('autoClockOutDelay' in patch && !(Number.isInteger(patch.autoClockOutDelay) && patch.autoClockOutDelay >= 0 && patch.autoClockOutDelay <= 300)) throw new ApiError(400, 'autoClockOutDelay must be 0 to 300 minutes');
   ARRAY_SECTIONS.forEach((key) => {
     if (key in patch && !Array.isArray(patch[key])) throw new ApiError(400, `${key} must be an array`);
   });
@@ -101,14 +97,10 @@ async function applyPatch(patch, actor) {
       if (patch[key]) await setupRepo.replaceNameList(db, table, patch[key]);
     }
     if (patch.nonWorking) await setupRepo.replaceNonWorking(db, patch.nonWorking);
-    if (patch.defaultWorkingTimes) await setupRepo.replaceDefaultWorkingTimes(db, patch.defaultWorkingTimes);
+    if ('autoClockOutDelay' in patch) await setupRepo.setAutoClockOutDelay(db, patch.autoClockOutDelay);
     if (patch.contractInfo) {
       await setupRepo.replaceContractInfo(db, patch.contractInfo);
       await setupRepo.syncContractTiles(db);
-    }
-    if (patch.workingTimes) {
-      const entries = actor && actor.userType !== 'admin' ? ownRowOnly(await setupRepo.listWorkingTimes(db), patch.workingTimes, actor.id) : patch.workingTimes;
-      await setupRepo.replaceWorkingTimes(db, entries);
     }
   });
 }

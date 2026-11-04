@@ -2,8 +2,9 @@
 
 /* Raw SQL for the shared setup tables: contracts, non_working,
  * machine_types, suffix_descriptions, customers, cost_centres,
- * default_working_times(+breaks), contract_info(+suffixes),
- * working_times(+breaks). Clocking tables live in clockRepo.
+ * contract_info(+suffixes), and the auto clock-out delay (in
+ * default_working_times). Working patterns live in workingPatternsRepo,
+ * clocking tables in clockRepo.
  *
  * `users` is read here for the frontend's convenience and only written by a
  * cost centre rename (renameCostCentre) --
@@ -11,6 +12,7 @@
  * /api/users.
  */
 const usersRepo = require('./usersRepo');
+const workingPatternsRepo = require('./workingPatternsRepo');
 const { uid } = require('../utils/ids');
 const ApiError = require('../utils/ApiError');
 
@@ -53,14 +55,8 @@ async function getSetup(db, userId) {
   const costCentres = await listCostCentres(db); // A-Z
   const reworkReasons = (await db.query('SELECT name FROM rework_reasons ORDER BY lower(name), name')).rows.map((x) => x.name);
 
-  const defaultRow = (await db.query('SELECT start, "end", auto_clock_out_delay FROM default_working_times WHERE id = 1')).rows[0];
-  const defaultBreaks = (await db.query('SELECT start, "end" FROM default_working_time_breaks ORDER BY sort_order')).rows;
-  const defaultWorkingTimes = {
-    start: timeToHm(defaultRow.start),
-    end: timeToHm(defaultRow.end),
-    autoClockOutDelay: defaultRow.auto_clock_out_delay, // minutes after the end of the working day
-    breaks: defaultBreaks.map((b) => ({ start: timeToHm(b.start), end: timeToHm(b.end) })),
-  };
+  // Minutes after the end of the working day that a forgotten clock stops (everyone without their own time).
+  const autoClockOutDelay = (await db.query('SELECT auto_clock_out_delay FROM default_working_times WHERE id = 1')).rows[0].auto_clock_out_delay;
 
   const infoSuffixRows = (await db.query('SELECT * FROM contract_info_suffixes ORDER BY sort_order')).rows;
   const suffixesByInfo = {};
@@ -79,7 +75,7 @@ async function getSetup(db, userId) {
     suffixes: suffixesByInfo[r.id] || [],
   }));
 
-  const workingTimes = await listWorkingTimes(db);
+  const workingPatterns = await workingPatternsRepo.listPatterns(db);
 
   const users = (await usersRepo.listAll()).map((u) => ({
     id: u.id,
@@ -88,11 +84,12 @@ async function getSetup(db, userId) {
     userType: u.user_type,
     costCentre: u.cost_centre || '',
     autoClockOut: u.auto_clock_out ? timeToHm(u.auto_clock_out) : '', // '' = at the end of their working day
+    patternId: u.working_pattern_id || '', // '' = no working pattern
   }));
 
   return {
     contracts, order, nonWorking, machineTypes, suffixDescriptions, customers, costCentres, reworkReasons,
-    defaultWorkingTimes, contractInfo, workingTimes, users,
+    autoClockOutDelay, contractInfo, workingPatterns, users,
   };
 }
 
@@ -188,16 +185,8 @@ async function replaceNonWorking(db, entries) {
   }
 }
 
-async function replaceDefaultWorkingTimes(db, value) {
-  // Whole minutes, 0 to 5 hours; anything else keeps the saved delay.
-  const delay = Number.isInteger(value.autoClockOutDelay) && value.autoClockOutDelay >= 0 && value.autoClockOutDelay <= 300 ? value.autoClockOutDelay : null;
-  await db.query('UPDATE default_working_times SET start = $1, "end" = $2, auto_clock_out_delay = COALESCE($3, auto_clock_out_delay) WHERE id = 1', [value.start, value.end, delay]);
-  await db.query('DELETE FROM default_working_time_breaks');
-  let breakIdx = 0;
-  for (const b of value.breaks || []) {
-    await db.query('INSERT INTO default_working_time_breaks (sort_order, start, "end") VALUES ($1,$2,$3)', [breakIdx, b.start, b.end]);
-    breakIdx += 1;
-  }
+async function setAutoClockOutDelay(db, minutes) {
+  await db.query('UPDATE default_working_times SET auto_clock_out_delay = $1 WHERE id = 1', [minutes]);
 }
 
 async function replaceContractInfo(db, records) {
@@ -267,59 +256,8 @@ async function syncContractTiles(db) {
   if (remove.length) await db.query('DELETE FROM contracts WHERE id = ANY($1)', [remove]); // no time on them, so nothing else is lost
 }
 
-async function listWorkingTimes(db) {
-  const wtBreakRows = (await db.query('SELECT * FROM working_time_breaks ORDER BY sort_order')).rows;
-  const breaksByWt = {};
-  wtBreakRows.forEach((b) => {
-    breaksByWt[b.working_time_id] = breaksByWt[b.working_time_id] || [];
-    breaksByWt[b.working_time_id].push({ id: b.id, type: b.type, start: timeToHm(b.start), end: timeToHm(b.end) });
-  });
-  return (await db.query('SELECT * FROM working_times')).rows.map((wt) => ({
-    id: wt.id,
-    userId: wt.user_id,
-    start: timeToHm(wt.start),
-    end: timeToHm(wt.end),
-    breaks: breaksByWt[wt.id] || [],
-  }));
-}
-
-async function replaceWorkingTimes(db, entries) {
-  await db.query('DELETE FROM working_times'); // cascades working_time_breaks
-  for (const entry of entries) {
-    const user = await usersRepo.findById(entry.userId);
-    if (!user) continue; // working-time rows only make sense for a real, signed-in user
-    await db.query('INSERT INTO working_times (id, user_id, start, "end") VALUES ($1,$2,$3,$4)', [entry.id, entry.userId, entry.start, entry.end]);
-    let breakIndex = 0;
-    for (const brk of entry.breaks || []) {
-      await db.query(
-        'INSERT INTO working_time_breaks (id, working_time_id, type, start, "end", sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
-        [brk.id, entry.id, brk.type || 'Break', brk.start, brk.end, breakIndex]
-      );
-      breakIndex += 1;
-    }
-  }
-}
-
-// Someone just ticked into Time Slide starts with a copy of the default
-// working times, unless they already have a row. Returns whether one was added.
-async function addDefaultWorkingTimes(db, userId) {
-  if ((await db.query('SELECT 1 FROM working_times WHERE user_id = $1', [userId])).rows.length) return false;
-  const defaults = (await db.query('SELECT start, "end" FROM default_working_times WHERE id = 1')).rows[0];
-  if (!defaults) return false;
-  const breaks = (await db.query('SELECT start, "end" FROM default_working_time_breaks ORDER BY sort_order')).rows;
-  const workingTimeId = uid('wt');
-  await db.query('INSERT INTO working_times (id, user_id, start, "end") VALUES ($1,$2,$3,$4)', [workingTimeId, userId, defaults.start, defaults.end]);
-  for (const [index, brk] of breaks.entries()) {
-    await db.query(
-      'INSERT INTO working_time_breaks (id, working_time_id, type, start, "end", sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
-      [uid('break'), workingTimeId, 'Break', brk.start, brk.end, index]
-    );
-  }
-  return true;
-}
-
 module.exports = {
   getSetup, upsertContract, setTileSettings, setTileOrder, replaceNameList, replaceNonWorking,
-  replaceDefaultWorkingTimes, replaceContractInfo, syncContractTiles, listWorkingTimes, replaceWorkingTimes, addDefaultWorkingTimes,
+  setAutoClockOutDelay, replaceContractInfo, syncContractTiles,
   listCostCentres, costCentreUsage, renameCostCentre, deleteCostCentre,
 };

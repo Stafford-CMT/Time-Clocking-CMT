@@ -172,7 +172,7 @@ see that file for the full steps.
 ## Moving the data to the live server
 
 The live server starts with this PC's set-up (staff and who is ticked in,
-roles, cost centres, working times, lists, real tiles, contract information)
+roles, cost centres, working patterns, lists, real tiles, contract information)
 but no clocked time. On this PC, on the day:
 
 ```
@@ -287,16 +287,16 @@ the signed-in user; each returns the refreshed clock state.
 | Endpoint | What it does | Who |
 |---|---|---|
 | `GET /state` | Setup data + your clock state + who you are | anyone |
-| `PATCH /setup` | Saves only the setup sections sent (lists, contract info, working times, tiles). Never deletes contracts. | anyone |
+| `PATCH /setup` | Saves only the setup sections sent (lists, contract info, tiles, the auto clock-out delay). Never deletes contracts. | anyone (the delay, cost centres and rework reasons: admin) |
 | `POST /clock/:contractId/start` · `/stop` | Start/stop your clock. Starting one contract stops any other you had running. | own clock |
 | `POST /clock/break/pause` · `/resume` | Called by the browser when your scheduled break starts/ends | own clock |
 | `PATCH /sessions` · `DELETE /sessions/:id` | Edit Times changes, as a batch so a block and its linked neighbour change together | own times; admin: anyone's |
-| `POST /commits/:userId/:date` | Lock a day's times | own day; admin: anyone's |
-| `DELETE /commits/:userId/:date` | Unlock a day | admin |
+| `POST /commits/:userId/:date` | Lock a day's times for good (nobody can uncommit) | own day; admin: anyone's |
 | `GET /users` | People in Time Slide | anyone |
 | `GET /directory` · `POST /directory/sync` | All staff from Microsoft, ticked or not, and the sync status · sync now | admin |
 | `PUT /users/:id/included` | Tick someone into Time Slide, or out of it | admin |
-| `PUT /users/:id/user-type` · `/cost-centre` | Change role / cost centre | admin |
+| `PUT /users/:id/user-type` · `/cost-centre` · `/working-pattern` | Change role / cost centre / working pattern (`patternId`, '' = none) | admin |
+| `POST /working-patterns` · `PUT /working-patterns/:id` · `DELETE /working-patterns/:id` · `PUT /working-patterns/:id/default` | Lists → Working patterns: add one (a copy of `copyFrom`) · save its name and seven days · delete it (refused while anyone is on it, or for the default) · make it the pattern new people start on. Each returns the whole list. | admin |
 | `GET /export/overview?from=&to=` | Setup → Data export grid: each person's days with hours and status (not committed / committed / exported / changed since export), plus the exports covering those dates | own row; everyone for admin |
 | `GET /export/times?from=&to=&userId=` | Preview spreadsheet (.xlsx) — marks nothing as exported (no `userId` = everyone, admins only) | own times; anyone's for admin |
 | `POST /export/batches` | Export: every committed, not-yet-exported day in `{from, to}` becomes one batch and is returned as .xlsx; a day is never in two live batches | admin |
@@ -307,10 +307,9 @@ the signed-in user; each returns the refreshed clock state.
 
 ## Roles
 
-- **admin** — can review and edit anyone's times (Edit Times shows a user
-  picker), edit committed days, unlock commits, and change users' roles and
-  cost centres, and set up the Syspro connection. The "Admin mode" checkbox is a per-browser safety catch only
-  admins see; the server checks the role itself.
+- **admin** — can review and edit anyone's uncommitted times (Edit Times shows a user
+  picker), change users' roles, cost centres and working patterns, set up
+  working patterns, and set up the Syspro connection.
 - **manager** / **user** — clock, edit and commit their own times, and edit
   shared setup data.
 
@@ -321,7 +320,7 @@ unticked — nobody is ever auto-admin, auto-manager or let in automatically.
 
 - **Most setup data is shared:** any signed-in user can edit the machine
   type, suffix description and customer lists and contract information.
-  Users, Cost centre, Rework reasons and Default working times are
+  Users, Working patterns, Cost centre and Rework reasons are
   admin-only; tile layout (pinned/hidden/order) is per person. Saves send
   only changed sections, so stale browsers don't wipe other sections, but
   two people editing the same section at once is still last-write-wins.

@@ -17,6 +17,7 @@ const configController = require('../controllers/configController');
 const exportController = require('../controllers/exportController');
 const costCentreController = require('../controllers/costCentreController');
 const imagesController = require('../controllers/imagesController');
+const workingPatternsController = require('../controllers/workingPatternsController');
 
 const router = express.Router();
 
@@ -37,7 +38,6 @@ router.patch('/sessions', clockController.updateSessions); // own sessions, or a
 router.post('/sessions', clockController.restoreSession); // undo a removed block: own sessions, or anyone's for admin
 router.delete('/sessions/:id', clockController.removeSession); // own sessions, or anyone's for admin
 router.post('/commits/:userId/:date', clockController.commit); // own day, or anyone's for admin
-router.delete('/commits/:userId/:date', clockController.uncommit); // admin only (checked in clockService)
 router.post('/sessions/auto-noticed', clockController.markAutoNoticed); // own sessions: the "stopped automatically" message was seen
 
 router.get('/users', usersController.list); // any logged-in session -- needed for the working-times dropdowns (people in Time Slide only)
@@ -49,9 +49,17 @@ router.put('/users/:id/cost-centre', requireRole('admin'), usersController.setCo
 router.put('/cost-centres/:name', requireRole('admin'), costCentreController.rename); // renames it for everyone who has it too
 router.delete('/cost-centres/:name', requireRole('admin'), costCentreController.remove); // refused while anyone has it
 router.put('/users/:id/auto-clock-out', usersController.setAutoClockOut); // own, or anyone's for admin (checked in usersService)
+router.put('/users/:id/working-pattern', requireRole('admin', 'manager'), workingPatternsController.assign); // body: patternId ('' = none); a manager: people in their team (checked in workingPatternsService)
+
+router.post('/working-patterns', requireRole('admin', 'manager'), workingPatternsController.create); // body: name, copyFrom
+router.put('/working-patterns/:id', requireRole('admin', 'manager'), workingPatternsController.save); // body: name, days (all seven)
+router.delete('/working-patterns/:id', requireRole('admin', 'manager'), workingPatternsController.remove); // refused while anyone is on it, or for the default
+router.put('/working-patterns/:id/default', requireRole('admin', 'manager'), workingPatternsController.makeDefault); // the pattern new people start on
 
 router.get('/export/overview', exportController.overview); // own days, or everyone's for admin (checked in exportService)
-router.get('/export/times', exportController.exportTimes); // preview spreadsheet, marks nothing: own times, or anyone's / everyone's for admin
+router.get('/export/times', exportController.exportTimes); // preview spreadsheet, marks nothing: own times, a manager's team, or everyone's for admin
+router.post('/export/times', exportController.exportTimes); // the same, for just the time blocks the in-app preview's filters show (body: from, to, ids)
+router.get('/export/blocks', exportController.blocks); // the in-app preview's time blocks: same scope as above
 router.post('/export/batches', requireRole('admin'), exportController.createBatch); // download = mark committed days as exported
 router.get('/export/batches/:id/file', requireRole('admin'), exportController.batchFile);
 router.delete('/export/batches/:id', requireRole('admin'), exportController.undoBatch);

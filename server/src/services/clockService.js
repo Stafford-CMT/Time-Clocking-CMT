@@ -18,11 +18,10 @@ function assertCanActOn(actor, userId) {
   if (actor.id !== userId && !isAdmin(actor)) throw new ApiError(403, 'You can only change your own times');
 }
 
-// Committed means locked for everyone, admins too: an admin uncommits the day first (Edit times -> Uncommit).
+// Committed is final: nobody, admins included, can change or uncommit the day,
+// so what goes to Syspro can never differ from what Time Slide holds.
 async function assertNotCommitted(db, actor, userId, date) {
-  if (await clockRepo.isCommitted(db, userId, date)) {
-    throw new ApiError(409, isAdmin(actor) ? `Times for ${date} are committed — uncommit the day in Edit times first` : `Times for ${date} are committed — only an admin can uncommit them`);
-  }
+  if (await clockRepo.isCommitted(db, userId, date)) throw new ApiError(409, `Times for ${date} are committed and can't be changed`);
 }
 
 async function getState(actor) {
@@ -74,7 +73,6 @@ function autoClockOutAt(startedAt, clockOut) {
  * gets to it (a sweep every 30 seconds, every state load, and before every
  * start/stop). Steps are applied in time order until nothing more is due. */
 async function applyClockSchedule(db, userId, now) {
-  const schedule = await clockRepo.findClockSchedule(db, userId);
   for (let step = 0; step < 20; step += 1) {
     const active = await clockRepo.findActive(db, userId);
     if (!active) {
@@ -86,6 +84,7 @@ async function applyClockSchedule(db, userId, now) {
       }
       continue;
     }
+    const schedule = await clockRepo.findClockSchedule(db, userId, localDate(new Date(active.startedAt))); // the day the clock started
     if (!schedule) return;
     const cutoff = autoClockOutAt(active.startedAt, schedule.clockOut);
     const nextBreak = schedule.breaks
@@ -251,13 +250,7 @@ async function markAutoNoticed(actor, ids) {
   return getState(actor);
 }
 
-async function uncommit(actor, userId, date) {
-  if (!isAdmin(actor)) throw new ApiError(403, 'Only an admin can unlock committed times');
-  await clockRepo.removeCommit(getPool(), userId, date);
-  return getState(actor);
-}
-
 module.exports = {
-  getState, start, stop, updateSessions, restoreSession, removeSession, commit, uncommit, markAutoNoticed,
+  getState, start, stop, updateSessions, restoreSession, removeSession, commit, markAutoNoticed,
   autoClockOutAt, runClockSchedule, startClockSchedule,
 };

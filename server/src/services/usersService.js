@@ -1,7 +1,7 @@
 'use strict';
 
 const usersRepo = require('../repositories/usersRepo');
-const setupRepo = require('../repositories/setupRepo');
+const workingPatternsRepo = require('../repositories/workingPatternsRepo');
 const { getPool, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 const teamService = require('./teamService');
@@ -98,9 +98,9 @@ async function setIncluded(id, included, actor) {
   }
   if (!included && target.user_type === 'admin') throw new ApiError(400, 'Change their user type from Admin before removing them');
   const entry = toDirectoryEntry(await usersRepo.setIncluded(id, included));
-  // Ticking someone in gives them the default working times, so nobody has
-  // to be added again on the Working times screen.
-  entry.workingTimesAdded = included ? await withTransaction((db) => setupRepo.addDefaultWorkingTimes(db, id)) : false;
+  // Ticking someone in puts them on the default working pattern (unless they
+  // are already on one); the name comes back for the message.
+  entry.workingPatternAdded = included ? await withTransaction((db) => workingPatternsRepo.assignDefault(db, id)) : null;
   return entry;
 }
 
@@ -130,8 +130,8 @@ async function setCostCentre(id, costCentre) {
 
 // Anyone can move their own auto clock-out time; an admin can move anyone's.
 // '' (or a time before the end of their working day) is stored as NULL: "the
-// default" -- the end of their working day plus the default delay from
-// Default working times, so it keeps following both if they change.
+// default" -- the end of each working day plus the default delay from
+// Lists -> Working patterns, so it keeps following both if they change.
 async function setAutoClockOut(actor, id, autoClockOut) {
   if (actor.id !== id && actor.userType !== 'admin') throw new ApiError(403, 'You can only change your own auto clock-out time');
   if (autoClockOut != null && autoClockOut !== '' && (typeof autoClockOut !== 'string' || !TIME_RE.test(autoClockOut) || autoClockOut.startsWith('24'))) {

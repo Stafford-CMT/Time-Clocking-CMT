@@ -143,6 +143,7 @@ async function buildWorkbook(rows) {
     { header: 'Person', key: 'person', width: 24 },
     { header: 'Email', key: 'email', width: 28 },
     { header: 'Cost centre', key: 'costCentre', width: 16 },
+    { header: 'Department', key: 'department', width: 20 },
     { header: 'Date', key: 'date', width: 12, style: { numFmt: 'dd/mm/yyyy' } },
     { header: 'Contract', key: 'contract', width: 14 },
     { header: 'Suffix', key: 'suffix', width: 8 },
@@ -162,12 +163,13 @@ async function buildWorkbook(rows) {
     { header: 'Hours', key: 'hours', width: 8, style: { numFmt: '0.00' } },
     { header: 'Committed', key: 'committed', width: 11 },
     { header: 'Auto clock-out not checked', key: 'autoStopped', width: 14 },
+    { header: 'Block ID', key: 'blockId', width: 30 }, // the time block's own id: every row can be traced back to it
   ];
   const totals = new Map();
   rows.forEach((row) => {
     const start = timeToSeconds(row.start_time);
     const end = timeToSeconds(row.end_time);
-    const person = { person: row.user_name, email: row.email || '', costCentre: row.cost_centre || '', date: excelDate(row.date), ...contractCells(row), rework: row.rework_reason ? 'Yes' : 'No', reworkReason: row.rework_reason || '' };
+    const person = { person: row.user_name, email: row.email || '', costCentre: row.cost_centre || '', department: row.department || '', date: excelDate(row.date), ...contractCells(row), rework: row.rework_reason ? 'Yes' : 'No', reworkReason: row.rework_reason || '' };
     blocks.addRow({
       ...person,
       start: start / DAY_SECONDS,
@@ -176,6 +178,7 @@ async function buildWorkbook(rows) {
       hours: Math.round(((end - start) / 3600) * 100) / 100,
       committed: row.committed ? 'Yes' : 'No',
       autoStopped: row.auto_stopped ? 'Yes' : '',
+      blockId: row.id,
     });
     const key = [row.user_id, row.date, person.contract, person.suffix, person.reworkReason].join('|'); // rework kept apart from ordinary time
     if (!totals.has(key)) totals.set(key, { ...person, seconds: 0 });
@@ -195,13 +198,16 @@ async function buildWorkbook(rows) {
   return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 
-// Preview: the spreadsheet for any dates, marking nothing as exported.
-async function exportTimes(actor, { from, to, userId }) {
+// Preview: the spreadsheet for any dates, marking nothing as exported. `ids`
+// (from the in-app preview's filters) keeps just those time blocks.
+async function exportTimes(actor, { from, to, userId, ids }) {
+  if (ids !== undefined && (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string'))) throw new ApiError(400, 'ids must be a list of time block ids');
   assertRange(from, to);
   const db = getPool();
   const visible = await teamService.visibleUserIds(db, actor);
   if (userId && visible !== null && !visible.includes(userId)) throw new ApiError(403, isAdmin(actor) || actor.userType === 'manager' ? 'That person is not in your team' : 'You can only export your own times');
-  const rows = await clockRepo.findSessionsForExport(db, { from, to, userIds: userId ? [userId] : visible });
+  let rows = await clockRepo.findSessionsForExport(db, { from, to, userIds: userId ? [userId] : visible });
+  if (ids) { const keep = new Set(ids); rows = rows.filter((row) => keep.has(row.id)); }
   return { buffer: await buildWorkbook(rows), filename: `time-slide-preview_${from}_to_${to}.xlsx` };
 }
 
@@ -291,4 +297,23 @@ async function sendReminders(actor, { from, to }) {
   return result;
 }
 
-module.exports = { overview, exportTimes, createBatch, batchFile, undoBatch, sendReminders };
+// The in-app preview: every time block in the dates that the caller may see
+// (their own, a manager's team, or everyone for an admin), with the details
+// its filters and totals need. Running clocks aren't included until stopped.
+async function blocks(actor, { from, to }) {
+  assertRange(from, to);
+  const db = getPool();
+  const rows = await clockRepo.findSessionsForExport(db, { from, to, userIds: await teamService.visibleUserIds(db, actor) });
+  return {
+    from, to,
+    blocks: rows.map((row) => ({
+      id: row.id, userId: row.user_id, person: row.user_name, department: row.department || '', costCentre: row.cost_centre || '',
+      date: row.date, start: row.start_time, end: row.end_time, seconds: timeToSeconds(row.end_time) - timeToSeconds(row.start_time),
+      contractId: row.contract_id, nonContract: row.system, number: row.system ? '' : row.number, suffix: row.system ? '' : row.suffix,
+      suffixDescription: row.system ? '' : row.suffix_description, customer: row.system ? '' : row.customer_name, machineType: row.system ? '' : row.machine_type,
+      reworkReason: row.rework_reason || '', committed: row.committed, autoStopped: row.auto_stopped,
+    })),
+  };
+}
+
+module.exports = { overview, exportTimes, blocks, createBatch, batchFile, undoBatch, sendReminders };

@@ -6,6 +6,7 @@
  * several calls into one transaction.
  */
 const { timeToSeconds } = require('../utils/time');
+const workingPatternsRepo = require('./workingPatternsRepo');
 
 const secondsToTime = (s) => [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((n) => String(n).padStart(2, '0')).join(':');
 
@@ -82,24 +83,20 @@ async function findScheduledClockUsers(db) {
   return rows.map((r) => r.user_id);
 }
 
-/* A person's day as the clock schedule sees it, or null without working
- * times. clockOut is their own auto clock-out time (never before the end of
- * their working day) or, without one, the end of their working day plus the
- * default delay, capped at midnight; times are 'HH:MM:SS'. */
-async function findClockSchedule(db, userId) {
-  const { rows } = await db.query(
-    `SELECT w.id, w."end", u.auto_clock_out, d.auto_clock_out_delay
-       FROM working_times w JOIN users u ON u.id = w.user_id CROSS JOIN default_working_times d
-      WHERE w.user_id = $1 AND d.id = 1`,
-    [userId]
-  );
-  if (!rows[0]) return null;
-  const { id, end, auto_clock_out: own, auto_clock_out_delay: delay } = rows[0];
+/* A person's day on `date` as the clock schedule sees it (from their working
+ * pattern), or null without a pattern. clockOut is their own auto clock-out
+ * time (never before the end of that working day) or, without one, the end of
+ * the working day plus the default delay, capped at midnight; on a day off it
+ * counts from Monday's end. Times are 'HH:MM:SS'. */
+async function findClockSchedule(db, userId, date) {
+  const day = await workingPatternsRepo.dayFor(db, userId, date);
+  if (!day) return null;
+  const { rows } = await db.query('SELECT u.auto_clock_out, d.auto_clock_out_delay FROM users u CROSS JOIN default_working_times d WHERE u.id = $1 AND d.id = 1', [userId]);
+  const { auto_clock_out: own, auto_clock_out_delay: delay } = rows[0];
   const clockOut = own
-    ? Math.max(timeToSeconds(own), timeToSeconds(end))
-    : Math.min(timeToSeconds(end) + delay * 60, 24 * 3600);
-  const breaks = (await db.query('SELECT start, "end" FROM working_time_breaks WHERE working_time_id = $1 ORDER BY start', [id])).rows;
-  return { clockOut: secondsToTime(clockOut), breaks: breaks.map((b) => ({ start: b.start, end: b.end })) };
+    ? Math.max(timeToSeconds(own), timeToSeconds(day.clockEnd))
+    : Math.min(timeToSeconds(day.clockEnd) + delay * 60, 24 * 3600);
+  return { clockOut: secondsToTime(clockOut), breaks: day.breaks.map((b) => ({ start: b.start, end: b.end })) };
 }
 
 async function deleteTimeSession(db, id) {
@@ -126,10 +123,6 @@ async function isCommitted(db, userId, date) {
 
 async function addCommit(db, userId, date) {
   await db.query('INSERT INTO committed_dates (user_id, date) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, date]);
-}
-
-async function removeCommit(db, userId, date) {
-  await db.query('DELETE FROM committed_dates WHERE user_id = $1 AND date = $2', [userId, date]);
 }
 
 /* The clocking half of GET /api/state. Running clocks are visible for
@@ -166,8 +159,8 @@ async function getClockState(db, userId, userIds) {
  * means everyone. Running clocks aren't included until they are stopped. */
 async function findSessionsForExport(db, { from, to, userIds = null }) {
   const { rows } = await db.query(
-    `SELECT s.user_id, s.date, s.start_time, s.end_time, s.auto_stopped, s.rework_reason,
-            u.name AS user_name, u.email, u.cost_centre,
+    `SELECT s.id, s.user_id, s.contract_id, s.date, s.start_time, s.end_time, s.auto_stopped, s.rework_reason,
+            u.name AS user_name, u.email, u.cost_centre, u.department,
             c.system, c.number, c.suffix, c.suffix_description, c.customer_name, c.machine_type,
             (cd.user_id IS NOT NULL) AS committed
        FROM time_sessions s
@@ -186,5 +179,5 @@ module.exports = {
   insertTimeSession, findTimeSession, updateTimeSession, deleteTimeSession,
   markAutoNoticed, findUncheckedAutoStops, findScheduledClockUsers, findClockSchedule,
   findBreakState, setBreakState, clearBreakState,
-  isCommitted, addCommit, removeCommit, getClockState, findSessionsForExport,
+  isCommitted, addCommit, getClockState, findSessionsForExport,
 };

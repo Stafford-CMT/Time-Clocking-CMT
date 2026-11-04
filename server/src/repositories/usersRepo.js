@@ -1,6 +1,7 @@
 'use strict';
 
 const { getPool } = require('../config/db');
+const workingPatternsRepo = require('./workingPatternsRepo');
 const { uid } = require('../utils/ids');
 
 async function findByOid(oid) {
@@ -50,7 +51,7 @@ async function recordSignIn(id, { email, name }) {
 // Only the people ticked into Time Slide -- everything outside Lists -> Users.
 async function listAll() {
   const { rows } = await getPool().query(
-    'SELECT id, email, name, user_type, cost_centre, auto_clock_out, is_active, created_at, last_login_at FROM users WHERE included ORDER BY created_at'
+    'SELECT id, email, name, user_type, cost_centre, auto_clock_out, working_pattern_id, is_active, created_at, last_login_at FROM users WHERE included ORDER BY created_at'
   );
   return rows;
 }
@@ -126,10 +127,9 @@ async function setAutoClockOut(id, time) {
   return rows[0] || null;
 }
 
-// The end of this person's working day ('HH:MM:SS'), or null without one.
+// The latest end of this person's working days ('HH:MM:SS'), or null without a pattern.
 async function workingDayEnd(id) {
-  const { rows } = await getPool().query('SELECT "end" FROM working_times WHERE user_id = $1', [id]);
-  return rows[0]?.end ?? null;
+  return workingPatternsRepo.latestEnd(getPool(), id);
 }
 
 async function countActiveAdmins() {

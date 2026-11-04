@@ -24,7 +24,8 @@ const download = (action) => async (req, res, next) => {
 
 module.exports = {
   overview: handle((req) => exportService.overview(req.session.user, req.query)),
-  exportTimes: download((req) => exportService.exportTimes(req.session.user, req.query)),
+  exportTimes: download((req) => exportService.exportTimes(req.session.user, { ...req.query, ...(req.method === 'POST' ? req.body || {} : {}) })),
+  blocks: handle((req) => exportService.blocks(req.session.user, req.query)),
   createBatch: download((req) => exportService.createBatch(req.session.user, req.body || {})),
   batchFile: download((req) => exportService.batchFile(req.session.user, req.params.id)),
   undoBatch: handle((req) => exportService.undoBatch(req.session.user, req.params.id)),
