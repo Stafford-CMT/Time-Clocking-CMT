@@ -137,7 +137,8 @@ async function removeCommit(db, userId, date) {
  * sessions and commits only for the viewer, unless they are an admin, who
  * can review and unlock anyone's times.
  */
-async function getClockState(db, userId, allUsers) {
+// userIds: whose time blocks and committed days to include (null = everyone).
+async function getClockState(db, userId, userIds) {
   const activeRows = (await db.query('SELECT user_id, contract_id, started_at, rework_reason FROM active_sessions')).rows;
   const activeSessions = {};
   activeRows.forEach((r) => {
@@ -145,7 +146,7 @@ async function getClockState(db, userId, allUsers) {
     activeSessions[r.contract_id][r.user_id] = new Date(r.started_at).getTime();
   });
 
-  const scope = allUsers ? ['', []] : ['WHERE user_id = $1', [userId]];
+  const scope = userIds === null ? ['', []] : ['WHERE user_id = ANY($1)', [userIds]];
   const sessionRows = (await db.query(`SELECT * FROM time_sessions ${scope[0]} ORDER BY contract_id, date, start_time`, scope[1])).rows;
   const editSessions = {};
   sessionRows.forEach((row) => {
@@ -161,9 +162,9 @@ async function getClockState(db, userId, allUsers) {
 }
 
 /* Completed time blocks between two dates (inclusive) for Setup -> Data
- * export, with the person and contract details spelled out. userId null
+ * export, with the person and contract details spelled out. userIds null
  * means everyone. Running clocks aren't included until they are stopped. */
-async function findSessionsForExport(db, { from, to, userId }) {
+async function findSessionsForExport(db, { from, to, userIds = null }) {
   const { rows } = await db.query(
     `SELECT s.user_id, s.date, s.start_time, s.end_time, s.auto_stopped, s.rework_reason,
             u.name AS user_name, u.email, u.cost_centre,
@@ -173,9 +174,9 @@ async function findSessionsForExport(db, { from, to, userId }) {
        JOIN users u ON u.id = s.user_id
        JOIN contracts c ON c.id = s.contract_id
        LEFT JOIN committed_dates cd ON cd.user_id = s.user_id AND cd.date = s.date
-      WHERE s.date BETWEEN $1 AND $2 AND ($3::text IS NULL OR s.user_id = $3)
+      WHERE s.date BETWEEN $1 AND $2 AND ($3::text[] IS NULL OR s.user_id = ANY($3))
       ORDER BY u.name, s.date, s.start_time`,
-    [from, to, userId]
+    [from, to, userIds]
   );
   return rows;
 }

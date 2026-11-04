@@ -39,7 +39,7 @@ async function setAutoClockOut(req, res, next) {
 
 async function directory(req, res, next) {
   try {
-    res.json({ people: await usersService.listDirectory(), sync: directoryService.getStatus() });
+    res.json({ people: await usersService.listDirectory(req.session.user), sync: directoryService.getStatus() });
   } catch (err) {
     next(err);
   }
@@ -48,7 +48,7 @@ async function directory(req, res, next) {
 async function syncDirectory(req, res, next) {
   try {
     const sync = await directoryService.sync();
-    res.json({ people: await usersService.listDirectory(), sync });
+    res.json({ people: await usersService.listDirectory(req.session.user), sync });
   } catch (err) {
     next(err);
   }
@@ -56,7 +56,7 @@ async function syncDirectory(req, res, next) {
 
 async function setIncluded(req, res, next) {
   try {
-    res.json(await usersService.setIncluded(req.params.id, req.body.included, req.session.user.id));
+    res.json(await usersService.setIncluded(req.params.id, req.body.included, req.session.user));
   } catch (err) {
     next(err);
   }

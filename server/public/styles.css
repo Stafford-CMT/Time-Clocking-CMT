@@ -17,7 +17,7 @@ button { cursor: pointer; }
 .sidebar-resize:hover::after { width: 4px; background: var(--teal); }
 .is-resizing, .is-resizing * { cursor: col-resize !important; user-select: none !important; }
 .drag-tooltip { position: fixed; z-index: 30; white-space: nowrap; padding: 5px 8px; border-radius: 5px; background: var(--ink); color: #fff; box-shadow: var(--shadow); font-size: 10px; font-weight: 700; pointer-events: none; }
-.edit-times-card .schedule-toolbar { min-height: 72px; }.edit-times-card .schedule-toolbar div { display: grid; gap: 4px; }.edit-times-card .schedule-toolbar strong { font: 600 16px 'Space Grotesk'; }.edit-times-card .schedule-toolbar span { color: var(--muted); font-size: 11px; }.edit-times-card .schedule-toolbar .edit-user-block { display: flex; align-items: stretch; gap: 12px; width: max-content; }.edit-times-card .schedule-toolbar .edit-user-text { width: max-content; }.commit-times-button { flex: 0 0 auto; align-self: stretch; width: 84px; height: auto; display: grid; place-items: center; padding: 4px; white-space: nowrap; border: 1.5px solid var(--teal); border-radius: 8px; background: transparent; color: var(--teal-dark); font-size: 11px; font-weight: 700; text-align: center; line-height: 1.2; }.commit-times-button:hover { background: var(--mint); }.commit-times-button:disabled { border-color: var(--line); color: var(--muted); cursor: not-allowed; }.commit-times-button:disabled:hover { background: transparent; }.admin-toggle-label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }/* Committed day: blocks still show their tooltip on hover, but their handles and badges can't be used (double-click is ignored in app.js) */
+.edit-times-card .schedule-toolbar { min-height: 72px; }.edit-times-card .schedule-toolbar div { display: grid; gap: 4px; }.edit-times-card .schedule-toolbar strong { font: 600 16px 'Space Grotesk'; }.edit-times-card .schedule-toolbar span { color: var(--muted); font-size: 11px; }.edit-times-card .schedule-toolbar .edit-user-block { display: flex; align-items: stretch; gap: 12px; width: max-content; }.edit-times-card .schedule-toolbar .edit-user-text { width: max-content; }.commit-times-button { flex: 0 0 auto; align-self: stretch; width: 84px; height: auto; display: grid; place-items: center; padding: 4px; white-space: nowrap; border: 1.5px solid var(--teal); border-radius: 8px; background: transparent; color: var(--teal-dark); font-size: 11px; font-weight: 700; text-align: center; line-height: 1.2; }.commit-times-button:hover { background: var(--mint); }.commit-times-button:disabled { border-color: var(--line); color: var(--muted); cursor: not-allowed; }.commit-times-button:disabled:hover { background: transparent; }/* Committed day: blocks still show their tooltip on hover, but their handles and badges can't be used (double-click is ignored in app.js) */
 .edit-times-card.is-locked .edit-session-block { opacity: .55; cursor: default; }
 .edit-times-card.is-locked .edit-session-block > * { pointer-events: none; }.edit-session-row .user-cell { display: flex; align-items: center; gap: 12px; overflow: hidden; }.edit-contract-top { display: flex; align-items: baseline; gap: 8px; overflow: hidden; }.edit-contract-top strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; }.edit-contract-code { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--muted); font-size: 10px; }.edit-session-block { background: #cfe8df; }.edit-session-block:hover { background: #b8ddd0; }.edit-session-block .schedule-handle { background: transparent; }.edit-session-block .schedule-handle:hover { background: rgba(20, 125, 120, .28); }
 /* EXPERIMENTAL — remove this rule to revert the long-press unlink/relink feature (see app.js for the matching note) */
@@ -516,3 +516,34 @@ table.export-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 .modal label.image-upload-button { display: flex; justify-content: center; margin: 0; color: #fff; font-size: 13px; cursor: pointer; }
 .image-upload-button input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .image-upload-button:focus-within { box-shadow: 0 0 0 3px rgba(20, 125, 120, .25); }
+
+/* Manage lists -> Users: default working times, the heading, search and the sync status stay put; only the people table scrolls (its header row stays on top) */
+#lists-modal #users-panel:not(.is-hidden) { display: flex; flex-direction: column; overflow: hidden; }
+#users-panel > .default-working-times, #users-panel > .users-panel-header, #users-panel > .directory-status { flex: 0 0 auto; }
+#users-panel > .table-scroll { flex: 1 1 auto; min-height: 120px; overflow: auto; }
+
+/* Manage lists -> Users: (i) beside User type opens "What each user type can do" */
+.th-info-button { display: inline-grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--teal); cursor: pointer; }
+.th-info-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.th-info-button svg .th-info-dot { fill: currentColor; stroke-width: 1.2; }
+.th-info-button:hover { color: var(--teal-dark); background: var(--mint); }
+#role-matrix-modal { z-index: 11; } /* above Manage lists, which it opens from */
+.role-matrix-modal { width: min(860px, 100%); } /* wide enough for the whole table, no sideways scrolling */
+.role-matrix-note { margin: -8px 0 16px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.role-matrix { width: 100%; border-collapse: collapse; font-size: 12px; }
+.role-matrix th, .role-matrix td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: center; }
+.role-matrix thead th { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.role-matrix thead th:first-child, .role-matrix tbody th { text-align: left; }
+.role-matrix tbody th { font-weight: 500; color: var(--ink); }
+.role-matrix .role-group th { padding-top: 14px; border-bottom: 0; color: var(--teal-dark); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.role-matrix .role-yes { color: var(--teal); font-size: 15px; font-weight: 700; }
+.role-matrix .role-no { color: #b3bfbd; }
+.role-matrix .role-some { color: var(--ink); font-size: 11px; font-weight: 600; }
+.role-matrix th:not(:first-child), .role-matrix td { width: 18%; }
+.role-matrix tbody th { background: transparent; font-size: 12px; font-weight: 500; letter-spacing: normal; text-transform: none; }
+.role-matrix .role-group th { background: transparent; }
+/* the title, note and column headings stay put; only the rows scroll */
+.role-matrix-modal { display: flex; flex-direction: column; overflow: hidden; }
+.role-matrix-modal > .modal-header, .role-matrix-modal > .role-matrix-note { flex: 0 0 auto; }
+.role-matrix-modal > .table-scroll { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+.role-matrix thead th { position: sticky; top: 0; z-index: 1; background: #fff; }

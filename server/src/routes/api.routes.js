@@ -41,9 +41,9 @@ router.delete('/commits/:userId/:date', clockController.uncommit); // admin only
 router.post('/sessions/auto-noticed', clockController.markAutoNoticed); // own sessions: the "stopped automatically" message was seen
 
 router.get('/users', usersController.list); // any logged-in session -- needed for the working-times dropdowns (people in Time Slide only)
-router.get('/directory', requireRole('admin'), usersController.directory); // all staff from Entra ID, ticked or not
+router.get('/directory', requireRole('admin', 'manager'), usersController.directory); // staff from Entra ID, ticked or not: everyone for an admin, their team for a manager
 router.post('/directory/sync', requireRole('admin'), usersController.syncDirectory);
-router.put('/users/:id/included', requireRole('admin'), usersController.setIncluded);
+router.put('/users/:id/included', requireRole('admin', 'manager'), usersController.setIncluded); // a manager: people in their team who are Users (checked in usersService)
 router.put('/users/:id/user-type', requireRole('admin'), usersController.setUserType);
 router.put('/users/:id/cost-centre', requireRole('admin'), usersController.setCostCentre);
 router.put('/cost-centres/:name', requireRole('admin'), costCentreController.rename); // renames it for everyone who has it too

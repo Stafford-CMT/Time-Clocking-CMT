@@ -8,6 +8,7 @@
 const clockRepo = require('../repositories/clockRepo');
 const { getPool, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
+const teamService = require('./teamService');
 const { uid } = require('../utils/ids');
 const { localDate, splitByDay, timeToSeconds, TIME_RE, DATE_RE } = require('../utils/time');
 
@@ -17,9 +18,10 @@ function assertCanActOn(actor, userId) {
   if (actor.id !== userId && !isAdmin(actor)) throw new ApiError(403, 'You can only change your own times');
 }
 
+// Committed means locked for everyone, admins too: an admin uncommits the day first (Edit times -> Uncommit).
 async function assertNotCommitted(db, actor, userId, date) {
-  if (!isAdmin(actor) && (await clockRepo.isCommitted(db, userId, date))) {
-    throw new ApiError(409, `Times for ${date} are committed — only an admin can change them`);
+  if (await clockRepo.isCommitted(db, userId, date)) {
+    throw new ApiError(409, isAdmin(actor) ? `Times for ${date} are committed — uncommit the day in Edit times first` : `Times for ${date} are committed — only an admin can uncommit them`);
   }
 }
 
@@ -27,7 +29,8 @@ async function getState(actor) {
   // Catch up the caller's own clock schedule first (breaks, auto clock-out),
   // so nobody is shown a clock still waiting for the next sweep.
   await runClockSchedule(Date.now(), [actor.id]).catch((err) => console.error('Clock schedule failed:', err));
-  return clockRepo.getClockState(getPool(), actor.id, isAdmin(actor));
+  const db = getPool();
+  return clockRepo.getClockState(db, actor.id, await teamService.visibleUserIds(db, actor)); // a manager sees their team's (changing them stays own-or-admin)
 }
 
 // Stops the user's running clock, if any, and records it as completed

@@ -2,8 +2,8 @@
 
 /* Raw SQL for Setup -> Data export: the per-day overview, export batches
  * (export_batches, exported_days) and commit reminders. Every function takes
- * `db` -- the pool, or a transaction client from withTransaction. userId null
- * means everyone in Time Slide.
+ * `db` -- the pool, or a transaction client from withTransaction. userIds
+ * (a list of user ids) null means everyone in Time Slide.
  */
 
 // Only one export batch is made at a time, so two admins clicking Download
@@ -13,57 +13,57 @@ async function lockExports(db) {
 }
 
 // Everyone in Time Slide, plus anyone since taken out who still has time in the range.
-async function listPeople(db, { from, to, userId }) {
+async function listPeople(db, { from, to, userIds = null }) {
   const { rows } = await db.query(
     `SELECT id, name, email FROM users
-      WHERE id = $3
-         OR ($3::text IS NULL AND (included OR id IN (SELECT user_id FROM time_sessions WHERE date BETWEEN $1 AND $2)))
+      WHERE (included OR id IN (SELECT user_id FROM time_sessions WHERE date BETWEEN $1 AND $2))
+        AND ($3::text[] IS NULL OR id = ANY($3))
       ORDER BY name`,
-    [from, to, userId]
+    [from, to, userIds]
   );
   return rows;
 }
 
 // Seconds per person, day and contract: the overview's hours and what an
 // exported day's snapshot is compared against.
-async function findDayTotals(db, { from, to, userId }) {
+async function findDayTotals(db, { from, to, userIds = null }) {
   const { rows } = await db.query(
     `SELECT user_id, date, contract_id, SUM(EXTRACT(EPOCH FROM end_time - start_time))::int AS seconds
        FROM time_sessions
-      WHERE date BETWEEN $1 AND $2 AND ($3::text IS NULL OR user_id = $3)
+      WHERE date BETWEEN $1 AND $2 AND ($3::text[] IS NULL OR user_id = ANY($3))
       GROUP BY user_id, date, contract_id`,
-    [from, to, userId]
+    [from, to, userIds]
   );
   return rows;
 }
 
-async function findCommittedDays(db, { from, to, userId }) {
+async function findCommittedDays(db, { from, to, userIds = null }) {
   const { rows } = await db.query(
-    'SELECT user_id, date FROM committed_dates WHERE date BETWEEN $1 AND $2 AND ($3::text IS NULL OR user_id = $3)',
-    [from, to, userId]
+    'SELECT user_id, date FROM committed_dates WHERE date BETWEEN $1 AND $2 AND ($3::text[] IS NULL OR user_id = ANY($3))',
+    [from, to, userIds]
   );
   return rows;
 }
 
-async function findExportedDays(db, { from, to, userId }) {
+async function findExportedDays(db, { from, to, userIds = null }) {
   const { rows } = await db.query(
     `SELECT e.user_id, e.date, e.batch_id, e.snapshot, b.created_at
        FROM exported_days e JOIN export_batches b ON b.id = e.batch_id
-      WHERE e.date BETWEEN $1 AND $2 AND ($3::text IS NULL OR e.user_id = $3)`,
-    [from, to, userId]
+      WHERE e.date BETWEEN $1 AND $2 AND ($3::text[] IS NULL OR e.user_id = ANY($3))`,
+    [from, to, userIds]
   );
   return rows;
 }
 
-async function findRunningClocks(db, userId) {
-  const { rows } = await db.query('SELECT user_id, started_at FROM active_sessions WHERE $1::text IS NULL OR user_id = $1', [userId]);
+async function findRunningClocks(db, userIds = null) {
+  const { rows } = await db.query('SELECT user_id, started_at FROM active_sessions WHERE $1::text[] IS NULL OR user_id = ANY($1)', [userIds]);
   return rows;
 }
 
-async function findLastReminders(db, userId) {
+async function findLastReminders(db, userIds = null) {
   const { rows } = await db.query(
-    'SELECT user_id, MAX(sent_at) AS sent_at FROM commit_reminders WHERE $1::text IS NULL OR user_id = $1 GROUP BY user_id',
-    [userId]
+    'SELECT user_id, MAX(sent_at) AS sent_at FROM commit_reminders WHERE $1::text[] IS NULL OR user_id = ANY($1) GROUP BY user_id',
+    [userIds]
   );
   return rows;
 }

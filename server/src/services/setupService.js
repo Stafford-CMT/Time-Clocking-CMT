@@ -2,6 +2,7 @@
 
 const setupRepo = require('../repositories/setupRepo');
 const imagesRepo = require('../repositories/imagesRepo');
+const teamService = require('./teamService');
 const clockService = require('./clockService');
 const costCentreService = require('./costCentreService');
 const { getPool, withTransaction } = require('../config/db');
@@ -50,7 +51,8 @@ async function ensureSeeded() {
 async function getFullState(actor) {
   const setup = await setupRepo.getSetup(getPool(), actor.id);
   const clock = await clockService.getState(actor);
-  return { ...setup, ...clock, currentUser: actor };
+  const teamUserIds = await teamService.visibleUserIds(getPool(), actor); // null = everyone (admin)
+  return { ...setup, ...clock, teamUserIds, currentUser: actor };
 }
 
 /* Working times are saved as the whole list, but anyone other than an admin

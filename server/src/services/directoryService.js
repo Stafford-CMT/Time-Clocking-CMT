@@ -4,8 +4,10 @@
  * an admin clicks "Sync now") this reads the tenant's members through
  * Microsoft Graph and refreshes the users table: new people are added
  * unticked, everyone's name/department/job title is refreshed, and anyone
- * no longer in Entra ID is flagged (their times are kept). Ticking someone
- * into Time Slide is done by an admin in Lists -> Users.
+ * no longer in Entra ID is flagged (their times are kept). Each person's
+ * manager is kept too: a Manager sees the times of everyone below them
+ * (teamService). Ticking someone into Time Slide is done by an admin in
+ * Lists -> Users.
  *
  * Needs the app registration's Microsoft Graph application permission
  * User.Read.All with admin consent. Until then the sync reports
@@ -15,7 +17,7 @@ const { getMsalClient } = require('../config/msal');
 const env = require('../config/env');
 const usersRepo = require('../repositories/usersRepo');
 
-const GRAPH_USERS = 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,mail,userPrincipalName,jobTitle,department,officeLocation,accountEnabled,userType&$top=999';
+const GRAPH_USERS = 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,mail,userPrincipalName,jobTitle,department,officeLocation,accountEnabled,userType&$expand=manager($select=id)&$top=999';
 
 // DIRECTORY_SAMPLE=true (development only): made-up staff, clearly marked.
 const SAMPLE_STAFF = [
@@ -66,6 +68,7 @@ async function fetchFromGraph() {
         department: person.department,
         officeLocation: person.officeLocation,
         accountEnabled: person.accountEnabled,
+        managerOid: person.manager?.id || null,
       }));
     url = page['@odata.nextLink'];
   }

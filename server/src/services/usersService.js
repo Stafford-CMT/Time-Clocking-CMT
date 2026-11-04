@@ -2,8 +2,9 @@
 
 const usersRepo = require('../repositories/usersRepo');
 const setupRepo = require('../repositories/setupRepo');
-const { withTransaction } = require('../config/db');
+const { getPool, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
+const teamService = require('./teamService');
 const env = require('../config/env');
 const { timeToSeconds, TIME_RE } = require('../utils/time');
 
@@ -77,16 +78,24 @@ function toDirectoryEntry(row) {
   };
 }
 
-// Everyone from Entra ID plus anyone who has tried to sign in -- admin only.
-async function listDirectory() {
-  return (await usersRepo.listDirectory()).map(toDirectoryEntry);
+// Everyone from Entra ID plus anyone who has tried to sign in, for an admin;
+// a manager gets just their team (teamService).
+async function listDirectory(actor) {
+  const team = await teamService.visibleUserIds(getPool(), actor);
+  return (await usersRepo.listDirectory()).filter((row) => team === null || team.includes(row.id)).map(toDirectoryEntry);
 }
 
-async function setIncluded(id, included, actorId) {
+// An admin can tick anyone in or out; a manager only people in their team,
+// and only takes out a User (managers and admins stay until an admin acts).
+async function setIncluded(id, included, actor) {
   if (typeof included !== 'boolean') throw new ApiError(400, 'included must be true or false');
   const target = await usersRepo.findById(id);
   if (!target) throw new ApiError(404, 'User not found');
-  if (!included && id === actorId) throw new ApiError(400, 'You cannot remove yourself from Time Slide');
+  if (!included && id === actor.id) throw new ApiError(400, 'You cannot remove yourself from Time Slide');
+  if (actor.userType !== 'admin') {
+    if (!(await teamService.canSee(getPool(), actor, id))) throw new ApiError(403, 'That person is not in your team');
+    if (!included && target.user_type !== 'user') throw new ApiError(403, 'Only an admin can take a Manager or Admin out of Time Slide');
+  }
   if (!included && target.user_type === 'admin') throw new ApiError(400, 'Change their user type from Admin before removing them');
   const entry = toDirectoryEntry(await usersRepo.setIncluded(id, included));
   // Ticking someone in gives them the default working times, so nobody has

@@ -69,18 +69,18 @@ async function setIncluded(id, included) {
 // One person from Entra ID: refresh their row (Microsoft's name wins) or add
 // them unticked. syncStartedAt marks them as still in the directory.
 async function saveDirectoryPerson(person, syncStartedAt) {
-  const values = [person.oid, person.email || null, person.name || null, person.jobTitle || null, person.department || null, person.officeLocation || null, person.accountEnabled !== false, syncStartedAt];
+  const values = [person.oid, person.email || null, person.name || null, person.jobTitle || null, person.department || null, person.officeLocation || null, person.accountEnabled !== false, syncStartedAt, person.managerOid || null];
   const { rows } = await getPool().query(
     `UPDATE users SET email = COALESCE($2, email), name = COALESCE($3, name), job_title = $4, department = $5,
-       office_location = $6, account_enabled = $7, in_directory = true, synced_at = $8
+       office_location = $6, account_enabled = $7, in_directory = true, synced_at = $8, manager_oid = $9
      WHERE microsoft_oid = $1
      RETURNING *`,
     values
   );
   if (rows[0]) return rows[0];
   const inserted = await getPool().query(
-    `INSERT INTO users (id, microsoft_oid, email, name, job_title, department, office_location, account_enabled, in_directory, synced_at)
-     VALUES ($9, $1, $2, COALESCE($3, ''), $4, $5, $6, $7, true, $8)
+    `INSERT INTO users (id, microsoft_oid, email, name, job_title, department, office_location, account_enabled, in_directory, synced_at, manager_oid)
+     VALUES ($10, $1, $2, COALESCE($3, ''), $4, $5, $6, $7, true, $8, $9)
      RETURNING *`,
     [...values, uid('user')]
   );
@@ -94,6 +94,21 @@ async function markMissingFromDirectory(syncStartedAt) {
 
 async function deleteSampleStaff() {
   await getPool().query("DELETE FROM users WHERE microsoft_oid LIKE 'sample-%'");
+}
+
+// The user and everyone below them in Entra ID's reporting chain (UNION, so a
+// loop in the chain can't repeat forever).
+async function teamUserIds(db, userId) {
+  const { rows } = await db.query(
+    `WITH RECURSIVE team AS (
+       SELECT id, microsoft_oid FROM users WHERE id = $1
+       UNION
+       SELECT u.id, u.microsoft_oid FROM users u JOIN team t ON u.manager_oid = t.microsoft_oid
+     )
+     SELECT id FROM team`,
+    [userId]
+  );
+  return rows.map((r) => r.id);
 }
 
 async function setUserType(id, userType) {
@@ -125,6 +140,7 @@ async function countActiveAdmins() {
 }
 
 module.exports = {
+  teamUserIds,
   findByOid, findByEmail, setOid, findById, create, recordSignIn, listAll, listDirectory, setIncluded,
   saveDirectoryPerson, markMissingFromDirectory, deleteSampleStaff, setUserType, setCostCentre, setAutoClockOut, workingDayEnd, countActiveAdmins,
 };

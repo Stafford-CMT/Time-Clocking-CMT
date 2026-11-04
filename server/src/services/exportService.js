@@ -20,6 +20,7 @@ const mailService = require('./mailService');
 const env = require('../config/env');
 const { getPool, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
+const teamService = require('./teamService');
 const { uid } = require('../utils/ids');
 const { localDate, timeToSeconds, DATE_RE } = require('../utils/time');
 
@@ -54,15 +55,15 @@ const sameTotals = (a, b) => {
 /* Each person's days in the range. A day's status is one of:
  * 'uncommitted' (time not committed), 'committed' (not exported yet),
  * 'exported', 'changed' (exported, then edited by an admin) or 'empty'. */
-async function buildOverview(db, { from, to, userId }) {
+async function buildOverview(db, { from, to, userIds = null }) {
   // One after another: db may be a single transaction client, which can't run queries side by side.
-  const scope = { from, to, userId };
+  const scope = { from, to, userIds };
   const people = await exportRepo.listPeople(db, scope);
   const totals = await exportRepo.findDayTotals(db, scope);
   const committed = await exportRepo.findCommittedDays(db, scope);
   const exported = await exportRepo.findExportedDays(db, scope);
-  const running = await exportRepo.findRunningClocks(db, userId);
-  const reminders = await exportRepo.findLastReminders(db, userId);
+  const running = await exportRepo.findRunningClocks(db, userIds);
+  const reminders = await exportRepo.findLastReminders(db, userIds);
   const today = localDate(new Date());
   const users = people.map((p) => ({ id: p.id, name: p.name, email: p.email || '', lastReminderAt: null, running: false, days: {} }));
   const byId = new Map(users.map((u) => [u.id, u]));
@@ -108,7 +109,7 @@ function publicOverview(data, actor) {
 async function overview(actor, { from, to }) {
   assertRange(from, to);
   const db = getPool();
-  const data = await buildOverview(db, { from, to, userId: isAdmin(actor) ? null : actor.id });
+  const data = await buildOverview(db, { from, to, userIds: await teamService.visibleUserIds(db, actor) }); // everyone (admin), a manager's team, or yourself
   const result = publicOverview(data, actor);
   if (isAdmin(actor)) {
     result.batches = (await exportRepo.listBatches(db, { from, to })).map((b) => ({
@@ -197,9 +198,10 @@ async function buildWorkbook(rows) {
 // Preview: the spreadsheet for any dates, marking nothing as exported.
 async function exportTimes(actor, { from, to, userId }) {
   assertRange(from, to);
-  const forUser = userId || (isAdmin(actor) ? null : actor.id);
-  if (forUser !== actor.id && !isAdmin(actor)) throw new ApiError(403, 'You can only export your own times');
-  const rows = await clockRepo.findSessionsForExport(getPool(), { from, to, userId: forUser });
+  const db = getPool();
+  const visible = await teamService.visibleUserIds(db, actor);
+  if (userId && visible !== null && !visible.includes(userId)) throw new ApiError(403, isAdmin(actor) || actor.userType === 'manager' ? 'That person is not in your team' : 'You can only export your own times');
+  const rows = await clockRepo.findSessionsForExport(db, { from, to, userIds: userId ? [userId] : visible });
   return { buffer: await buildWorkbook(rows), filename: `time-slide-preview_${from}_to_${to}.xlsx` };
 }
 
@@ -210,7 +212,7 @@ async function createBatch(actor, { from, to }) {
   assertRange(from, to);
   return withTransaction(async (db) => {
     await exportRepo.lockExports(db);
-    const scope = { from, to, userId: null };
+    const scope = { from, to }; // everyone
     const data = await buildOverview(db, scope);
     const ready = [];
     data.users.forEach((user) => Object.entries(user.days).forEach(([date, day]) => {
@@ -267,7 +269,7 @@ async function sendReminders(actor, { from, to }) {
   assertRange(from, to);
   mailService.assertConfigured();
   const db = getPool();
-  const data = await buildOverview(db, { from, to, userId: null });
+  const data = await buildOverview(db, { from, to });
   const result = { sent: [], failed: [], noEmail: [] };
   for (const user of data.users) {
     const days = Object.entries(user.days)

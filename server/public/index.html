@@ -98,7 +98,7 @@
         </div>
         <div class="day-strip-bar"><span class="day-strip-month" id="day-strip-month"></span><div class="day-strip" id="day-strip" tabindex="0" aria-label="Days, the last four weeks"></div><button class="day-strip-today" id="day-strip-today" type="button">Today</button><label class="day-strip-older" title="Pick an older day">Older<input id="edit-times-date" type="date"></label></div>
         <div class="schedule-card zoomable edit-times-card" id="edit-times-card">
-          <div class="schedule-toolbar"><div class="edit-user-block"><div class="edit-user-text"><strong id="edit-user-name"></strong><select id="edit-user-select" class="current-user-select edit-user-select is-hidden" aria-label="Show times for user"></select><span>Showing times for</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button><div class="undo-redo" role="group" aria-label="Undo and redo"><button class="undo-redo-button" id="edit-undo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 2.5 6.5l3 3"/><path d="M2.5 6.5h7a4 4 0 0 1 0 8H7"/></svg></button><button class="undo-redo-button" id="edit-redo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m10.5 3.5 3 3-3 3"/><path d="M13.5 6.5h-7a4 4 0 0 0 0 8H9"/></svg></button></div></div><label class="admin-toggle-label is-hidden"><input type="checkbox" id="admin-mode-toggle">Admin mode</label></div>
+          <div class="schedule-toolbar"><div class="edit-user-block"><div class="edit-user-text"><strong id="edit-user-name"></strong><select id="edit-user-select" class="current-user-select edit-user-select is-hidden" aria-label="Show times for user"></select><span>Showing times for</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button><div class="undo-redo" role="group" aria-label="Undo and redo"><button class="undo-redo-button" id="edit-undo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 2.5 6.5l3 3"/><path d="M2.5 6.5h7a4 4 0 0 1 0 8H7"/></svg></button><button class="undo-redo-button" id="edit-redo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m10.5 3.5 3 3-3 3"/><path d="M13.5 6.5h-7a4 4 0 0 0 0 8H9"/></svg></button></div></div></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading edit-column-heading"><span>Contract</span><span>Total</span></div><div class="timeline-heading" id="edit-timeline-heading"></div></div><div id="edit-time-rows"></div></div><p class="empty-state is-hidden" id="edit-empty-state">No time booked on this day.</p>
           <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch non-contract-swatch"></i>Non-contract time</span><span><i class="legend-swatch rework-swatch"></i>Rework (hover for the reason)</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span><span class="legend-tips">Tips: drag a block's ends to change its times · hold an end to unlink it · double-click a block to delete it · Ctrl+Z to undo</span></div>
         </div>
@@ -185,7 +185,7 @@
       <div class="form-row"><label>Contract number<select id="contract-number" class="force-uppercase" name="number" required><option value="">Select contract number</option></select></label><label>Suffix<select id="contract-suffix" class="force-uppercase" name="suffix"><option value="">Select suffix</option></select></label></div>
       <label>Suffix description<input id="contract-suffix-description" name="suffixDescription" readonly placeholder="Auto-filled from suffix"></label>
       <label>Machine type<input id="contract-machine-type" name="machineType" readonly placeholder="Auto-filled from contract"></label></div>
-      <div class="image-field"><span class="image-field-label">Image</span><div class="modal-image-preview" id="contract-image-preview"></div><span class="image-field-label">Picture library: click one to use it</span><ul class="image-library" id="image-library"></ul><span class="image-field-label">Upload a new picture <span class="image-upload-status" id="contract-image-status"></span></span><label class="add-button image-upload-button">Choose file<input id="contract-image" type="file" accept="image/*"></label></div>
+      <div class="image-field"><span class="image-field-label">Image</span><div class="modal-image-preview" id="contract-image-preview"></div><span class="image-field-label">Picture library: click one to use it</span><ul class="image-library" id="image-library"></ul><span class="image-field-label">Upload a new picture <span class="image-upload-status" id="contract-image-status"></span></span><label class="add-button image-upload-button">Add a file to library<input id="contract-image" type="file" accept="image/*"></label></div>
       <div class="modal-actions"><button class="add-button" id="contract-submit" type="submit"><span>+</span> Add tile</button></div>
     </form>
   </div>
@@ -198,6 +198,43 @@
       <div class="modal-actions"><button class="add-button add-break-row" id="schedule-add-break" type="button">+ Add break</button><button class="add-button" type="submit">Save</button></div>
     </form>
   </div>
+  <!-- What each user type can do. Opened from the (i) beside User type in Manage lists -> Users; closes with its x only. -->
+  <div class="modal-backdrop is-hidden" id="role-matrix-modal" role="presentation">
+    <div class="modal role-matrix-modal" role="dialog" aria-modal="true" aria-labelledby="role-matrix-title">
+      <div class="modal-header"><div><span class="section-kicker">Users</span><h2 id="role-matrix-title">What each user type can do</h2></div><button class="modal-close" id="close-role-matrix" type="button" aria-label="Close what each user type can do">&times;</button></div>
+      <p class="role-matrix-note">A <strong>Manager</strong> is set here by an admin. Their team is everyone below them in Microsoft's reporting chain (their direct reports, those people's reports, and so on). A committed day is locked for everyone until an admin uncommits it.</p>
+      <div class="table-scroll">
+        <table class="role-matrix">
+          <thead><tr><th scope="col">What you can do</th><th scope="col">User</th><th scope="col">Manager</th><th scope="col">Admin</th></tr></thead>
+          <tbody>
+            <tr class="role-group"><th colspan="4" scope="colgroup">Your own time</th></tr>
+            <tr><th scope="row">Start and stop clocks on your tiles</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Change your own times (uncommitted days)</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Commit your own days</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Uncommit a committed day</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr class="role-group"><th colspan="4" scope="colgroup">Other people's time</th></tr>
+            <tr><th scope="row">See other people's times (Edit times, Data export)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-some">Their team, view only</td><td class="role-some">Everyone</td></tr>
+            <tr><th scope="row">Change other people's times (uncommitted days)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Commit other people's days</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr class="role-group"><th colspan="4" scope="colgroup">Data export</th></tr>
+            <tr><th scope="row">Preview spreadsheet</th><td class="role-some">Own</td><td class="role-some">Own and team</td><td class="role-some">Everyone</td></tr>
+            <tr><th scope="row">Export to Syspro, undo an export, send reminders</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr class="role-group"><th colspan="4" scope="colgroup">Dashboard and setup</th></tr>
+            <tr><th scope="row">Add tiles, pin them, change their image</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Contract information</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Lists: machine types, suffix descriptions, customers</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Your own working times</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Other people's working times</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr class="role-group"><th colspan="4" scope="colgroup">Company settings</th></tr>
+            <tr><th scope="row">Add or remove people in Time Slide</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-some">Their team (remove Users only)</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Users: user type, cost centre</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Cost centres, rework reasons, default working times</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Configuration (Syspro connection)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
   <div class="modal-backdrop is-hidden" id="lists-modal" role="presentation">
     <div class="modal" aria-labelledby="lists-modal-title">
       <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="lists-modal-title">Manage lists</h2></div><button class="modal-close" id="close-lists-modal" type="button" aria-label="Close manage lists">&times;</button></div>
@@ -205,7 +242,7 @@
         <button class="modal-tab is-active" data-list-tab="machine-type" type="button">Machine type</button>
         <button class="modal-tab" data-list-tab="suffix-description" type="button">Suffix description</button>
         <button class="modal-tab" data-list-tab="customers" type="button">Customers</button>
-        <button class="modal-tab" data-list-tab="users" data-admin-only type="button">Users</button>
+        <button class="modal-tab" data-list-tab="users" data-admin-only data-manager-ok type="button">Users</button>
         <button class="modal-tab" data-list-tab="cost-centres" data-admin-only type="button">Cost centre</button>
         <button class="modal-tab" data-list-tab="rework-reasons" data-admin-only type="button">Rework reasons</button>
       </div>
@@ -242,7 +279,7 @@
         </div>
         <div class="users-panel-header"><span id="users-heading">People in Time Slide</span><div class="directory-tools is-hidden" id="directory-tools"><input id="directory-search" type="search" placeholder="Search name, email or department" aria-label="Search staff"><select id="directory-filter" aria-label="Show"><option value="all">Everyone</option><option value="in">In Time Slide</option><option value="out">Not in Time Slide</option></select><button class="directory-sync-button" id="directory-sync" type="button">Sync now</button></div></div>
         <p class="directory-status is-hidden" id="directory-status"></p>
-        <div class="table-scroll"><table class="users-table"><thead><tr><th class="directory-col is-hidden">In Time Slide</th><th>Name</th><th>Email</th><th class="directory-col is-hidden">Department</th><th>User type</th><th><span class="th-with-action"><span>Cost centre</span><button class="th-add-button" data-heading-add="costCentre" type="button" title="Add a cost centre" aria-label="Add a cost centre"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v6M5 8h6"/></svg></button></span></th></tr></thead><tbody id="user-rows"></tbody></table></div>
+        <div class="table-scroll"><table class="users-table"><thead><tr><th class="directory-col is-hidden">In Time Slide</th><th>Name</th><th>Email</th><th class="directory-col is-hidden">Department</th><th><span class="th-with-action"><span>User type</span><button class="th-info-button" id="open-role-matrix" type="button" title="What each user type can do" aria-label="What each user type can do"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4"/><circle class="th-info-dot" cx="8" cy="4.9" r=".55"/></svg></button></span></th><th><span class="th-with-action"><span>Cost centre</span><button class="th-add-button" data-heading-add="costCentre" type="button" title="Add a cost centre" aria-label="Add a cost centre"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v6M5 8h6"/></svg></button></span></th></tr></thead><tbody id="user-rows"></tbody></table></div>
       </div>
       <form class="modal-tab-panel is-hidden" id="cost-centres-panel" data-list-panel="cost-centres">
         <label>Cost centre
