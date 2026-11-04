@@ -625,3 +625,23 @@ table.export-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 #working-patterns-panel .modal-actions .add-break-row.is-hidden { display: none; }
 /* + Add break, Save pattern and + Add pattern end where the time boxes end (clear of the 40px x column and its 12px gap) */
 #working-patterns-panel .modal-actions, #working-patterns-panel .pattern-section .list-add-row { margin-right: 52px; }
+
+/* The circled x (X_CIRCLE in app.js) on every x button. Red for remove/delete, darker on hover; grey for closing a
+ * window, dark on hover (white on the picture viewer's dark bar). No background behind either. */
+.x-circle { display: block; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
+.pattern-delete .x-circle { width: 18px; height: 18px; }
+.tile-action.delete-contract, .image-library-delete, .list-items .remove-list-item, .break-row-action.remove-break-row, .delete-row { display: inline-grid; place-items: center; padding: 0; border: 0; background: transparent; color: var(--coral); line-height: 1; cursor: pointer; }
+.tile-action.delete-contract:hover, .image-library-delete:hover, .list-items .remove-list-item:hover, .break-row-action.remove-break-row:hover, .delete-row:hover { background: transparent; color: #a44d3c; }
+.image-library-delete .x-circle { width: 16px; height: 16px; }
+.modal-close { display: inline-grid; place-items: center; padding: 0; background: transparent; color: #8a9896; }
+.modal-close:hover { background: transparent; color: var(--ink); }
+.modal-close .x-circle { width: 22px; height: 22px; }
+.image-viewer-toolbar .modal-close, .image-viewer-toolbar .modal-close:hover { background: transparent; color: rgba(255, 255, 255, .75); }
+.image-viewer-toolbar .modal-close:hover { color: #fff; }
+/* Users tab "In Time Slide": a circled tick drawn like the circled x. An empty grey circle when out, a teal circle and tick when in;
+ * greyed when it can't be changed. Still a real checkbox, so clicking, the keyboard and screen readers work as before. */
+.users-table td:first-child input[type="checkbox"] { appearance: none; -webkit-appearance: none; display: block; width: 20px; height: 20px; margin: 0; border: 0; border-radius: 50%; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6.5' fill='none' stroke='%23b3bfbd' stroke-width='1.4'/%3E%3C/svg%3E") center / 20px 20px no-repeat; cursor: pointer; }
+.users-table td:first-child input[type="checkbox"]:hover:not(:disabled) { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6.5' fill='none' stroke='%23147d78' stroke-width='1.4'/%3E%3C/svg%3E"); }
+.users-table td:first-child input[type="checkbox"]:checked { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='%23147d78' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6.5'/%3E%3Cpath d='M5.2 8.2l1.9 1.9 3.7-4'/%3E%3C/g%3E%3C/svg%3E"); }
+.users-table td:first-child input[type="checkbox"]:disabled { opacity: .45; cursor: not-allowed; }
+.users-table td:first-child input[type="checkbox"]:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }

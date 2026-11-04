@@ -62,7 +62,7 @@
           </div>
         </div>
 
-        <div class="auto-notice is-hidden" id="auto-notice" role="status"><svg class="clock-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.3 1.5"/></svg><p id="auto-notice-text"></p><button class="secondary-button" id="auto-notice-check" type="button">Check times</button><button class="modal-close" id="auto-notice-close" type="button" aria-label="Dismiss this message">&times;</button></div>
+        <div class="auto-notice is-hidden" id="auto-notice" role="status"><svg class="clock-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.3 1.5"/></svg><p id="auto-notice-text"></p><button class="secondary-button" id="auto-notice-check" type="button">Check times</button><button class="modal-close" id="auto-notice-close" type="button" aria-label="Dismiss this message"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></div>
         <div class="dashboard-toolbar">
           <div>
             <span class="toolbar-title" id="tiles-heading">Your contracts</span>
@@ -187,7 +187,7 @@
   </div>
   <div class="modal-backdrop is-hidden" id="contract-modal" role="presentation">
     <form class="modal" id="contract-form" aria-labelledby="contract-modal-title">
-      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="contract-modal-title">Add tile</h2></div><button class="modal-close" id="close-contract-modal" type="button" aria-label="Close add tile form">&times;</button></div>
+      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="contract-modal-title">Add tile</h2></div><button class="modal-close" id="close-contract-modal" type="button" aria-label="Close add tile form"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></div>
       <p class="contract-linked-hint is-hidden" id="contract-linked-hint"></p>
       <div id="contract-detail-fields"><label>Customer name<select id="contract-customer-name" class="force-uppercase" name="customerName" required><option value="">Select customer</option></select></label>
       <div class="form-row"><label>Contract number<select id="contract-number" class="force-uppercase" name="number" required><option value="">Select contract number</option></select></label><label>Suffix<select id="contract-suffix" class="force-uppercase" name="suffix"><option value="">Select suffix</option></select></label></div>
@@ -200,7 +200,7 @@
   <!-- What each user type can do. Opened from the (i) beside User type in Manage lists -> Users; closes with its x only. -->
   <div class="modal-backdrop is-hidden" id="role-matrix-modal" role="presentation">
     <div class="modal role-matrix-modal" role="dialog" aria-modal="true" aria-labelledby="role-matrix-title">
-      <div class="modal-header"><div><span class="section-kicker">Users</span><h2 id="role-matrix-title">What each user type can do</h2></div><button class="modal-close" id="close-role-matrix" type="button" aria-label="Close what each user type can do">&times;</button></div>
+      <div class="modal-header"><div><span class="section-kicker">Users</span><h2 id="role-matrix-title">What each user type can do</h2></div><button class="modal-close" id="close-role-matrix" type="button" aria-label="Close what each user type can do"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></div>
       <p class="role-matrix-note">A <strong>Manager</strong> is set here by an admin. Their team is everyone below them in Microsoft's reporting chain (their direct reports, those people's reports, and so on). A committed day is final: nobody, admins included, can change or uncommit it.</p>
       <div class="table-scroll">
         <table class="role-matrix">
@@ -237,7 +237,7 @@
   </div>
   <div class="modal-backdrop is-hidden" id="lists-modal" role="presentation">
     <div class="modal" aria-labelledby="lists-modal-title">
-      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="lists-modal-title">Manage lists</h2></div><button class="modal-close" id="close-lists-modal" type="button" aria-label="Close manage lists">&times;</button></div>
+      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="lists-modal-title">Manage lists</h2></div><button class="modal-close" id="close-lists-modal" type="button" aria-label="Close manage lists"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></div>
       <div class="modal-tabs">
         <button class="modal-tab is-active" data-list-tab="machine-type" type="button">Machine type</button>
         <button class="modal-tab" data-list-tab="suffix-description" type="button">Suffix description</button>
@@ -272,7 +272,7 @@
       </div>
       <div class="modal-tab-panel is-hidden" id="working-patterns-panel" data-list-panel="working-patterns">
         <div class="pattern-bar">
-          <label>Pattern<span class="pattern-select-field"><select id="pattern-select"></select><button class="pattern-delete" id="pattern-delete" type="button" title="Delete this pattern" aria-label="Delete this pattern"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></span></label>
+          <label>Pattern<span class="pattern-select-field"><select id="pattern-select"></select><button class="pattern-delete" id="pattern-delete" type="button" title="Delete this pattern" aria-label="Delete this pattern"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></span></label>
           <label>Name<input id="pattern-name" type="text" maxlength="60"></label>
           <div class="pattern-bar-actions"><span class="pattern-default-badge is-hidden" id="pattern-default-badge">Pattern for new people</span><button class="pattern-link" id="pattern-make-default" type="button">Make this the pattern for new people</button></div>
         </div>
@@ -305,7 +305,7 @@
   </div>
   <div class="modal-backdrop is-hidden" id="find-tiles-modal" role="presentation">
     <div class="modal find-tiles-modal" role="dialog" aria-labelledby="find-tiles-title">
-      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="find-tiles-title">Find a tile</h2></div><button class="modal-close" id="close-find-tiles" type="button" aria-label="Close find a tile">&times;</button></div>
+      <div class="modal-header"><div><span class="section-kicker">Dashboard setup</span><h2 id="find-tiles-title">Find a tile</h2></div><button class="modal-close" id="close-find-tiles" type="button" aria-label="Close find a tile"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></div>
       <div class="tile-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.4 10.4 15 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="tile-search" type="search" placeholder="Contract, suffix or customer" aria-label="Find a tile by contract, suffix or customer" autocomplete="off"></div>
       <div class="find-tiles-count" id="find-tiles-count" aria-live="polite"></div>
       <ul class="find-tiles-list" id="find-tiles-list"></ul>
@@ -314,7 +314,7 @@
   </div>
   <div class="modal-backdrop is-hidden" id="rework-modal" role="presentation">
     <div class="modal rework-modal" role="dialog" aria-labelledby="rework-modal-title">
-      <div class="modal-header"><div><span class="section-kicker" id="rework-modal-tile"></span><h2 id="rework-modal-title">Why is this rework?</h2></div><button class="modal-close" id="close-rework-modal" type="button" aria-label="Close rework reasons">&times;</button></div>
+      <div class="modal-header"><div><span class="section-kicker" id="rework-modal-tile"></span><h2 id="rework-modal-title">Why is this rework?</h2></div><button class="modal-close" id="close-rework-modal" type="button" aria-label="Close rework reasons"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></div>
       <p class="rework-modal-hint">Pick a reason, then press <strong>Start rework</strong> on the tile. It applies to that one start only.</p>
       <ul class="rework-reason-options" id="rework-reason-options"></ul>
     </div>
@@ -331,7 +331,7 @@
         <button class="icon-button" id="image-zoom-out" type="button" title="Zoom out" aria-label="Zoom out">&#8722;</button>
         <button class="icon-button" id="image-zoom-fit" type="button" title="Zoom to fit" aria-label="Zoom to fit">&#8865;</button>
         <button class="icon-button" id="image-zoom-in" type="button" title="Zoom in" aria-label="Zoom in">&#43;</button>
-        <button class="modal-close" id="close-image-viewer" type="button" aria-label="Close image viewer">&times;</button>
+        <button class="modal-close" id="close-image-viewer" type="button" aria-label="Close image viewer"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button>
       </div>
       <div class="image-viewer-viewport" id="image-viewer-viewport">
         <img id="image-viewer-img" alt="Tile image">
