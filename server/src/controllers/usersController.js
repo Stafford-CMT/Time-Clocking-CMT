@@ -62,4 +62,12 @@ async function setIncluded(req, res, next) {
   }
 }
 
-module.exports = { list, setUserType, setCostCentre, setAutoClockOut, directory, syncDirectory, setIncluded };
+async function setTheme(req, res, next) {
+  try {
+    res.json(await usersService.setTheme(req.session.user, req.body && req.body.theme));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list, setUserType, setCostCentre, setAutoClockOut, setTheme, directory, syncDirectory, setIncluded };

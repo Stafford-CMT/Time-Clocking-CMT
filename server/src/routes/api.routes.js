@@ -22,6 +22,7 @@ const workingPatternsController = require('../controllers/workingPatternsControl
 const router = express.Router();
 
 router.get('/whoami', authController.whoami); // any logged-in session
+router.put('/me/theme', usersController.setTheme); // your own light/dark choice (body: theme)
 
 router.get('/state', setupController.getState); // any logged-in session
 router.patch('/setup', setupController.patchSetup); // any logged-in session -- see setupController's comment

@@ -122,6 +122,11 @@ async function setCostCentre(id, costCentre) {
   return rows[0] || null;
 }
 
+async function setTheme(id, theme) {
+  const { rows } = await getPool().query('UPDATE users SET theme = $1 WHERE id = $2 RETURNING id, theme', [theme, id]);
+  return rows[0] || null;
+}
+
 async function setAutoClockOut(id, time) {
   const { rows } = await getPool().query('UPDATE users SET auto_clock_out = $1 WHERE id = $2 RETURNING *', [time || null, id]);
   return rows[0] || null;
@@ -142,5 +147,5 @@ async function countActiveAdmins() {
 module.exports = {
   teamUserIds,
   findByOid, findByEmail, setOid, findById, create, recordSignIn, listAll, listDirectory, setIncluded,
-  saveDirectoryPerson, markMissingFromDirectory, deleteSampleStaff, setUserType, setCostCentre, setAutoClockOut, workingDayEnd, countActiveAdmins,
+  saveDirectoryPerson, markMissingFromDirectory, deleteSampleStaff, setUserType, setCostCentre, setAutoClockOut, setTheme, workingDayEnd, countActiveAdmins,
 };

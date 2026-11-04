@@ -144,4 +144,12 @@ async function setAutoClockOut(actor, id, autoClockOut) {
   return { id: user.id, autoClockOut: user.auto_clock_out ? user.auto_clock_out.slice(0, 5) : '' };
 }
 
-module.exports = { findOrCreateFromAzureClaims, listUsers, listDirectory, setIncluded, setUserType, setCostCentre, setAutoClockOut, toPublicUser };
+// Light or dark mode: everyone sets their own, saved on their account.
+async function setTheme(actor, theme) {
+  if (!['light', 'dark'].includes(theme)) throw new ApiError(400, 'theme must be light or dark');
+  const user = await usersRepo.setTheme(actor.id, theme);
+  if (!user) throw new ApiError(404, 'User not found');
+  return { theme: user.theme };
+}
+
+module.exports = { findOrCreateFromAzureClaims, listUsers, listDirectory, setIncluded, setUserType, setCostCentre, setAutoClockOut, setTheme, toPublicUser };

@@ -1,6 +1,7 @@
 'use strict';
 
 const setupRepo = require('../repositories/setupRepo');
+const usersRepo = require('../repositories/usersRepo');
 const imagesRepo = require('../repositories/imagesRepo');
 const teamService = require('./teamService');
 const clockService = require('./clockService');
@@ -53,7 +54,8 @@ async function getFullState(actor) {
   const setup = await setupRepo.getSetup(getPool(), actor.id);
   const clock = await clockService.getState(actor);
   const teamUserIds = await teamService.visibleUserIds(getPool(), actor); // null = everyone (admin)
-  return { ...setup, ...clock, teamUserIds, currentUser: actor };
+  const theme = (await usersRepo.findById(actor.id))?.theme || 'light'; // light or dark: their own choice
+  return { ...setup, ...clock, teamUserIds, currentUser: actor, theme };
 }
 
 /* Applies only the sections present in `patch` -- the frontend sends just
