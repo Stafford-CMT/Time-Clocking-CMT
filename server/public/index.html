@@ -101,9 +101,9 @@
         </div>
         <div class="day-strip-bar"><span class="day-strip-month" id="day-strip-month"></span><div class="day-strip" id="day-strip" tabindex="0" aria-label="Days, the last four weeks"></div><button class="day-strip-today" id="day-strip-today" type="button">Today</button><label class="day-strip-older" title="Pick an older day">Older<input id="edit-times-date" type="date"></label></div>
         <div class="schedule-card zoomable edit-times-card" id="edit-times-card">
-          <div class="schedule-toolbar"><span class="now-marker is-hidden"><svg viewBox="0 0 9 9.506" aria-hidden="true"><path d="M1 1 L8 1 L4.5 8.506 Z"/></svg></span><div class="edit-user-block"><div class="edit-user-text"><strong id="edit-user-name"></strong><select id="edit-user-select" class="current-user-select edit-user-select is-hidden" aria-label="Show times for user"></select><span>Showing times for</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button><div class="undo-redo" role="group" aria-label="Undo and redo"><button class="undo-redo-button" id="edit-undo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 2.5 6.5l3 3"/><path d="M2.5 6.5h7a4 4 0 0 1 0 8H7"/></svg></button><button class="undo-redo-button" id="edit-redo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m10.5 3.5 3 3-3 3"/><path d="M13.5 6.5h-7a4 4 0 0 0 0 8H9"/></svg></button></div></div></div>
+          <div class="schedule-toolbar"><span class="now-marker is-hidden"><svg viewBox="0 0 9 9.506" aria-hidden="true"><path d="M1 1 L8 1 L4.5 8.506 Z"/></svg></span><div class="edit-user-block"><div class="edit-user-text"><strong id="edit-user-name"></strong><select id="edit-user-select" class="current-user-select edit-user-select is-hidden" aria-label="Show times for user"></select><span>Showing times for</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button><div class="undo-redo" role="group" aria-label="Undo and redo"><button class="undo-redo-button" id="edit-undo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 2.5 6.5l3 3"/><path d="M2.5 6.5h7a4 4 0 0 1 0 8H7"/></svg></button><button class="undo-redo-button" id="edit-redo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m10.5 3.5 3 3-3 3"/><path d="M13.5 6.5h-7a4 4 0 0 0 0 8H9"/></svg></button></div><button class="commit-times-button add-time-button" id="add-time" type="button">+ Add contract</button></div></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading edit-column-heading"><span>Contract</span><span>Total</span></div><div class="timeline-heading" id="edit-timeline-heading"></div></div><div id="edit-time-rows"></div></div><p class="empty-state is-hidden" id="edit-empty-state">No time booked on this day.</p>
-          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch non-contract-swatch"></i>Non-contract time</span><span><i class="legend-swatch rework-swatch"></i>Rework (hover for the reason)</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span><span class="legend-tips">Tips: drag a block's ends to change its times · hold an end to unlink it · double-click a block to delete it · Ctrl+Z to undo</span></div>
+          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch non-contract-swatch"></i>Non-contract time</span><span><i class="legend-swatch rework-swatch"></i>Rework (hover for the reason)</span><span><i class="legend-swatch hand-entered-swatch"></i>Entered by hand</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span><span class="legend-tips">Tips: drag on an empty timeline to add time you forgot to clock · drag a block's ends to change its times · hold an end to unlink it · double-click a block to delete it · Ctrl+Z to undo</span></div>
         </div>
       </section>
 
@@ -175,6 +175,7 @@
         </div>
         <div class="table-card">
           <div class="table-intro"><div><strong>Reference contracts</strong><span>Master contract details used elsewhere in the app</span></div><button class="add-button" id="add-contract-info" type="button"><span>+</span> Add contract</button></div>
+          <div class="info-filter-bar"><input id="info-search" type="search" placeholder="Search number, customer, machine type or suffix" aria-label="Search contracts"><select id="info-customer" aria-label="Customer"></select><select id="info-machine" aria-label="Machine type"></select><span class="info-count" id="info-count"></span><button class="secondary-button" id="info-clear" type="button">Clear</button></div>
           <div class="table-scroll">
             <table class="contract-info-table">
               <thead>
@@ -199,6 +200,15 @@
       <div class="image-field"><span class="image-field-label">Image</span><div class="modal-image-preview" id="contract-image-preview"></div><span class="image-field-label">Picture library: click one to use it</span><ul class="image-library" id="image-library"></ul><span class="image-field-label">Upload a new picture <span class="image-upload-status" id="contract-image-status"></span></span><label class="add-button image-upload-button">Add a file to library<input id="contract-image" type="file" accept="image/*"></label></div>
       <div class="modal-actions"><button class="add-button" id="contract-submit" type="submit"><span>+</span> Add tile</button></div>
     </form>
+  </div>
+  <!-- + Add contract on Edit times: puts a contract on the day so time forgotten on the clock can be drawn on its timeline. -->
+  <div class="modal-backdrop is-hidden" id="add-time-modal" role="presentation">
+    <div class="modal add-time-modal" role="dialog" aria-modal="true" aria-labelledby="add-time-title">
+      <div class="modal-header"><div><span class="section-kicker" id="add-time-day"></span><h2 id="add-time-title">Add a contract</h2></div><button class="modal-close" id="close-add-time" type="button" aria-label="Close add a contract"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></div>
+      <p class="rework-modal-hint">Pick the contract you forgot to clock. It goes on the day; then drag on its timeline to enter the time.</p>
+      <input class="add-time-search" id="add-time-search" type="search" placeholder="Search contract, suffix or customer" aria-label="Search contracts">
+      <ul class="rework-reason-options" id="add-time-options"></ul>
+    </div>
   </div>
   <!-- What each user type can do. Opened from the (i) beside User type in Manage lists -> Users; closes with its x only. -->
   <div class="modal-backdrop is-hidden" id="role-matrix-modal" role="presentation">

@@ -18,6 +18,8 @@ module.exports = {
   updateSessions: handle((req) => clockService.updateSessions(req.session.user, req.body && req.body.changes)),
   removeSession: handle((req) => clockService.removeSession(req.session.user, req.params.id)),
   restoreSession: handle((req) => clockService.restoreSession(req.session.user, req.body && req.body.session)),
+  addSession: handle((req) => clockService.addSession(req.session.user, req.body)),
+  takeSession: handle((req) => clockService.addSession(req.session.user, req.body, { take: true })),
   commit: handle((req) => clockService.commit(req.session.user, req.params.userId, req.params.date)),
   markAutoNoticed: handle((req) => clockService.markAutoNoticed(req.session.user, req.body && req.body.ids)),
 };

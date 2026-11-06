@@ -42,15 +42,51 @@ async function clearActive(db, userId) {
   await db.query('DELETE FROM active_sessions WHERE user_id = $1', [userId]);
 }
 
+// enteredBy/enteredAt: set when the block was entered by hand on Edit times (null = recorded by the clock).
 function toSession(row) {
-  return { id: row.id, contractId: row.contract_id, userId: row.user_id, date: row.date, start: row.start_time, end: row.end_time, unlinkedStart: row.unlinked_start, unlinkedEnd: row.unlinked_end, autoStopped: row.auto_stopped, autoNoticed: row.auto_noticed, reworkReason: row.rework_reason };
+  return { id: row.id, contractId: row.contract_id, userId: row.user_id, date: row.date, start: row.start_time, end: row.end_time, unlinkedStart: row.unlinked_start, unlinkedEnd: row.unlinked_end, autoStopped: row.auto_stopped, autoNoticed: row.auto_noticed, reworkReason: row.rework_reason, enteredBy: row.entered_by || null, enteredAt: row.entered_at || null };
 }
 
-async function insertTimeSession(db, { id, contractId, userId, date, start, end, autoStopped = false, reworkReason = null }) {
+async function insertTimeSession(db, { id, contractId, userId, date, start, end, autoStopped = false, reworkReason = null, enteredBy = null, enteredAt = null }) {
   await db.query(
-    'INSERT INTO time_sessions (id, contract_id, user_id, date, start_time, end_time, auto_stopped, rework_reason) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-    [id, contractId, userId, date, start, end, autoStopped, reworkReason]
+    'INSERT INTO time_sessions (id, contract_id, user_id, date, start_time, end_time, auto_stopped, rework_reason, entered_by, entered_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+    [id, contractId, userId, date, start, end, autoStopped, reworkReason, enteredBy, enteredAt]
   );
+}
+
+// This person's blocks on one day, for the overlap check when time is added or put back.
+async function findDaySessions(db, userId, date) {
+  const { rows } = await db.query('SELECT * FROM time_sessions WHERE user_id = $1 AND date = $2', [userId, date]);
+  return rows.map(toSession);
+}
+
+async function contractIsRetired(db, contractId) {
+  const { rows } = await db.query('SELECT retired FROM contracts WHERE id = $1', [contractId]);
+  return Boolean(rows[0]?.retired);
+}
+
+/* Deleted blocks are kept (removed_time_sessions) so Undo puts back exactly what
+ * was deleted: the row as it was, including who entered it by hand. */
+async function keepRemoved(db, id, removedBy) {
+  await db.query(
+    `INSERT INTO removed_time_sessions (id, user_id, row, removed_by)
+     SELECT id, user_id, to_jsonb(t), $2 FROM time_sessions t WHERE id = $1
+     ON CONFLICT (id) DO UPDATE SET row = EXCLUDED.row, removed_by = EXCLUDED.removed_by, removed_at = now()`,
+    [id, removedBy]
+  );
+}
+
+async function findRemoved(db, id) {
+  const { rows } = await db.query('SELECT row FROM removed_time_sessions WHERE id = $1', [id]);
+  return rows[0] ? toSession(rows[0].row) : null;
+}
+
+async function putBackRemoved(db, id) {
+  await db.query(
+    'INSERT INTO time_sessions SELECT * FROM jsonb_populate_record(NULL::time_sessions, (SELECT row FROM removed_time_sessions WHERE id = $1))',
+    [id]
+  );
+  await db.query('DELETE FROM removed_time_sessions WHERE id = $1', [id]);
 }
 
 async function findTimeSession(db, id) {
@@ -160,12 +196,14 @@ async function getClockState(db, userId, userIds) {
 async function findSessionsForExport(db, { from, to, userIds = null }) {
   const { rows } = await db.query(
     `SELECT s.id, s.user_id, s.contract_id, s.date, s.start_time, s.end_time, s.auto_stopped, s.rework_reason,
+            s.entered_by, s.entered_at, eb.name AS entered_by_name,
             u.name AS user_name, u.email, u.cost_centre, u.department,
             c.system, c.number, c.suffix, c.suffix_description, c.customer_name, c.machine_type,
             (cd.user_id IS NOT NULL) AS committed
        FROM time_sessions s
        JOIN users u ON u.id = s.user_id
        JOIN contracts c ON c.id = s.contract_id
+       LEFT JOIN users eb ON eb.id = s.entered_by
        LEFT JOIN committed_dates cd ON cd.user_id = s.user_id AND cd.date = s.date
       WHERE s.date BETWEEN $1 AND $2 AND ($3::text[] IS NULL OR s.user_id = ANY($3))
       ORDER BY u.name, s.date, s.start_time`,
@@ -179,5 +217,6 @@ module.exports = {
   insertTimeSession, findTimeSession, updateTimeSession, deleteTimeSession,
   markAutoNoticed, findUncheckedAutoStops, findScheduledClockUsers, findClockSchedule,
   findBreakState, setBreakState, clearBreakState,
+  findDaySessions, contractIsRetired, keepRemoved, findRemoved, putBackRemoved,
   isCommitted, addCommit, getClockState, findSessionsForExport,
 };

@@ -36,7 +36,9 @@ router.post('/clock/:contractId/start', clockController.start); // own clock
 router.post('/clock/:contractId/stop', clockController.stop); // own clock
 
 router.patch('/sessions', clockController.updateSessions); // own sessions, or anyone's for admin
-router.post('/sessions', clockController.restoreSession); // undo a removed block: own sessions, or anyone's for admin
+router.post('/sessions', clockController.restoreSession); // undo a removed block (only one that was really removed): own sessions, or anyone's for admin
+router.post('/sessions/take', clockController.takeSession); // the same, drawn over other time: the blocks under it are trimmed or split (never a running clock)
+router.post('/sessions/add', clockController.addSession); // time entered by hand (body: contractId, userId, date, start, end, reworkReason?): own, or anyone's for admin; last 28 days
 router.delete('/sessions/:id', clockController.removeSession); // own sessions, or anyone's for admin
 router.post('/commits/:userId/:date', clockController.commit); // own day, or anyone's for admin
 router.post('/sessions/auto-noticed', clockController.markAutoNoticed); // own sessions: the "stopped automatically" message was seen

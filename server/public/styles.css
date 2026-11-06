@@ -669,3 +669,36 @@ table.export-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 .theme-toggle svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 /* Dark mode: pictures (mostly on white) are dimmed a little so they don't glare on the dark page */
 :root[data-theme="dark"] :is(.tile-image, .find-tile-image, .modal-image-preview, .image-library-item) img { filter: brightness(.86); }
+/* An open dropdown list: Windows draws it on its own background, so the options get the page's own card colour and
+ * text colour. Without this, dark mode's light text sat on Windows' white list and the names looked greyed out. */
+select option, select optgroup { background-color: var(--panel); color: var(--ink); }
+
+/* Time entered by hand (Edit times): rows can be drawn on; the block being drawn; the marker on blocks entered by hand */
+.edit-times-card:not(.is-locked) .edit-session-row .timeline-lane { cursor: crosshair; }
+.edit-session-block.is-drawing { z-index: 3; pointer-events: none; border: 1.5px dashed var(--teal); background: var(--mint); opacity: .85; }
+.edit-session-block.is-hand-entered { outline: 1.5px dashed var(--teal-dark); outline-offset: -2px; }
+.edit-session-block.is-hand-entered.is-rework { outline-color: var(--rework); }
+.hand-entered-mark { position: absolute; top: 50%; left: 6px; display: grid; place-items: center; width: 14px; height: 14px; color: var(--teal-dark); transform: translateY(-50%); pointer-events: none; }
+.is-rework .hand-entered-mark { color: var(--rework-dark); }
+.hand-entered-mark svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; }
+.legend-swatch.hand-entered-swatch { background: var(--c-cfe8df); outline: 1.5px dashed var(--teal-dark); outline-offset: -2px; }
+.add-time-button { width: auto; padding: 4px 14px; }
+.add-time-button:disabled { opacity: .6; }
+.edit-rework-chip { flex: 0 0 auto; max-width: 96px; margin-left: auto; padding: 3px 8px; font-size: 10px; }
+.add-time-search { width: 100%; margin-bottom: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); font-size: 13px; }
+.add-time-option { display: grid; gap: 2px; }
+.add-time-option span { color: var(--muted); font-size: 11px; font-weight: 400; }
+/* Drawing over other time: the part that will be taken from other blocks */
+.take-mark { position: absolute; top: 4px; bottom: 4px; z-index: 4; border-radius: 4px; background: var(--c-e09a52); opacity: .55; pointer-events: none; }
+/* Contract information filters */
+.info-filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 25px; border-bottom: 1px solid var(--line); }
+.info-filter-bar input, .info-filter-bar select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background-color: var(--panel); color: var(--ink); font-size: 12px; }
+.info-filter-bar input { flex: 1 1 260px; min-width: 200px; }
+.info-filter-bar select { flex: 0 0 auto; min-width: 170px; padding-right: 28px; }
+.info-count { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 700; }
+.info-filter-bar .secondary-button { padding: 8px 12px; font-size: 12px; }
+.suffix-subtable tr.is-match td { background: var(--mint); }
+/* Manage lists: the add box filters its list */
+.list-filter-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -4px 0 10px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.list-filter-status .secondary-button { padding: 6px 11px; font-size: 12px; }
+.list-items li.is-exact { border-color: var(--teal); background: var(--mint); }

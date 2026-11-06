@@ -6,6 +6,7 @@
 const setupRepo = require('../repositories/setupRepo');
 const { withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
+const { sentenceCase } = require('../utils/textCase');
 
 const peopleText = (n) => `${n} ${n === 1 ? 'person has' : 'people have'}`;
 
@@ -19,7 +20,7 @@ async function assertUnused(db, names) {
 }
 
 async function rename(from, to) {
-  const name = typeof to === 'string' ? to.trim() : '';
+  const name = typeof to === 'string' ? sentenceCase(to) : ''; // cost centres are in sentence case
   if (!name) throw new ApiError(400, 'Enter a name for the cost centre');
   if (name.length > 100) throw new ApiError(400, 'Cost centre names are 100 characters at most');
   return withTransaction(async (db) => {

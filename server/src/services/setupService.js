@@ -8,6 +8,7 @@ const clockService = require('./clockService');
 const costCentreService = require('./costCentreService');
 const { getPool, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
+const { LIST_CASE, sentenceCase } = require('../utils/textCase');
 
 const NAME_LISTS = {
   machineTypes: 'machine_types',
@@ -79,6 +80,13 @@ async function applyPatch(patch, actor) {
     ['oneDriveLink', 'orderConfirmationLink'].forEach((field) => {
       if (record[field] && !/^https?:\/\//i.test(record[field])) throw new ApiError(400, 'Links must start with http:// or https://');
     });
+  });
+
+  // Each name list in its own style (capitals, title or sentence case), with names that become the same kept once.
+  Object.keys(NAME_LISTS).forEach((key) => {
+    if (!patch[key]) return;
+    const seen = new Set();
+    patch[key] = patch[key].map((name) => LIST_CASE[key](name)).filter((name) => name && !seen.has(name.toLowerCase()) && seen.add(name.toLowerCase()));
   });
 
   await withTransaction(async (db) => {

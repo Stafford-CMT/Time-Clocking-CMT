@@ -196,21 +196,111 @@ async function updateSessions(actor, changes) {
 }
 
 // Undo of a removed block in Edit Times: puts it back exactly as it was.
+// Nothing else may sit in [start, end) on this person's day (other blocks, and today a running clock).
+async function assertFree(db, userId, date, start, end) {
+  const from = timeToSeconds(start); const to = timeToSeconds(end);
+  const clash = (await clockRepo.findDaySessions(db, userId, date)).find((other) => from < timeToSeconds(other.end) && to > timeToSeconds(other.start));
+  if (clash) throw new ApiError(409, `That overlaps other time on ${date} (${String(clash.start).slice(0, 5)}–${String(clash.end).slice(0, 5)})`);
+  await assertNotOverRunningClock(db, userId, date, end);
+}
+
+// A clock still running can't be drawn over: stop it first.
+async function assertNotOverRunningClock(db, userId, date, end) {
+  const to = timeToSeconds(end);
+  const active = await clockRepo.findActive(db, userId);
+  if (active && localDate(new Date(active.startedAt)) === date) {
+    const started = new Date(active.startedAt); const runFrom = started.getHours() * 3600 + started.getMinutes() * 60 + started.getSeconds();
+    if (to > runFrom) throw new ApiError(409, 'That overlaps the clock that is running now');
+  }
+}
+
+/* Undo of a deletion: puts back exactly the block that was deleted (kept in
+ * removed_time_sessions), never one described by the browser, so Undo can't be
+ * used to slip in time that was never there. */
 async function restoreSession(actor, session) {
-  if (!session || typeof session !== 'object') throw new ApiError(400, 'Expected the removed time block');
-  const { id, contractId, userId, date, start, end } = session;
-  if (typeof id !== 'string' || !id || typeof userId !== 'string') throw new ApiError(400, 'Time block needs an id and a user');
-  if (!DATE_RE.test(String(date)) || !TIME_RE.test(String(start)) || !TIME_RE.test(String(end))) throw new ApiError(400, 'Time block needs a date (YYYY-MM-DD) and HH:MM times');
-  if (timeToSeconds(end) <= timeToSeconds(start)) throw new ApiError(400, 'End time must be after start time');
-  assertCanActOn(actor, userId);
+  const id = session && typeof session === 'object' ? session.id : null;
+  if (typeof id !== 'string' || !id) throw new ApiError(400, 'Expected the removed time block');
   await withTransaction(async (db) => {
-    if (!(await clockRepo.contractExists(db, contractId))) throw new ApiError(404, 'Contract not found');
+    const removed = await clockRepo.findRemoved(db, id);
+    if (!removed) throw new ApiError(404, "That time block can't be put back");
+    assertCanActOn(actor, removed.userId);
     if (await clockRepo.findTimeSession(db, id)) throw new ApiError(409, 'That time block is already there');
-    await assertNotCommitted(db, actor, userId, date);
-    await clockRepo.insertTimeSession(db, { id, contractId, userId, date, start, end, reworkReason: typeof session.reworkReason === 'string' && session.reworkReason ? session.reworkReason : null });
-    await clockRepo.updateTimeSession(db, id, { start, end, unlinkedStart: session.unlinkedStart === true, unlinkedEnd: session.unlinkedEnd === true, autoStopped: false });
+    await assertNotCommitted(db, actor, removed.userId, removed.date);
+    await assertFree(db, removed.userId, removed.date, removed.start, removed.end);
+    await clockRepo.putBackRemoved(db, id);
   });
   return getState(actor);
+}
+
+/* Time entered by hand on Edit times, for a clock someone forgot: their own
+ * day (or anyone's for an admin), on today or the 27 days before it (the day
+ * strip), never in the future, never over other time, never on a committed day.
+ * It is marked with who entered it and when. reworkReason works as the tile's
+ * Rework button: a reason from the list, not on Non-contract. */
+/* Drawing over clocked time (a clock left running on the wrong contract): every
+ * block under [start, end) gives up that time, in the same step as the new block
+ * goes in. A block wholly under it is removed (kept for Undo); one the new time
+ * sits inside is split in two (the block keeps its start and its id, a new piece
+ * takes its end); one it overlaps at an edge is trimmed. `changes` records what
+ * was done so the browser can undo it. Rework and hand-entered blocks give up
+ * time the same way; a running clock never does. */
+async function takeTime(db, actor, userId, date, start, end, changes) {
+  await assertNotOverRunningClock(db, userId, date, end);
+  const from = timeToSeconds(start); const to = timeToSeconds(end);
+  for (const block of await clockRepo.findDaySessions(db, userId, date)) {
+    const blockFrom = timeToSeconds(block.start); const blockTo = timeToSeconds(block.end);
+    if (from >= blockTo || to <= blockFrom) continue;
+    const before = { id: block.id, start: block.start, end: block.end, unlinkedStart: block.unlinkedStart, unlinkedEnd: block.unlinkedEnd };
+    if (from <= blockFrom && to >= blockTo) {
+      await clockRepo.keepRemoved(db, block.id, actor.id);
+      await clockRepo.deleteTimeSession(db, block.id);
+      changes.removed.push(block.id);
+      continue;
+    }
+    if (from > blockFrom && to < blockTo) {
+      const pieceId = uid('session');
+      await clockRepo.insertTimeSession(db, { id: pieceId, contractId: block.contractId, userId, date, start: end, end: block.end, autoStopped: block.autoStopped, reworkReason: block.reworkReason, enteredBy: block.enteredBy, enteredAt: block.enteredAt });
+      await clockRepo.updateTimeSession(db, pieceId, { start: end, end: block.end, unlinkedStart: false, unlinkedEnd: block.unlinkedEnd, autoStopped: block.autoStopped });
+      await clockRepo.updateTimeSession(db, block.id, { start: block.start, end: start, unlinkedStart: block.unlinkedStart, unlinkedEnd: false, autoStopped: false });
+      changes.pieces.push(pieceId);
+    } else if (from > blockFrom) {
+      await clockRepo.updateTimeSession(db, block.id, { start: block.start, end: start, unlinkedStart: block.unlinkedStart, unlinkedEnd: false, autoStopped: false });
+    } else {
+      await clockRepo.updateTimeSession(db, block.id, { start: end, end: block.end, unlinkedStart: false, unlinkedEnd: block.unlinkedEnd, autoStopped: block.autoStopped });
+    }
+    changes.trimmed.push(before);
+  }
+}
+
+const ADD_DAYS_BACK = 27;
+async function addSession(actor, body, { take = false } = {}) {
+  const { contractId, userId, date, start, end } = body || {};
+  if (typeof contractId !== 'string' || typeof userId !== 'string') throw new ApiError(400, 'Time needs a contract and a person');
+  if (!DATE_RE.test(String(date)) || !TIME_RE.test(String(start)) || !TIME_RE.test(String(end))) throw new ApiError(400, 'Time needs a date (YYYY-MM-DD) and HH:MM times');
+  if (timeToSeconds(end) <= timeToSeconds(start)) throw new ApiError(400, 'End time must be after start time');
+  if (body.reworkReason != null && typeof body.reworkReason !== 'string') throw new ApiError(400, 'reworkReason must be text');
+  const reason = body.reworkReason ? body.reworkReason.trim() : null;
+  assertCanActOn(actor, userId);
+  const now = new Date(); const today = localDate(now);
+  const earliest = localDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - ADD_DAYS_BACK));
+  if (date > today) throw new ApiError(400, "Time can't be added to a day that hasn't happened yet");
+  if (date < earliest) throw new ApiError(400, `Time can only be added back to ${earliest} (the last 28 days)`);
+  if (date === today && timeToSeconds(end) > now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds()) throw new ApiError(400, "Time can't go past now");
+  const id = uid('session'); const changes = { trimmed: [], removed: [], pieces: [] };
+  await withTransaction(async (db) => {
+    await clockRepo.lockUser(db, userId);
+    if (!(await clockRepo.contractExists(db, contractId))) throw new ApiError(404, 'Contract not found');
+    if (await clockRepo.contractIsRetired(db, contractId)) throw new ApiError(400, 'That contract has been removed from Contract information');
+    if (reason) {
+      if (contractId === 'non-contract') throw new ApiError(400, "Non-contract time can't be rework");
+      if (!(await clockRepo.reworkReasonExists(db, reason))) throw new ApiError(400, `"${reason}" is not in the rework reasons list`);
+    }
+    await assertNotCommitted(db, actor, userId, date);
+    if (take) await takeTime(db, actor, userId, date, start, end, changes);
+    else await assertFree(db, userId, date, start, end);
+    await clockRepo.insertTimeSession(db, { id, contractId, userId, date, start, end, reworkReason: reason, enteredBy: actor.id, enteredAt: now });
+  });
+  return { ...(await getState(actor)), addedId: id, changes };
 }
 
 async function removeSession(actor, id) {
@@ -219,6 +309,7 @@ async function removeSession(actor, id) {
     if (!session) throw new ApiError(404, 'Time block not found');
     assertCanActOn(actor, session.userId);
     await assertNotCommitted(db, actor, session.userId, session.date);
+    await clockRepo.keepRemoved(db, id, actor.id); // so Undo can put back exactly this block
     await clockRepo.deleteTimeSession(db, id);
   });
   return getState(actor);
@@ -251,6 +342,6 @@ async function markAutoNoticed(actor, ids) {
 }
 
 module.exports = {
-  getState, start, stop, updateSessions, restoreSession, removeSession, commit, markAutoNoticed,
+  getState, start, stop, updateSessions, restoreSession, addSession, removeSession, commit, markAutoNoticed,
   autoClockOutAt, runClockSchedule, startClockSchedule,
 };

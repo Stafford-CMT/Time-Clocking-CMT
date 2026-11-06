@@ -163,6 +163,7 @@ async function buildWorkbook(rows) {
     { header: 'Hours', key: 'hours', width: 8, style: { numFmt: '0.00' } },
     { header: 'Committed', key: 'committed', width: 11 },
     { header: 'Auto clock-out not checked', key: 'autoStopped', width: 14 },
+    { header: 'Entered by hand', key: 'enteredBy', width: 22 }, // forgotten on the clock and added afterwards: by whom (blank = clocked)
     { header: 'Block ID', key: 'blockId', width: 30 }, // the time block's own id: every row can be traced back to it
   ];
   const totals = new Map();
@@ -178,6 +179,7 @@ async function buildWorkbook(rows) {
       hours: Math.round(((end - start) / 3600) * 100) / 100,
       committed: row.committed ? 'Yes' : 'No',
       autoStopped: row.auto_stopped ? 'Yes' : '',
+      enteredBy: row.entered_by ? `${row.entered_by_name || 'Yes'}${row.entered_at ? `, ${new Date(row.entered_at).toLocaleDateString('en-GB')}` : ''}` : '',
       blockId: row.id,
     });
     const key = [row.user_id, row.date, person.contract, person.suffix, person.reworkReason].join('|'); // rework kept apart from ordinary time
@@ -311,7 +313,7 @@ async function blocks(actor, { from, to }) {
       date: row.date, start: row.start_time, end: row.end_time, seconds: timeToSeconds(row.end_time) - timeToSeconds(row.start_time),
       contractId: row.contract_id, nonContract: row.system, number: row.system ? '' : row.number, suffix: row.system ? '' : row.suffix,
       suffixDescription: row.system ? '' : row.suffix_description, customer: row.system ? '' : row.customer_name, machineType: row.system ? '' : row.machine_type,
-      reworkReason: row.rework_reason || '', committed: row.committed, autoStopped: row.auto_stopped,
+      reworkReason: row.rework_reason || '', committed: row.committed, autoStopped: row.auto_stopped, enteredByHand: Boolean(row.entered_by),
     })),
   };
 }
