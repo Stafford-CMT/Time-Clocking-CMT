@@ -174,7 +174,7 @@
           <div><span class="section-kicker">Dashboard setup</span><h2>Contract information</h2></div>
         </div>
         <div class="table-card">
-          <div class="table-intro"><div><strong>Reference contracts</strong><span>Master contract details used elsewhere in the app</span></div><button class="add-button" id="add-contract-info" type="button"><span>+</span> Add contract</button></div>
+          <div class="table-intro"><div><strong>Reference contracts</strong><span>Master contract details used elsewhere in the app</span></div><div class="info-intro-actions"><button class="secondary-button is-hidden" id="info-download" type="button" title="Contract information as an Excel workbook: add the missing contracts and suffixes underneath, then use Import from Excel">Download spreadsheet</button><button class="secondary-button is-hidden" id="info-import" type="button" title="Add contracts and suffixes from an Excel workbook: it checks the file first and shows what it would add">Import from Excel</button><input class="is-hidden" id="info-import-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><button class="add-button" id="add-contract-info" type="button"><span>+</span> Add contract</button></div></div>
           <div class="info-filter-bar"><input id="info-search" type="search" placeholder="Search number, customer, machine type or suffix" aria-label="Search contracts"><select id="info-customer" aria-label="Customer"></select><select id="info-machine" aria-label="Machine type"></select><span class="info-count" id="info-count"></span><button class="secondary-button" id="info-clear" type="button">Clear</button></div>
           <div class="table-scroll">
             <table class="contract-info-table">
@@ -208,6 +208,14 @@
       <p class="rework-modal-hint">Pick the contract you forgot to clock. It goes on the day; then drag on its timeline to enter the time.</p>
       <input class="add-time-search" id="add-time-search" type="search" placeholder="Search contract, suffix or customer" aria-label="Search contracts">
       <ul class="rework-reason-options" id="add-time-options"></ul>
+    </div>
+  </div>
+  <!-- Import from Excel on Contract information (admins): shows the check report, then loads. Closes with its x only. -->
+  <div class="modal-backdrop is-hidden" id="info-import-modal" role="presentation">
+    <div class="modal info-import-modal" role="dialog" aria-modal="true" aria-labelledby="info-import-title">
+      <div class="modal-header"><div><span class="section-kicker" id="info-import-file-name">Contract information</span><h2 id="info-import-title">Import from Excel</h2></div><button class="modal-close" id="close-info-import" type="button" aria-label="Close import from Excel"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></div>
+      <div class="info-import-report" id="info-import-report"></div>
+      <div class="modal-actions"><button class="add-button" id="info-import-apply" type="button">Load</button></div>
     </div>
   </div>
   <!-- What each user type can do. Opened from the (i) beside User type in Manage lists -> Users; closes with its x only. -->

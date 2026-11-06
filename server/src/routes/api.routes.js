@@ -18,6 +18,7 @@ const exportController = require('../controllers/exportController');
 const costCentreController = require('../controllers/costCentreController');
 const imagesController = require('../controllers/imagesController');
 const workingPatternsController = require('../controllers/workingPatternsController');
+const contractImportController = require('../controllers/contractImportController');
 
 const router = express.Router();
 
@@ -26,6 +27,9 @@ router.put('/me/theme', usersController.setTheme); // your own light/dark choice
 
 router.get('/state', setupController.getState); // any logged-in session
 router.patch('/setup', setupController.patchSetup); // any logged-in session -- see setupController's comment
+
+router.get('/contract-info/workbook', requireRole('admin'), contractImportController.workbook); // Contract information as Excel, to add missing rows to
+router.post('/contract-info/import', requireRole('admin'), contractImportController.importWorkbook); // body: dataUrl, apply -- only adds; differences are reported, never saved
 
 router.get('/images', imagesController.list); // any logged-in session -- the tile picture library
 router.get('/images/:id', imagesController.file); // any logged-in session

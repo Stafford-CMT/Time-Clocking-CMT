@@ -482,7 +482,7 @@ table.export-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 
 /* Tile pencil (change image) sits in the image's top-right corner */
 .tile-image { position: relative; }
-.tile-image .edit-contract { position: absolute; top: 5px; right: 5px; z-index: 1; background: var(--glass-90); box-shadow: 0 1px 3px rgba(23, 40, 45, .15); }
+.tile-image .edit-contract, .find-tile-image .edit-contract { position: absolute; top: 5px; right: 5px; z-index: 1; background: var(--glass-90); box-shadow: 0 1px 3px rgba(23, 40, 45, .15); }
 .tile-image .edit-contract:hover { background: var(--c-fff5d9); }
 
 /* Tile x: turns red on hover with no background, like the other remove x's (Contract information, Lists) */
@@ -531,6 +531,9 @@ table.export-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 .th-info-button svg .th-info-dot { fill: currentColor; stroke-width: 1.2; }
 .th-info-button:hover { color: var(--teal-dark); background: var(--mint); }
 #role-matrix-modal { z-index: 11; } /* above Manage lists, which it opens from */
+.find-tile-image .edit-contract { z-index: 2; height: 27px; padding: 0; font-family: inherit; letter-spacing: 0; } /* top right, above On dashboard */
+#contract-modal { z-index: 11; } /* Change image can open from Find a tile */
+#confirm-modal { z-index: 12; } /* a confirm is always on top */
 .role-matrix-modal { width: min(860px, 100%); } /* wide enough for the whole table, no sideways scrolling */
 .role-matrix-note { margin: -8px 0 16px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .role-matrix { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -707,3 +710,19 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
 .list-filter-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -4px 0 10px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .list-filter-status .secondary-button { padding: 6px 11px; font-size: 12px; }
 .list-items li.is-exact { border-color: var(--teal); background: var(--mint); }
+
+/* Contract information: Download spreadsheet / Import from Excel (admins) */
+.table-intro .info-intro-actions { display: flex; align-items: center; gap: 9px; }
+.info-import-modal { width: min(760px, 100%); }
+.info-import-report { display: grid; gap: 14px; font-size: 13px; }
+.info-import-report p { margin: 0; }
+.info-import-report h3 { margin: 0 0 6px; font: 600 14px 'Space Grotesk'; }
+.info-import-report .info-import-muted { color: var(--muted); font-size: 12px; }
+.info-import-report ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.info-import-report table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.info-import-report th, .info-import-report td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.info-import-report th { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.info-import-report details summary { cursor: pointer; font-weight: 700; color: var(--teal-dark); }
+.info-import-report details[open] summary { margin-bottom: 6px; }
+.info-import-summary { padding: 12px 14px; border-radius: 10px; background: var(--c-f3faf7); border: 1px solid var(--line); }
+.info-import-warn { color: var(--c-a55b46); }

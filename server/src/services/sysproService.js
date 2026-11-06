@@ -96,7 +96,7 @@ function reachNetTcp(address, timeoutMs) {
     const socket = net.connect({ host, port });
     const done = (result) => { socket.destroy(); resolve(result); };
     socket.setTimeout(timeoutMs, () => done({ ok: false, message: `No answer from ${host}:${port} within ${timeoutMs / 1000} seconds.` }));
-    socket.once('connect', () => done({ ok: true, message: `The Syspro e.net service is answering at ${host}:${port} (net.tcp). Time Slide can't log on over net.tcp, though: to post times it needs e.net's REST address (http://…/SYSPROWCFService/Rest) from your Syspro administrator.` }));
+    socket.once('connect', () => done({ ok: true, message: `The Syspro e.net service is answering at ${host}:${port} (net.tcp). Time Slide can't log on over net.tcp, though: to read from Syspro or post times it needs e.net's REST address (http://…/SYSPROWCFService/Rest) from your Syspro administrator.` }));
     socket.once('error', (err) => done({ ok: false, message: `Could not reach ${host}:${port} (${err.code || err.message}).` }));
   });
 }
