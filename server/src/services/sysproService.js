@@ -1,5 +1,7 @@
 'use strict';
 
+const net = require('net');
+
 /* Setup -> Configuration: the details Time Slide needs to reach Syspro.
  *  - e.net Solutions (Syspro's web services) for posting into Syspro.
  *  - The Syspro SQL Server database for read-only lookups.
@@ -57,7 +59,8 @@ async function saveSettings(body, actorId) {
   if (changes.enet_url) {
     let url;
     try { url = new URL(changes.enet_url); } catch { url = null; }
-    if (!url || !['http:', 'https:'].includes(url.protocol)) throw new ApiError(400, 'The e.net address must start with http:// or https://');
+    // http(s):// is e.net's REST address; net.tcp:// its WCF address (only checked for an answer: see testEnet).
+    if (!url || !['http:', 'https:', 'net.tcp:'].includes(url.protocol)) throw new ApiError(400, 'The e.net address must start with http://, https:// or net.tcp://');
     changes.enet_url = changes.enet_url.replace(/\/+$/, '');
   }
   if (body.sqlPort !== undefined) {
@@ -84,8 +87,23 @@ async function saveSettings(body, actorId) {
 // Logs on to e.net with the saved details and straight off again. Syspro's
 // REST Logon answers with a session id on success and with message text
 // (still HTTP 200) when the details are wrong.
+/* A net.tcp:// address is e.net's WCF (.NET binary) endpoint, which Node can't
+ * speak: the test only checks something answers on that host and port, and says
+ * that logging on and posting need e.net's REST (http) address. */
+function reachNetTcp(address, timeoutMs) {
+  const url = new URL(address); const host = url.hostname; const port = Number(url.port) || 808; // 808: the net.tcp default
+  return new Promise((resolve) => {
+    const socket = net.connect({ host, port });
+    const done = (result) => { socket.destroy(); resolve(result); };
+    socket.setTimeout(timeoutMs, () => done({ ok: false, message: `No answer from ${host}:${port} within ${timeoutMs / 1000} seconds.` }));
+    socket.once('connect', () => done({ ok: true, message: `The Syspro e.net service is answering at ${host}:${port} (net.tcp). Time Slide can't log on over net.tcp, though: to post times it needs e.net's REST address (http://…/SYSPROWCFService/Rest) from your Syspro administrator.` }));
+    socket.once('error', (err) => done({ ok: false, message: `Could not reach ${host}:${port} (${err.code || err.message}).` }));
+  });
+}
+
 async function testEnet({ fetchImpl = fetch, timeoutMs = 10000 } = {}) {
   const row = await sysproSettingsRepo.get();
+  if (row.enet_url && row.enet_url.startsWith('net.tcp:')) return reachNetTcp(row.enet_url, timeoutMs);
   const missing = [];
   if (!row.enet_url) missing.push('e.net address');
   if (!row.enet_operator) missing.push('operator');
