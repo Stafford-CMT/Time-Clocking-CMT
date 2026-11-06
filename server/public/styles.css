@@ -675,6 +675,8 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
 
 /* Time entered by hand (Edit times): rows can be drawn on; the block being drawn; the marker on blocks entered by hand */
 .edit-times-card:not(.is-locked) .edit-session-row .timeline-lane { cursor: crosshair; }
+/* Days time can't be added to (older than 28 days, or not happened yet): clicking explains why */
+.edit-times-card.no-draw-day:not(.is-locked) .edit-session-row .timeline-lane { cursor: not-allowed; }
 .edit-session-block.is-drawing { z-index: 3; pointer-events: none; border: 1.5px dashed var(--teal); background: var(--mint); opacity: .85; }
 .edit-session-block.is-hand-entered { outline: 1.5px dashed var(--teal-dark); outline-offset: -2px; }
 .edit-session-block.is-hand-entered.is-rework { outline-color: var(--rework); }
@@ -683,6 +685,9 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
 .hand-entered-mark svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; }
 .legend-swatch.hand-entered-swatch { background: var(--c-cfe8df); outline: 1.5px dashed var(--teal-dark); outline-offset: -2px; }
 .add-time-button { width: auto; padding: 4px 14px; }
+/* Edit times: + Add contract sits at the far right of the header, away from undo and redo */
+.edit-times-card .schedule-toolbar .edit-user-block { flex: 1 1 auto; width: auto; }
+.edit-times-card .schedule-toolbar .add-time-button { margin-left: auto; }
 .add-time-button:disabled { opacity: .6; }
 .edit-rework-chip { flex: 0 0 auto; max-width: 96px; margin-left: auto; padding: 3px 8px; font-size: 10px; }
 .add-time-search { width: 100%; margin-bottom: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); font-size: 13px; }
