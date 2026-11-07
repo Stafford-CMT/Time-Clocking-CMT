@@ -262,11 +262,11 @@ const longDate = (date) => new Date(`${date}T00:00:00Z`).toLocaleDateString('en-
 const hoursText = (seconds) => `${Math.floor(seconds / 3600)}:${String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')}`;
 
 function reminderHtml(name, days) {
-  const link = env.appUrl ? `<p><a href="${escHtml(env.appUrl)}">Open Time Slide</a></p>` : '';
+  const link = env.appUrl ? `<p><a href="${escHtml(`${env.appUrl.replace(/\/+$/, '')}/#edit-times/${days[0].date}`)}">Open my times in Time Slide</a></p>` : '';
   return `<p>Hello ${escHtml(name.split(' ')[0])},</p>
 <p>You have time in Time Slide that hasn't been committed yet:</p>
 <ul>${days.map((d) => `<li>${escHtml(longDate(d.date))} &ndash; ${hoursText(d.seconds)} hours</li>`).join('')}</ul>
-<p>Please open <strong>Edit or Commit times</strong>, check each day and press <strong>Commit</strong>.</p>${link}
+<p>Please check each day and press <strong>Commit</strong>. The link below opens <strong>Edit or Commit times</strong> on the first of these days.</p>${link}
 <p>Thank you.</p>`;
 }
 

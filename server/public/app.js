@@ -722,4 +722,13 @@ function updateTabIndicator() {
   if (href !== tabIconShown) { link.href = href; tabIconShown = href; }
 }
 document.querySelectorAll('.schedule-scroll').forEach((scroller) => scroller.addEventListener('scroll', updateNowMarkers, { passive: true })); window.addEventListener('resize', updateNowMarkers);
-loadState().then(() => { renderAll(); updateNowMarkers(); setInterval(tick, 1000); setInterval(updateTabIndicator, 70); }).catch((error) => showToast(`Could not load data: ${error.message}`));
+/* A link can open Edit times on a day: /#edit-times/2026-11-02 (the commit reminder email uses it).
+ * login.html keeps the link in sessionStorage when someone has to sign in first. */
+function openFromLink() {
+  let hash = location.hash;
+  try { if (!hash) hash = sessionStorage.getItem('timeslide-open') || ''; sessionStorage.removeItem('timeslide-open'); } catch { /* no storage: the link still works when already signed in */ }
+  const match = /^#edit-times(?:\/(\d{4}-\d{2}-\d{2}))?$/.exec(hash); if (!match) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  openExportDay(currentUserId, match[1] || TODAY);
+}
+loadState().then(() => { renderAll(); openFromLink(); updateNowMarkers(); setInterval(tick, 1000); setInterval(updateTabIndicator, 70); }).catch((error) => showToast(`Could not load data: ${error.message}`));

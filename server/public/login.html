@@ -73,6 +73,8 @@
     <div class="error" id="errBox">Sign-in failed or was cancelled. Please try again.</div>
   </div>
   <script>
+    // Keep a link to a screen (e.g. #edit-times/2026-11-02 from a reminder email) so the app can open it after sign-in.
+    if (location.hash) { try { sessionStorage.setItem('timeslide-open', location.hash); } catch (e) {} }
     const err = new URLSearchParams(window.location.search).get('error');
     if(err){
       const box = document.getElementById('errBox');
