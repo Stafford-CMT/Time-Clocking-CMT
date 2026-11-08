@@ -368,7 +368,7 @@ function autoClockOutTemplate(entry, name) { const minutes = autoClockOutMinutes
 function enableAutoClockOutHandle(handle, date) {
   const entry = scheduleFor(handle.dataset.userId, date); const user = state.users.find((item) => item.id === handle.dataset.userId); if (!entry || !user) return;
   const marker = handle.closest('.auto-clock-out'); const floor = timeToMinutes(entry.clockEnd); let value = autoClockOutMinutes(entry); let dragging = false; let saveTimer;
-  const tooltip = $('#drag-tooltip'); const showTip = (x, y) => { tooltip.textContent = `Auto clock-out: ${minutesToTime(value)}`; tooltip.classList.remove('is-hidden'); tooltip.style.left = `${x + 12 + tooltip.offsetWidth > window.innerWidth ? x - 12 - tooltip.offsetWidth : x + 12}px`; tooltip.style.top = `${y - 38}px`; };
+  const tooltip = $('#drag-tooltip'); const showTip = (x, y) => { tooltip.textContent = `Auto clock-out: ${minutesToTime(value)}`; tooltip.classList.remove('is-hidden'); tooltip.style.left = `${x + 12 + tooltip.offsetWidth > window.innerWidth ? x - 12 - tooltip.offsetWidth : x + 12}px`; tooltip.style.top = `${y - (byTouch() ? 84 : 38)}px`; };
   // 5-minute steps, never before the end of the working day, latest 23:55.
   const place = (minutes) => { value = Math.min(1435, Math.max(floor, Math.round(minutes / 5) * 5)); marker.style.left = `${value / 1440 * 100}%`; };
   // Redraw the rows; after a keyboard change, put focus back on this line's handle.

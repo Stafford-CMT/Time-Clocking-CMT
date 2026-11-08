@@ -318,7 +318,7 @@ h2 { font-size: 27px; }
 .find-tiles-actions .add-button:disabled { opacity: .45; cursor: not-allowed; }
 /* Auto clock-out: darker teal line on Working times, marks in Edit or Commit times, dashboard message */
 .auto-clock-out { position: absolute; top: 0; bottom: 0; z-index: 3; width: 0; border-left: 2px solid var(--teal-dark); transform: translateX(-1px); pointer-events: none; }
-.auto-clock-out-handle { position: absolute; top: 0; bottom: 0; left: -8px; width: 14px; padding: 0; border: 0; background: transparent; cursor: ew-resize; pointer-events: auto; }
+.auto-clock-out-handle { position: absolute; top: 0; bottom: 0; left: -8px; width: 14px; padding: 0; border: 0; background: transparent; cursor: ew-resize; pointer-events: auto; touch-action: none; /* a finger drags the line, never scrolls the page instead */ }
 .auto-clock-out-handle::before { content: ''; position: absolute; top: 1px; left: 2px; box-sizing: border-box; width: 10px; height: 10px; border: 2px solid var(--c-ffffff); border-radius: 50%; background: var(--teal-dark-solid); box-shadow: 0 1px 3px rgba(23, 40, 45, .3); }
 .auto-clock-out-handle:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; border-radius: 4px; }
 .auto-clock-out.is-fixed .auto-clock-out-handle { cursor: default; }
@@ -758,6 +758,9 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
   .undo-redo-button { width: 44px; min-height: 40px; }
   .zoom-bar .zoom-button { width: 36px; height: 36px; font-size: 18px; }
   .day-strip { cursor: auto; }
+  /* Working times: a finger-wide grab zone round the auto clock-out line (the dot stays on the line) */
+  .auto-clock-out-handle { left: -17px; width: 32px; }
+  .auto-clock-out-handle::before { left: 11px; }
 }
 /* Every screen: the title row stays at the top while the page scrolls under it (on the dashboard the notice and toolbar stay too; not on phones) */
 @media (min-width: 651px) {
