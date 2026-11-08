@@ -18,6 +18,8 @@ const $ = (selector) => document.querySelector(selector);
 let lastPointerType = 'mouse';
 document.addEventListener('pointerdown', (event) => { lastPointerType = event.pointerType || 'mouse'; }, true);
 const byTouch = () => lastPointerType !== 'mouse';
+// Tablet: start and stop buttons glow while a finger is on them (styles.css .is-pressed); the browser's own :active comes too late on touch.
+document.addEventListener('pointerdown', (event) => { if (event.pointerType === 'mouse') return; const button = event.target.closest?.('.clock-button, .metric-clock-button'); if (!button) return; button.classList.add('is-pressed'); const release = () => { button.classList.remove('is-pressed'); document.removeEventListener('pointerup', release, true); document.removeEventListener('pointercancel', release, true); }; document.addEventListener('pointerup', release, true); document.addEventListener('pointercancel', release, true); }, true);
 const undoHint = () => (byTouch() ? 'Undo to put it back' : 'Ctrl+Z to undo');
 // A long press by finger would open the browser's own menu or select text; on the tiles and Edit times it moves a tile, draws time or unlinks an end.
 document.addEventListener('contextmenu', (event) => { if (byTouch() && event.target.closest?.('#contract-grid, #edit-times-card')) event.preventDefault(); });

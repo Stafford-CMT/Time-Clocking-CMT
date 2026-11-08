@@ -56,7 +56,7 @@ button { cursor: pointer; }
 h1, h2 { margin: 6px 0 0; font-family: 'Space Grotesk', sans-serif; letter-spacing: -.04em; }
 h1 { font-size: clamp(27px, 3vw, 38px); font-weight: 600; }
 h2 { font-size: 27px; }
-.profile-button { display: flex; align-items: center; gap: 10px; padding: 5px 7px 5px 5px; border: 1px solid var(--line); border-radius: 14px; background: var(--c-ffffff); color: var(--ink); text-align: left; }
+.profile-button { display: flex; align-items: center; gap: 10px; padding: 5px 7px 5px 5px; border: 1px solid var(--line); border-radius: 11px; background: var(--c-ffffff); color: var(--ink); text-align: left; }
 .avatar { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--c-f4dfb7); color: var(--c-765935); font: 700 11px 'Space Grotesk'; }
 .profile-text { display: grid; gap: 1px; font-size: 12px; }.profile-text small { color: var(--muted); font-size: 10px; }.chevron { display: inline-block; width: 0; height: 0; margin: 0 4px; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid var(--muted); }
 .current-user-select { border: none; background-color: transparent; padding: 0 16px 0 0; margin: 0; font-weight: 700; font-size: 12px; color: var(--ink); background-position: right 0 center; }
@@ -208,9 +208,8 @@ h2 { font-size: 27px; }
 .metric-card.accent-orange { border-color: var(--c-f2d2a8); background: var(--c-fff3e3); }
 .metric-card.accent-orange::after { background: var(--glass-55); }
 .accent-orange strong { color: var(--c-a85a17); }
-.metric-clock-button { position: absolute; top: 14px; right: 14px; z-index: 2; padding: 6px 14px; border: 1.5px solid var(--c-e09a52); border-radius: 8px; background: var(--c-ffffff); color: var(--c-a85a17); font-size: 12px; font-weight: 700; cursor: pointer; }
-.metric-clock-button:hover { background: var(--c-ffe6c7); }
-.metric-clock-button.is-running { border-color: var(--c-c96f22); background: var(--c-e08a3c); color: #fff; }
+.metric-clock-button { position: absolute; top: 14px; right: 14px; z-index: 2; padding: 6px 14px; border: 1.5px solid var(--teal); border-radius: 8px; background: var(--teal); color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; } /* idle: the same as a tile's Start button */
+.metric-clock-button.is-running { border-color: var(--coral); background: var(--coral); color: #fff; } /* running and paused: the same as a tile's button */
 .metric-card.accent-orange.is-running { border-color: var(--c-e09a52); box-shadow: 0 0 0 3px rgba(224, 138, 60, .15); }
 .is-non-contract .edit-session-block { background: var(--c-fbdcb8); }
 .is-non-contract .edit-session-block:hover { background: var(--c-f8cd9c); }
@@ -282,7 +281,7 @@ h2 { font-size: 27px; }
 .day-chip-lock svg path { fill: none; }
 /* Zoom bar: same height as the profile badge and level with its top; the zoom factor sits centred under the slider */
 .section-heading:has(.zoom-bar) { align-items: flex-start; }
-.zoom-bar { box-sizing: border-box; height: var(--badge-height, 63px); display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; align-content: center; column-gap: 8px; row-gap: 2px; padding: 4px 10px; border-radius: 14px; }
+.zoom-bar { box-sizing: border-box; height: var(--badge-height, 63px); display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; align-content: center; column-gap: 8px; row-gap: 2px; padding: 4px 10px; border-radius: 11px; }
 .zoom-bar .zoom-button { grid-row: 1; }
 .zoom-bar input[type="range"] { grid-row: 1; grid-column: 2; align-self: center; margin: 0; }
 .zoom-bar .zoom-value { grid-row: 2; grid-column: 2; justify-self: center; height: 18px; min-width: 0; padding: 0 8px; line-height: 16px; }
@@ -343,7 +342,7 @@ h2 { font-size: 27px; }
 /* A clock paused for a scheduled break: restarts by itself unless stopped */
 .clock-button.is-paused { background: var(--teal-dark-solid); }
 .paused-time { color: var(--teal-dark); }
-.metric-clock-button.is-paused { border-color: var(--c-c96f22); background: var(--c-fff3e6); color: var(--c-a85a17); border-style: dashed; }
+.metric-clock-button.is-paused { border-color: var(--teal-dark-solid); background: var(--teal-dark-solid); color: #fff; }
 /* Edit Times undo / redo, beside Commit */
 .edit-times-card .schedule-toolbar .undo-redo { display: flex; flex: 0 0 auto; align-self: stretch; gap: 4px; }
 .undo-redo-button { display: grid; place-items: center; width: 34px; padding: 0; border: 1.5px solid var(--teal); border-radius: 8px; background: transparent; color: var(--teal-dark); cursor: pointer; }
@@ -670,7 +669,7 @@ table.export-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 .now-marker svg { display: block; width: 9px; height: 9.506px; fill: none; stroke: var(--now); stroke-width: 1; stroke-linejoin: round; }
 /* Light/dark button: a square the height of the profile badge, just to its left. It shows the mode it switches to. */
 .topbar { gap: 8px; }
-.theme-toggle { flex: 0 0 auto; display: grid; place-items: center; width: var(--badge-height, 64px); height: var(--badge-height, 64px); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--muted); cursor: pointer; }
+.theme-toggle { flex: 0 0 auto; display: grid; place-items: center; width: var(--badge-height, 64px); height: var(--badge-height, 64px); padding: 0; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); color: var(--muted); cursor: pointer; }
 .theme-toggle:hover { border-color: var(--teal); color: var(--teal-dark); }
 .theme-toggle svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 /* Dark mode: pictures (mostly on white) are dimmed a little so they don't glare on the dark page */
@@ -775,4 +774,17 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
 @media (pointer: coarse) {
   #edit-times-card .schedule-legend { display: grid; grid-template-columns: auto auto 1fr; column-gap: 24px; row-gap: 8px; align-items: center; }
   #edit-times-card .schedule-legend .legend-tips { grid-column: 3; grid-row: 1 / span 2; margin-left: 12px; }
+}
+
+/* Start and stop buttons glow when the mouse is over them: teal to start, orange to stop. Mouse only: on a tablet the hover would stick after a tap. */
+@media (hover: hover) {
+  .clock-button, .metric-clock-button { transition: box-shadow .15s ease; }
+  .clock-button:hover, .metric-clock-button:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 22%, transparent), 0 0 14px color-mix(in srgb, var(--teal) 55%, transparent); }
+  .clock-button.is-running:hover, .clock-button.is-paused:hover, .metric-clock-button.is-running:hover, .metric-clock-button.is-paused:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 22%, transparent), 0 0 14px color-mix(in srgb, var(--coral) 55%, transparent); }
+}
+/* Tablet: the same glow while a finger presses the button, fading out after the tap. */
+@media (hover: none) {
+  .clock-button, .metric-clock-button { transition: box-shadow .5s ease-out; -webkit-tap-highlight-color: transparent; } /* no grey Android press box over the glow */
+  .clock-button.is-pressed, .metric-clock-button.is-pressed { transition: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 22%, transparent), 0 0 14px color-mix(in srgb, var(--teal) 55%, transparent); }
+  .clock-button.is-running.is-pressed, .clock-button.is-paused.is-pressed, .metric-clock-button.is-running.is-pressed, .metric-clock-button.is-paused.is-pressed { box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 22%, transparent), 0 0 14px color-mix(in srgb, var(--coral) 55%, transparent); }
 }
