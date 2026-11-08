@@ -234,7 +234,7 @@ h2 { font-size: 27px; }
 /* Edit times: day strip (last four weeks ending today) */
 .day-strip-bar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; margin-bottom: 14px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--c-ffffff); box-shadow: var(--shadow); }
 .day-strip-month { min-width: 70px; color: var(--muted); font-size: 11px; font-weight: 700; text-align: center; white-space: nowrap; }
-.day-strip { display: flex; gap: 3px; overflow-x: auto; scroll-behavior: smooth; padding: 3px 2px 6px; scrollbar-width: thin; cursor: grab; }
+.day-strip { display: flex; gap: 3px; overflow-x: auto; scroll-behavior: smooth; padding: 12px 2px 6px; /* room above for today's triangle */ scrollbar-width: thin; cursor: grab; }
 .day-strip.is-dragging { cursor: grabbing; scroll-behavior: auto; }
 .day-strip:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 8px; }
 .day-chip { flex: 0 0 40px; /* 28 days fit a full-HD screen without the scroll bar */ display: grid; justify-items: center; gap: 3px; padding: 5px 0 6px; border: 1px solid transparent; border-radius: 9px; background: transparent; cursor: pointer; font-variant-numeric: tabular-nums; }
@@ -245,8 +245,10 @@ h2 { font-size: 27px; }
 .day-chip-bar i { display: block; width: 100%; border-radius: 3px; background: var(--teal); opacity: .55; }
 .day-chip.is-committed .day-chip-bar i { background: var(--c-c99a2e); opacity: .85; }
 .day-chip.is-weekend .day-chip-date { color: var(--muted); }
-.day-chip.is-monday { border-left: 1px dashed var(--line); border-radius: 0 9px 9px 0; }
-.day-chip.is-today .day-chip-date { color: var(--teal); }
+.day-chip.is-week-start { border-left: 1px dashed var(--line); border-radius: 0 9px 9px 0; } /* weeks start on Sunday */
+.day-chip { position: relative; }
+.day-chip-today { position: absolute; top: -11px; left: 50%; width: 9px; height: 9.506px; transform: translateX(-50%); } /* today: the timeline's "now" triangle, pointing down at the day */
+.day-chip-today svg { display: block; width: 9px; height: 9.506px; fill: none; stroke: var(--now); stroke-width: 1; stroke-linejoin: round; }
 .day-chip.is-selected, .day-chip.is-selected:hover { border-color: var(--teal); background: var(--mint); }
 .day-strip-today { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--c-ffffff); color: var(--teal-dark); font-size: 12px; font-weight: 700; cursor: pointer; }
 .day-strip-today:disabled { opacity: .45; cursor: default; }
