@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Time Slide on a tablet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f4f7f5; --panel: #ffffff; --ink: #17282d; --muted: #5f6f6d; --line: #dce6e2;
+    --teal: #147d78; --teal-soft: #e2f0eb; --gold: #b8892c; --gold-soft: #fbf3df; --rework: #6b4fb3; --rework-soft: #efeafb;
+    --warn: #a55b46; --warn-soft: #fdf0ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #11191b; --panel: #182326; --ink: #e6eeec; --muted: #9db0ad; --line: #2b3a3d;
+      --teal: #4eb9ac; --teal-soft: #1b3330; --gold: #e0b45a; --gold-soft: #322a17; --rework: #b39cf0; --rework-soft: #2a2340;
+      --warn: #e59a82; --warn-soft: #3a2620;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 'DM Sans', system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 40px 16px 64px; }
+  header { margin-bottom: 28px; }
+  .eyebrow { margin: 0 0 6px; color: var(--teal); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  h1 { margin: 0 0 10px; font-size: 34px; line-height: 1.15; }
+  .lead { margin: 0; color: var(--muted); font-size: 18px; }
+  nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
+  nav a { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--ink); font-size: 14px; text-decoration: none; }
+  section { margin-top: 22px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+  h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-size: 22px; }
+  h2 .num { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 15px; }
+  h3 { margin: 20px 0 6px; font-size: 17px; }
+  p { margin: 0 0 10px; }
+  ol, ul { margin: 0 0 10px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  .gesture-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .gesture { padding: 14px; border-radius: 12px; background: var(--teal-soft); }
+  .gesture strong { display: block; margin-bottom: 4px; font-size: 16px; }
+  .gesture span { color: var(--muted); font-size: 14px; }
+  .gesture svg { display: block; width: 40px; height: 40px; margin-bottom: 8px; stroke: var(--teal); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn { display: inline-block; padding: 1px 8px; border-radius: 6px; background: var(--teal); color: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; }
+  .btn.outline { border: 1.5px solid var(--teal); background: transparent; color: var(--teal); }
+  .btn.rework { border: 1.5px solid var(--rework); background: transparent; color: var(--rework); }
+  .note, .warn { margin: 14px 0 4px; padding: 12px 14px; border-radius: 10px; font-size: 15px; }
+  .note { background: var(--gold-soft); border-left: 4px solid var(--gold); }
+  .warn { background: var(--warn-soft); border-left: 4px solid var(--warn); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+  footer { margin-top: 28px; color: var(--muted); font-size: 13px; text-align: center; }
+  @media (max-width: 600px) { h1 { font-size: 28px; } section { padding: 18px 16px; } }
+  @media print {
+    body { background: #fff; color: #000; font-size: 12pt; }
+    main { padding: 0; max-width: none; }
+    nav { display: none; }
+    section { break-inside: avoid; border-color: #ccc; }
+    .btn { border: 1px solid #000; background: none; color: #000; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Time Slide · guide for tablet users</p>
+    <h1>Clocking your time on a tablet</h1>
+    <p class="lead">Everything you need to clock on and off contracts, and to put your day right, using your finger. You only need two screens: the <strong>Dashboard</strong> and <strong>Edit or Commit times</strong>. Anything else is done on a laptop.</p>
+    <nav aria-label="Contents">
+      <a href="#start">Getting started</a>
+      <a href="#gestures">Finger moves</a>
+      <a href="#clock">Clocking on and off</a>
+      <a href="#tiles">Your tiles</a>
+      <a href="#edit">Correcting your times</a>
+      <a href="#commit">Committing your day</a>
+      <a href="#help">Quick answers</a>
+    </nav>
+  </header>
+
+  <section id="start">
+    <h2><span class="num">1</span>Getting started</h2>
+    <ol>
+      <li>Hold the tablet <strong>sideways</strong> (landscape). Time Slide is laid out for that.</li>
+      <li>Open <strong>Chrome</strong> and go to <strong>timeslide.cliffeng.com</strong>.</li>
+      <li>Sign in with your normal Clifford work account. The tablet is yours, so you'll stay signed in.</li>
+      <li>Tip: in Chrome's menu (⋮), choose <strong>Add to Home screen</strong>. Time Slide then opens from an icon like any other app.</li>
+    </ol>
+  </section>
+
+  <section id="gestures">
+    <h2><span class="num">2</span>The four finger moves</h2>
+    <div class="gesture-grid">
+      <div class="gesture">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="6"/><circle cx="20" cy="20" r="12" opacity=".4"/></svg>
+        <strong>Tap</strong><span>Touch and let go. Presses buttons and opens a block of time.</span>
+      </div>
+      <div class="gesture">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 20h26M24 12l8 8-8 8"/></svg>
+        <strong>Swipe</strong><span>Slide straight away. Scrolls the page, the timeline or the day strip.</span>
+      </div>
+      <div class="gesture">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="6"/><path d="M20 4v4M20 32v4M4 20h4M32 20h4"/></svg>
+        <strong>Hold, then slide</strong><span>Keep your finger still until the tablet buzzes, then slide. Moves a tile or draws time.</span>
+      </div>
+      <div class="gesture">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 32l9-9M32 8l-9 9M8 32h7M8 32v-7M32 8h-7M32 8v7"/></svg>
+        <strong>Pinch</strong><span>Two fingers apart or together. Zooms a tile's picture.</span>
+      </div>
+    </div>
+    <p style="margin-top:14px">There's no right-click and no double-tap in Time Slide. You never need them.</p>
+  </section>
+
+  <section id="clock">
+    <h2><span class="num">3</span>Clocking on and off</h2>
+    <p>The <strong>Dashboard</strong> shows one tile for each contract you work on.</p>
+    <h3>Start work on a contract</h3>
+    <p>Tap <span class="btn">Start clock</span> on its tile. The tile glows and the <em>Current session</em> time counts up.</p>
+    <h3>Move to another contract</h3>
+    <p>Just tap <span class="btn">Start clock</span> on the next tile. Only one clock runs at a time, so the first one stops and saves by itself.</p>
+    <h3>Stop</h3>
+    <p>Tap <span class="btn">Stop clock</span>. The time is saved straight away.</p>
+    <h3>Rework</h3>
+    <p>If the job is rework, tap <span class="btn rework">Rework</span> on the tile first and pick the reason. The button changes to <span class="btn">Start rework</span>. Tap it to start.</p>
+    <h3>Time not on a contract</h3>
+    <p>Use <span class="btn outline">Start</span> on the orange <strong>Non-contract</strong> box at the top of the Dashboard.</p>
+    <h3>Breaks and the end of the day</h3>
+    <ul>
+      <li>A running clock <strong>pauses for your breaks</strong> and restarts afterwards by itself. While it's paused, the tile says <em>On break</em>. If you're not going back to that job, tap <span class="btn">Stop clock</span>.</li>
+      <li>If you forget to stop at the end of the day, Time Slide <strong>stops the clock for you</strong> (an auto clock-out). Check that day's end time next time you go to Edit times.</li>
+    </ul>
+  </section>
+
+  <section id="tiles">
+    <h2><span class="num">4</span>Your tiles</h2>
+    <table>
+      <thead><tr><th>To…</th><th>Do this</th></tr></thead>
+      <tbody>
+        <tr><td>Add a contract tile</td><td>Tap <span class="btn">+ Add tile</span>, search for the contract number or customer, tick it, then tap <strong>Add to dashboard</strong>.</td></tr>
+        <tr><td>Move a tile</td><td>Hold a tile still until it buzzes and lifts, then slide it to its new place and let go. A quick swipe just scrolls the page.</td></tr>
+        <tr><td>Stop a tile moving</td><td>Tap the <strong>pin</strong> at its top right. Tap again to unpin.</td></tr>
+        <tr><td>Remove a tile</td><td>Tap the <strong>⊗</strong> at its bottom left. The contract's time is kept, and you can add the tile back later.</td></tr>
+        <tr><td>See the picture bigger</td><td>Tap the picture, then pinch to zoom and slide one finger to look around.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="edit">
+    <h2><span class="num">5</span>Correcting your times</h2>
+    <p>Tap <strong>Edit or Commit times</strong> in the menu. Each contract you worked on that day has a row, and each piece of time is a coloured block on its timeline.</p>
+    <h3>Choose the day</h3>
+    <p>Tap a day in the strip at the top. Swipe the strip to see earlier days, and tap <span class="btn outline">Today</span> to come back. The little bar under each day shows how full it is. A <strong>padlock</strong> means the day is committed.</p>
+    <h3>Look along the day</h3>
+    <p>Swipe the timeline left and right. Use <strong>−</strong> and <strong>+</strong> at the top to zoom. Zoom in when you need to set exact minutes.</p>
+    <h3>Change a start or finish time</h3>
+    <p>Put your finger on the <strong>end</strong> of a block and slide it. A label above your finger shows the time. Where two blocks meet, they move together, so there's no gap or overlap.</p>
+    <p>To move one end on its own, <strong>hold that end still</strong> until it turns into a red bar (it's now unlinked). Hold it again to link it back.</p>
+    <h3>Add time you forgot to clock</h3>
+    <ol>
+      <li>If the contract has no row that day, tap <span class="btn outline">+ Add contract</span> and choose it.</li>
+      <li>On an empty part of its row, <strong>hold still until the tablet buzzes</strong>, then slide along to draw the time. Let go when the label shows the right times.</li>
+      <li>For rework, tap the row's <span class="btn rework">Rework</span> button and pick the reason before you draw.</li>
+    </ol>
+    <p>Time you add this way gets a dashed edge and a pencil mark. You can add time to the last 28 days, but never past the current time. If you draw over other time, Time Slide asks before it takes that time away from the other block.</p>
+    <h3>See or remove a block</h3>
+    <p>Tap a block. You'll see its times and any notes (rework reason, added by hand, auto clock-out). Tap <span class="btn" style="background:#e07a5f">Remove</span> to delete it, or <strong>Cancel</strong> to leave it.</p>
+    <h3>Check an auto clock-out</h3>
+    <p>A block ended by an auto clock-out has a small <strong>clock badge</strong>. Tap the badge to keep that end time, or slide the end to when you really finished.</p>
+    <h3>Made a mistake?</h3>
+    <p>Use the <strong>Undo</strong> (↶) and <strong>Redo</strong> (↷) buttons beside <span class="btn outline">Commit</span>.</p>
+  </section>
+
+  <section id="commit">
+    <h2><span class="num">6</span>Committing your day</h2>
+    <p>When a day's times are right, tap <span class="btn outline">Commit</span> on Edit times and confirm.</p>
+    <div class="warn"><strong>Committing is final.</strong> Nobody can change a committed day afterwards, not even an administrator. Check every block first, especially any auto clock-outs.</div>
+    <p style="margin-top:10px">If you have days you haven't committed, you may get an email reminder. Its link opens the first one for you.</p>
+  </section>
+
+  <section id="help">
+    <h2><span class="num">7</span>Quick answers</h2>
+    <table>
+      <tbody>
+        <tr><td><strong>The page scrolls when I try to draw time</strong></td><td>Keep your finger still until it buzzes, then slide. Starting to slide straight away scrolls instead.</td></tr>
+        <tr><td><strong>A tile won't move</strong></td><td>It may be pinned. Tap its pin to release it. And hold on the tile itself, not on a button.</td></tr>
+        <tr><td><strong>I can't tap the middle of a short block</strong></td><td>Zoom in with <strong>+</strong> so the block is wider.</td></tr>
+        <tr><td><strong>I can't change a day</strong></td><td>It's committed (padlock), more than 28 days ago, or later than now.</td></tr>
+        <tr><td><strong>I need Data export, Setup or lists</strong></td><td>Those are for a laptop.</td></tr>
+        <tr><td><strong>Something looks wrong</strong></td><td>Ask your manager or speak to Stafford Kirby.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>Time Slide · Clifford Machines &amp; Technology · tablet guide, November 2026</footer>
+</main>
+</body>
+</html>

@@ -28,7 +28,6 @@ button { cursor: pointer; }
 .edit-times-card .schedule-toolbar { min-height: 72px; }.edit-times-card .schedule-toolbar div { display: grid; gap: 4px; }.edit-times-card .schedule-toolbar strong { font: 600 16px 'Space Grotesk'; }.edit-times-card .schedule-toolbar span { color: var(--muted); font-size: 11px; }.edit-times-card .schedule-toolbar .edit-user-block { display: flex; align-items: stretch; gap: 12px; width: max-content; }.edit-times-card .schedule-toolbar .edit-user-text { width: max-content; }.commit-times-button { flex: 0 0 auto; align-self: stretch; width: 84px; height: auto; display: grid; place-items: center; padding: 4px; white-space: nowrap; border: 1.5px solid var(--teal); border-radius: 8px; background: transparent; color: var(--teal-dark); font-size: 11px; font-weight: 700; text-align: center; line-height: 1.2; }.commit-times-button:hover { background: var(--mint); }.commit-times-button:disabled { border-color: var(--line); color: var(--muted); cursor: not-allowed; }.commit-times-button:disabled:hover { background: transparent; }/* Committed day: blocks still show their tooltip on hover, but their handles and badges can't be used (double-click is ignored in app.js) */
 .edit-times-card.is-locked .edit-session-block { opacity: .55; cursor: default; }
 .edit-times-card.is-locked .edit-session-block > * { pointer-events: none; }.edit-session-row .user-cell { display: flex; align-items: center; gap: 12px; overflow: hidden; }.edit-contract-top { display: flex; align-items: baseline; gap: 8px; overflow: hidden; }.edit-contract-top strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; }.edit-contract-code { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--muted); font-size: 10px; }.edit-session-block { background: var(--c-cfe8df); }.edit-session-block:hover { background: var(--c-b8ddd0); }.edit-session-block .schedule-handle { background: transparent; }.edit-session-block .schedule-handle:hover { background: rgba(20, 125, 120, .28); }
-/* EXPERIMENTAL — remove this rule to revert the long-press unlink/relink feature (see app.js for the matching note) */
 /* An unlinked end: its handle shows as a solid red bar (hold it to relink) */
 .edit-session-block .schedule-handle.is-unlinked, .edit-session-block .schedule-handle.is-unlinked:hover { width: 6px !important; background: var(--c-c6534b); box-shadow: 0 0 0 2px rgba(198, 83, 75, .25); }
 .edit-session-block .start-handle.is-unlinked { border-radius: 6px 0 0 6px; }
@@ -730,6 +729,36 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
 .info-import-report details[open] summary { margin-bottom: 6px; }
 .info-import-summary { padding: 12px 14px; border-radius: 10px; background: var(--c-f3faf7); border: 1px solid var(--line); }
 .info-import-warn { color: var(--c-a55b46); }
+
+/* Tablets: a finger is the main pointer (laptops never match this). Operators clock on Android tablets in landscape and use
+ * only the tiles and Edit times there, so those get fingertip-sized targets (about 40-44px). Touch behaviour is in app.js (byTouch). */
+/* Hints worded for a mouse or for a finger (index.html) */
+@media not all and (pointer: coarse) { .touch-only { display: none !important; } }
+@media (pointer: coarse) { .mouse-only { display: none !important; } }
+@media (pointer: coarse) {
+  /* Tiles: holding one picks it up (app.js enableTouchDrag), so no text selection, image menu or image drag on a long press */
+  .tile { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .tile img { -webkit-user-drag: none; }
+  .tile-action { width: 40px; height: 40px; font-size: 18px; }
+  .drag-handle { width: 30px; height: 40px; }
+  .clock-button { min-height: 44px; padding: 12px 16px; font-size: 13px; }
+  .tile .rework-chip { min-height: 36px; padding: 8px 12px; font-size: 11px; }
+  .tile.is-touch-dragging { position: relative; z-index: 5; opacity: 1; transform: scale(1.04); box-shadow: 0 18px 40px rgba(23, 40, 45, .28); }
+  /* Edit times: taller rows, wider grab zones at each end of a block (at most a third of a short block, so the middle can still be tapped) */
+  .edit-times-card { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .edit-times-card .schedule-row, .edit-times-card .timeline-lane { height: 48px; min-height: 48px; }
+  .edit-session-block .schedule-handle.edit-session-handle { width: clamp(5px, 30%, 18px) !important; touch-action: none; }
+  /* an unlinked end keeps its thin red bar at the edge of the wider zone */
+  .edit-session-block .schedule-handle.edit-session-handle.is-unlinked { box-shadow: none; }
+  .edit-session-block .start-handle.edit-session-handle.is-unlinked { background: linear-gradient(to right, var(--c-c6534b) 0 6px, transparent 6px); }
+  .edit-session-block .end-handle.edit-session-handle.is-unlinked { background: linear-gradient(to left, var(--c-c6534b) 0 6px, transparent 6px); }
+  .auto-stop-badge { width: 26px; height: 26px; }
+  .edit-rework-chip { min-height: 32px; padding: 6px 10px; }
+  .add-time-button { min-height: 40px; }
+  .undo-redo-button { width: 44px; min-height: 40px; }
+  .zoom-bar .zoom-button { width: 36px; height: 36px; font-size: 18px; }
+  .day-strip { cursor: auto; }
+}
 /* Every screen: the title row stays at the top while the page scrolls under it (on the dashboard the notice and toolbar stay too; not on phones) */
 @media (min-width: 651px) {
   .dashboard-head, .view > .section-heading { position: sticky; top: 0; z-index: 6; padding-top: 12px; }
@@ -739,3 +768,5 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
   .dashboard-head, .view > .section-heading { margin-top: -36px; padding-top: 36px; }
   .topbar { position: fixed; z-index: 7; }
 }
+/* Three tiles across on a landscape tablet, so the bigger buttons fit (a laptop has five or four; narrower screens keep two) */
+@media (pointer: coarse) and (min-width: 901px) { .tile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
