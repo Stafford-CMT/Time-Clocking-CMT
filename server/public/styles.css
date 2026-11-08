@@ -730,3 +730,12 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
 .info-import-report details[open] summary { margin-bottom: 6px; }
 .info-import-summary { padding: 12px 14px; border-radius: 10px; background: var(--c-f3faf7); border: 1px solid var(--line); }
 .info-import-warn { color: var(--c-a55b46); }
+/* Every screen: the title row stays at the top while the page scrolls under it (on the dashboard the notice and toolbar stay too; not on phones) */
+@media (min-width: 651px) {
+  .dashboard-head, .view > .section-heading { position: sticky; top: 0; z-index: 6; padding-top: 12px; }
+  .page-scrolled .dashboard-head, .page-scrolled .view > .section-heading { background: var(--paper); box-shadow: 0 1px 0 var(--line); }
+}
+@media (min-width: 901px) {
+  .dashboard-head, .view > .section-heading { margin-top: -36px; padding-top: 36px; }
+  .topbar { position: fixed; z-index: 7; }
+}

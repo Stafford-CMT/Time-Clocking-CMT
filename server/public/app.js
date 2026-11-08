@@ -732,3 +732,5 @@ function openFromLink() {
   openExportDay(currentUserId, match[1] || TODAY);
 }
 loadState().then(() => { renderAll(); openFromLink(); updateNowMarkers(); setInterval(tick, 1000); setInterval(updateTabIndicator, 70); }).catch((error) => showToast(`Could not load data: ${error.message}`));
+// Screen titles: solid background only once the page starts scrolling under them
+{ const markScrolled = () => document.documentElement.classList.toggle('page-scrolled', window.scrollY > 0); window.addEventListener('scroll', markScrolled, { passive: true }); markScrolled(); }
