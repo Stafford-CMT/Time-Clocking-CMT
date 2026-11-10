@@ -213,6 +213,11 @@ CMT-DC), set up the same way as IO Buddy, Gantt, MecHub and Training Matrix:
   (`C:\nssm\nssm.exe`), as LocalService, starting automatically, restarting
   if it stops, with `NODE_ENV=production`. This server does **not** use PM2
   (`ecosystem.config.js` is only for a PM2 setup elsewhere).
+- Node.js: Time Slide's own copy of Node 22 in `C:\TIME SLIDE\node22` (the
+  service's NSSM Application), so the rest of the server can stay on the main
+  Node 20 in `C:\Program Files\nodejs`. The SQL Server package (Syspro) needs
+  Node 20.19 or newer. `update-timeslide.ps1` installs packages with whichever
+  Node the service uses.
 - Logs: `C:\TIME SLIDE\server\logs\service-out.log` and `service-error.log`.
 - Port 4004, behind the shared Caddy (service `Caddy`), whose Caddyfile is
   `C:\IO BUDDY\IO Buddy - Eplan database import export\server\Caddyfile`. The

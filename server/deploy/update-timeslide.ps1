@@ -63,6 +63,14 @@ if ($env:COMPUTERNAME -ne 'CMT-DC') { Write-Host "STOPPED: this is $env:COMPUTER
 if (-not (Test-Path $Zip)) { Write-Host "STOPPED: $Zip not found. Nothing was changed." -ForegroundColor Red; exit 1 }
 if (-not (Test-Path (Join-Path $Live '.env'))) { Write-Host "STOPPED: $Live\.env not found - is Time Slide installed here? Nothing was changed." -ForegroundColor Red; exit 1 }
 
+# Install packages and run migrations with the same Node.js the service runs on (Time Slide can have its own copy,
+# e.g. C:\TIME SLIDE\node22, while the rest of the server stays on the main one).
+$serviceNode = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\$Service\Parameters" -Name Application -ErrorAction SilentlyContinue).Application
+if ($serviceNode -and (Test-Path $serviceNode)) {
+  $env:Path = (Split-Path $serviceNode) + ';' + $env:Path
+  Write-Host "  Node.js for Time Slide: $(& $serviceNode -v) ($serviceNode)"
+}
+
 try {
   Step 'Unpacking the update'
   if (Test-Path $Unpacked) { Remove-Item $Unpacked -Recurse -Force }
