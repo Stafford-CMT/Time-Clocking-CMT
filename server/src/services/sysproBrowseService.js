@@ -5,8 +5,11 @@
  * name from the browser is only used once it has been found in SQL Server's own
  * list, so nothing typed can reach the SQL text. The SQL login is read only too.
  */
-const sql = require('mssql');
-const { getSqlPool } = require('./sysproService');
+// Loaded on first use, not at start-up: the SQL Server package is large and only admins browsing Syspro need it.
+let mssql = null;
+const sql = new Proxy({}, { get: (target, key) => (mssql ||= sysproService.loadMssql())[key] });
+const sysproService = require('./sysproService');
+const { getSqlPool } = sysproService;
 const ApiError = require('../utils/ApiError');
 
 const PAGE_SIZE = 100;

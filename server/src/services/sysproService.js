@@ -13,6 +13,17 @@ const sysproSettingsRepo = require('../repositories/sysproSettingsRepo');
 const { encrypt, decrypt } = require('../utils/secrets');
 const ApiError = require('../utils/ApiError');
 
+// The SQL Server package, loaded on first use (it is large, and a server on Node.js older than 20.19 cannot load
+// part of it): there that shows as a clear message on the Syspro screens instead of stopping Time Slide.
+function loadMssql() {
+  try {
+    return require('mssql');
+  } catch (err) {
+    if (err.code === 'ERR_REQUIRE_ESM') throw new ApiError(500, `The Syspro SQL connection needs Node.js 20.19 or newer on the server (it has ${process.version}). Ask for Node.js to be updated.`);
+    throw err;
+  }
+}
+
 const TEXT_FIELDS = {
   enetUrl: 'enet_url',
   enetOperator: 'enet_operator',
@@ -162,7 +173,7 @@ async function getSqlPool() {
   const key = String(row.updated_at);
   if (sharedPool && sharedPoolKey === key) return sharedPool;
   if (sharedPool) sharedPool.then((pool) => pool.close()).catch(() => {});
-  const sql = require('mssql');
+  const sql = loadMssql();
   const { config, where } = sqlConfig(row, { requestTimeoutMs: 60000 });
   sharedPoolKey = key;
   sharedPool = new sql.ConnectionPool(config).connect().catch((err) => {
@@ -182,7 +193,7 @@ async function testSql({ timeoutMs = 10000 } = {}) {
   if (!row.sql_user) missing.push('SQL login');
   if (missing.length) return { ok: false, message: `Fill in the ${missing.join(', ')} and save first.` };
 
-  const sql = require('mssql');
+  const sql = loadMssql();
   const { config, where } = sqlConfig(row, { timeoutMs, poolMax: 1 });
   const pool = new sql.ConnectionPool(config);
   try {
@@ -198,4 +209,4 @@ async function testSql({ timeoutMs = 10000 } = {}) {
   }
 }
 
-module.exports = { getSettings, saveSettings, testEnet, testSql, getSqlPool };
+module.exports = { getSettings, saveSettings, testEnet, testSql, getSqlPool, loadMssql };

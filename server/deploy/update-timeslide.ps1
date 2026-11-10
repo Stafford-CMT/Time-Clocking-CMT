@@ -45,7 +45,7 @@ function Restore-Backup {
 }
 
 function Test-Running($logLinesBefore) {
-  for ($i = 0; $i -lt 20; $i++) {
+  for ($i = 0; $i -lt 60; $i++) { # up to a minute: loading the Syspro SQL package makes start-up slower
     Start-Sleep -Seconds 1
     $log = Join-Path $Live 'logs\service-out.log'
     $new = @(Get-Content $log -ErrorAction SilentlyContinue | Select-Object -Skip $logLinesBefore)
@@ -113,10 +113,12 @@ try {
 
   Step "Restarting $Service"
   $logLinesBefore = @(Get-Content (Join-Path $Live 'logs\service-out.log') -ErrorAction SilentlyContinue).Count
-  Restart-Service $Service
+  $errLinesBefore = @(Get-Content (Join-Path $Live 'logs\service-error.log') -ErrorAction SilentlyContinue).Count
+  # Whatever goes wrong, show what the app itself printed, so the cause is on screen.
+  $why = { $new = @(Get-Content (Join-Path $Live 'logs\service-error.log') -ErrorAction SilentlyContinue | Select-Object -Skip $errLinesBefore | Select-Object -Last 30); if ($new.Count) { "`nWhat Time Slide printed (service-error.log):`n" + ($new -join "`n") } else { "`n(service-error.log has nothing new.)" } }
+  try { Restart-Service $Service } catch { throw ("$($_.Exception.Message)" + (& $why)) }
   if (-not (Test-Running $logLinesBefore)) {
-    $errors = Get-Content (Join-Path $Live 'logs\service-error.log') -Tail 15 -ErrorAction SilentlyContinue
-    throw ("Time Slide did not come back up after the restart. Last lines of service-error.log:`n" + ($errors -join "`n"))
+    throw ("Time Slide did not come back up after the restart." + (& $why))
   }
 
   Write-Host ''
