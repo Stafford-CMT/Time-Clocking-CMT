@@ -51,7 +51,9 @@ async function recordSignIn(id, { email, name }) {
 // Only the people ticked into Time Slide -- everything outside Lists -> Users.
 async function listAll() {
   const { rows } = await getPool().query(
-    'SELECT id, email, name, user_type, cost_centre, auto_clock_out, working_pattern_id, is_active, created_at, last_login_at FROM users WHERE included ORDER BY created_at'
+    `SELECT id, email, name, user_type, cost_centre, department, auto_clock_out, working_pattern_id, is_active, created_at, last_login_at,
+            working_department, to_char(working_department_on, 'YYYY-MM-DD') AS working_department_on
+       FROM users WHERE included ORDER BY created_at`
   );
   return rows;
 }

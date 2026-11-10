@@ -29,6 +29,7 @@
             <button class="nav-item nav-child" data-view="contract-information" type="button">Contract information</button>
             <button class="nav-item nav-child" id="nav-lists-open" type="button">Lists</button>
             <button class="nav-item nav-child is-hidden" id="nav-configuration" data-view="configuration" type="button">Configuration</button>
+            <button class="nav-item nav-child is-hidden" id="nav-syspro-tables" data-view="syspro-tables" type="button">Syspro tables</button>
           </div>
         </div>
       </nav>
@@ -73,6 +74,7 @@
             <span class="toolbar-hint" id="tiles-hint"><span class="mouse-only">Drag to arrange your workspace</span><span class="touch-only">Hold a tile, then slide it to arrange your workspace</span></span>
           </div>
           <div class="toolbar-actions">
+            <button class="working-in" id="working-in" type="button" aria-haspopup="dialog"></button>
             <button class="add-button" id="open-lists" type="button"><span>+</span> Lists</button>
             <button class="add-button" id="open-find-tiles" type="button" aria-haspopup="dialog"><span>+</span> Add tile</button>
           </div>
@@ -87,7 +89,7 @@
           <div class="section-heading-actions"><div class="zoom-bar" role="group" aria-label="Zoom timeline"><button class="zoom-button" id="wt-zoom-out" type="button" title="Zoom out" aria-label="Zoom out">&#8722;</button><input id="wt-zoom-range" type="range" min="0.5" max="24" step="0.25" value="1" aria-label="Zoom level"><button class="zoom-button" id="wt-zoom-in" type="button" title="Zoom in" aria-label="Zoom in">&#43;</button><button class="zoom-value" id="wt-zoom-value" type="button" title="Reset to 05:00 - 18:00">1x</button></div></div>
         </div>
         <div class="schedule-card zoomable" id="working-times-card">
-          <div class="schedule-toolbar"><span class="now-marker is-hidden"><svg viewBox="0 0 9 9.506" aria-hidden="true"><path d="M1 1 L8 1 L4.5 8.506 Z"/></svg></span><div class="day-tabs" id="wt-day-tabs" role="tablist" aria-label="Day of the week"></div><span class="schedule-toolbar-note">Hours and breaks come from each person's working pattern (Manage lists &rarr; Working patterns).</span></div>
+          <div class="schedule-toolbar"><span class="now-marker is-hidden"><svg viewBox="0 0 9 9.506" aria-hidden="true"><path d="M2.9 1 L6.1 1 Q8 1 7.197 2.722 L5.303 6.784 Q4.5 8.506 3.697 6.784 L1.803 2.722 Q1 1 2.9 1 Z"/></svg></span><div class="day-tabs" id="wt-day-tabs" role="tablist" aria-label="Day of the week"></div><span class="schedule-toolbar-note">Hours and breaks come from each person's working pattern (Manage lists &rarr; Working patterns).</span></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading">Team member</div><div class="timeline-heading" id="timeline-heading"></div></div><div id="working-time-rows"></div></div>
           <p class="empty-state is-hidden" id="empty-state">Nobody is in Time Slide yet.</p>
           <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Scheduled work</span><span><i class="legend-swatch break-swatch"></i>Break</span><span><i class="legend-swatch auto-clock-out-swatch"></i>Auto clock-out (drag your own line to change it)</span></div>
@@ -103,9 +105,9 @@
         </div>
         <div class="day-strip-bar"><span class="day-strip-month" id="day-strip-month"></span><div class="day-strip" id="day-strip" tabindex="0" aria-label="Days, the last four weeks"></div><button class="day-strip-today" id="day-strip-today" type="button">Today</button><label class="day-strip-older" title="Pick an older day">Older<input id="edit-times-date" type="date"></label></div>
         <div class="schedule-card zoomable edit-times-card" id="edit-times-card">
-          <div class="schedule-toolbar"><span class="now-marker is-hidden"><svg viewBox="0 0 9 9.506" aria-hidden="true"><path d="M1 1 L8 1 L4.5 8.506 Z"/></svg></span><div class="edit-user-block"><div class="edit-user-text"><strong id="edit-user-name"></strong><select id="edit-user-select" class="current-user-select edit-user-select is-hidden" aria-label="Show times for user"></select><span>Showing times for</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button><div class="undo-redo" role="group" aria-label="Undo and redo"><button class="undo-redo-button" id="edit-undo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 2.5 6.5l3 3"/><path d="M2.5 6.5h7a4 4 0 0 1 0 8H7"/></svg></button><button class="undo-redo-button" id="edit-redo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m10.5 3.5 3 3-3 3"/><path d="M13.5 6.5h-7a4 4 0 0 0 0 8H9"/></svg></button></div><button class="commit-times-button add-time-button" id="add-time" type="button">+ Add contract</button></div></div>
+          <div class="schedule-toolbar"><span class="now-marker is-hidden"><svg viewBox="0 0 9 9.506" aria-hidden="true"><path d="M2.9 1 L6.1 1 Q8 1 7.197 2.722 L5.303 6.784 Q4.5 8.506 3.697 6.784 L1.803 2.722 Q1 1 2.9 1 Z"/></svg></span><div class="edit-user-block"><div class="edit-user-text"><strong id="edit-user-name"></strong><select id="edit-user-select" class="current-user-select edit-user-select is-hidden" aria-label="Show times for user"></select><span>Showing times for</span></div><button class="commit-times-button" id="commit-times" type="button" title="Commit times" aria-label="Commit times">Commit</button><div class="undo-redo" role="group" aria-label="Undo and redo"><button class="undo-redo-button" id="edit-undo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 2.5 6.5l3 3"/><path d="M2.5 6.5h7a4 4 0 0 1 0 8H7"/></svg></button><button class="undo-redo-button" id="edit-redo" type="button" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m10.5 3.5 3 3-3 3"/><path d="M13.5 6.5h-7a4 4 0 0 0 0 8H9"/></svg></button></div><button class="commit-times-button add-time-button" id="add-time" type="button">+ Add contract</button></div></div>
           <div class="schedule-scroll"><div class="schedule-header"><div class="user-column-heading edit-column-heading"><span>Contract</span><span>Total</span></div><div class="timeline-heading" id="edit-timeline-heading"></div></div><div id="edit-time-rows"></div></div><p class="empty-state is-hidden" id="edit-empty-state">No time booked on this day.</p>
-          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch non-contract-swatch"></i>Non-contract time</span><span class="mouse-only"><i class="legend-swatch rework-swatch"></i>Rework (hover for the reason)</span><span><i class="legend-swatch hand-entered-swatch"></i>Entered by hand</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span><span class="legend-tips mouse-only">Tips: drag on an empty timeline to add time you forgot to clock · drag a block's ends to change its times · hold an end to unlink it · double-click a block to delete it · Ctrl+Z to undo</span><span class="legend-tips touch-only">Tips: hold on an empty timeline, then slide, to add time you forgot to clock · drag a block's ends to change its times · hold an end to unlink it · tap a block to see it or delete it · Undo puts it back</span></div>
+          <div class="schedule-legend"><span><i class="legend-swatch work-swatch"></i>Recorded contract time</span><span><i class="legend-swatch non-contract-swatch"></i>Non-contract time</span><span class="mouse-only"><i class="legend-swatch rework-swatch"></i>Rework (hover for the reason)</span><span><i class="legend-swatch hand-entered-swatch"></i>Entered by hand</span><span><i class="legend-swatch other-department-swatch"></i>Another department</span><span><i class="legend-swatch break-swatch"></i>Break / non-working time</span><span class="legend-tips mouse-only">Tips: drag on an empty timeline to add time you forgot to clock · drag a block's ends to change its times · hold an end to unlink it · right-click or hold a block to delete it or change its department · Ctrl+Z to undo</span><span class="legend-tips touch-only">Tips: hold on an empty timeline, then slide, to add time you forgot to clock · drag a block's ends to change its times · hold an end to unlink it · hold a block to delete it or change its department · Undo puts it back</span></div>
         </div>
       </section>
 
@@ -127,7 +129,8 @@
             </div>
           </div>
           <div class="table-card">
-            <div class="table-intro"><div><strong>Syspro SQL Server (read only)</strong><span>Used to look up Syspro jobs. Use a SQL login that can only read the Syspro company database.</span></div></div>
+            <div class="table-intro"><div><strong>Syspro SQL Server (read only)</strong><span>Used to look up Syspro jobs. Use a SQL login that can only read the Syspro company database.</span></div><button class="secondary-button" id="config-test-sql" type="button">Test connection</button></div>
+            <p class="config-test-result is-hidden" id="config-test-sql-result" role="status"></p>
             <div class="config-fields">
               <label>Server<input id="config-sql-server" type="text" placeholder="SYSPRO-SQL or SYSPRO-SQL\INSTANCE" spellcheck="false"></label>
               <label>Port<input id="config-sql-port" type="number" min="1" max="65535"></label>
@@ -139,6 +142,35 @@
           </div>
           <p class="config-updated" id="config-updated"></p>
         </form>
+      </section>
+      <section class="view is-hidden" data-view-panel="syspro-tables">
+        <div class="section-heading">
+          <div><span class="section-kicker">Admins only · read only</span><h2>Syspro tables</h2></div>
+        </div>
+        <div class="syspro-browser">
+          <div class="table-card syspro-table-list">
+            <div class="syspro-list-tools">
+              <input id="syspro-table-search" type="search" placeholder="Find a table, e.g. WipMaster" spellcheck="false" aria-label="Find a table">
+              <label class="config-check"><input id="syspro-hide-empty" type="checkbox" checked> Hide empty tables</label>
+              <span class="syspro-list-count" id="syspro-list-count"></span>
+            </div>
+            <ul class="syspro-list" id="syspro-list" role="listbox" aria-label="Syspro tables"></ul>
+          </div>
+          <div class="table-card syspro-table-view">
+            <div class="table-intro syspro-view-head">
+              <div><strong id="syspro-view-name">Choose a table</strong><span id="syspro-view-info">Pick one on the left to see its fields and data.</span></div>
+              <div class="syspro-pager is-hidden" id="syspro-pager"><button class="secondary-button" id="syspro-prev" type="button" aria-label="Previous page">‹</button><span id="syspro-page-text"></span><button class="secondary-button" id="syspro-next" type="button" aria-label="Next page">›</button></div>
+            </div>
+            <form class="syspro-filter is-hidden" id="syspro-filter" autocomplete="off">
+              <label>Filter<select id="syspro-filter-column"></select></label>
+              <label>contains<input id="syspro-filter-text" type="search" spellcheck="false"></label>
+              <button class="secondary-button" type="submit">Find</button>
+              <button class="secondary-button is-hidden" id="syspro-filter-clear" type="button">Show all</button>
+            </form>
+            <p class="config-test-result is-hidden" id="syspro-view-error" role="status"></p>
+            <div class="syspro-grid-scroll"><table class="syspro-grid" id="syspro-grid"></table></div>
+          </div>
+        </div>
       </section>
       <section class="view is-hidden" data-view-panel="data-export">
         <div class="section-heading">
@@ -241,7 +273,7 @@
             <tr><th scope="row">Preview spreadsheet</th><td class="role-some">Own</td><td class="role-some">Own and team</td><td class="role-some">Everyone</td></tr>
             <tr><th scope="row">Export to Syspro, undo an export, send reminders</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr class="role-group"><th colspan="4" scope="colgroup">Dashboard and setup</th></tr>
-            <tr><th scope="row">Add tiles, pin them, change their image</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Add tiles, change their image</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Contract information</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Lists: machine types, suffix descriptions, customers</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Move your own auto clock-out line (Working times)</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
@@ -340,6 +372,13 @@
       <div class="modal-header"><div><span class="section-kicker" id="rework-modal-tile"></span><h2 id="rework-modal-title">Why is this rework?</h2></div><button class="modal-close" id="close-rework-modal" type="button" aria-label="Close rework reasons"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></div>
       <p class="rework-modal-hint">Pick a reason, then press <strong>Start rework</strong> on the tile. It applies to that one start only.</p>
       <ul class="rework-reason-options" id="rework-reason-options"></ul>
+    </div>
+  </div>
+  <div class="modal-backdrop is-hidden" id="department-modal" role="presentation">
+    <div class="modal rework-modal" role="dialog" aria-labelledby="department-modal-title">
+      <div class="modal-header"><div><span class="section-kicker" id="department-modal-kicker"></span><h2 id="department-modal-title">Which department?</h2></div><button class="modal-close" id="close-department-modal" type="button" aria-label="Close departments"><svg class="x-circle" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2"/></svg></button></div>
+      <p class="rework-modal-hint" id="department-modal-hint"></p>
+      <ul class="rework-reason-options" id="department-options"></ul>
     </div>
   </div>
   <div class="modal-backdrop is-hidden" id="confirm-modal" role="alertdialog" aria-labelledby="confirm-modal-message">

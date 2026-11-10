@@ -23,14 +23,15 @@ async function contractExists(db, contractId) {
 }
 
 async function findActive(db, userId) {
-  const { rows } = await db.query('SELECT contract_id, started_at, rework_reason FROM active_sessions WHERE user_id = $1', [userId]);
+  const { rows } = await db.query('SELECT contract_id, started_at, rework_reason, department FROM active_sessions WHERE user_id = $1', [userId]);
   if (!rows.length) return null;
-  return { contractId: rows[0].contract_id, startedAt: new Date(rows[0].started_at).getTime(), reworkReason: rows[0].rework_reason };
+  return { contractId: rows[0].contract_id, startedAt: new Date(rows[0].started_at).getTime(), reworkReason: rows[0].rework_reason, department: rows[0].department };
 }
 
 // reworkReason: null for ordinary time, or the reason this clock is running as rework.
-async function setActive(db, userId, contractId, startedAt, reworkReason = null) {
-  await db.query('INSERT INTO active_sessions (user_id, contract_id, started_at, rework_reason) VALUES ($1, $2, $3, $4)', [userId, contractId, startedAt, reworkReason]);
+// department: the department its time is for (migration 020).
+async function setActive(db, userId, contractId, startedAt, reworkReason = null, department = null) {
+  await db.query('INSERT INTO active_sessions (user_id, contract_id, started_at, rework_reason, department) VALUES ($1, $2, $3, $4, $5)', [userId, contractId, startedAt, reworkReason, department]);
 }
 
 async function reworkReasonExists(db, name) {
@@ -44,13 +45,13 @@ async function clearActive(db, userId) {
 
 // enteredBy/enteredAt: set when the block was entered by hand on Edit times (null = recorded by the clock).
 function toSession(row) {
-  return { id: row.id, contractId: row.contract_id, userId: row.user_id, date: row.date, start: row.start_time, end: row.end_time, unlinkedStart: row.unlinked_start, unlinkedEnd: row.unlinked_end, autoStopped: row.auto_stopped, autoNoticed: row.auto_noticed, reworkReason: row.rework_reason, enteredBy: row.entered_by || null, enteredAt: row.entered_at || null };
+  return { id: row.id, contractId: row.contract_id, userId: row.user_id, date: row.date, start: row.start_time, end: row.end_time, unlinkedStart: row.unlinked_start, unlinkedEnd: row.unlinked_end, autoStopped: row.auto_stopped, autoNoticed: row.auto_noticed, reworkReason: row.rework_reason, department: row.department ?? null, enteredBy: row.entered_by || null, enteredAt: row.entered_at || null };
 }
 
-async function insertTimeSession(db, { id, contractId, userId, date, start, end, autoStopped = false, reworkReason = null, enteredBy = null, enteredAt = null }) {
+async function insertTimeSession(db, { id, contractId, userId, date, start, end, autoStopped = false, reworkReason = null, department = null, enteredBy = null, enteredAt = null }) {
   await db.query(
-    'INSERT INTO time_sessions (id, contract_id, user_id, date, start_time, end_time, auto_stopped, rework_reason, entered_by, entered_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
-    [id, contractId, userId, date, start, end, autoStopped, reworkReason, enteredBy, enteredAt]
+    'INSERT INTO time_sessions (id, contract_id, user_id, date, start_time, end_time, auto_stopped, rework_reason, department, entered_by, entered_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+    [id, contractId, userId, date, start, end, autoStopped, reworkReason, department, enteredBy, enteredAt]
   );
 }
 
@@ -140,12 +141,40 @@ async function deleteTimeSession(db, id) {
 }
 
 async function findBreakState(db, userId) {
-  const { rows } = await db.query('SELECT contract_id, resume_at, rework_reason FROM user_break_state WHERE user_id = $1', [userId]);
-  return rows[0] ? { contractId: rows[0].contract_id, resumeAt: new Date(rows[0].resume_at).getTime(), reworkReason: rows[0].rework_reason } : null;
+  const { rows } = await db.query('SELECT contract_id, resume_at, rework_reason, department FROM user_break_state WHERE user_id = $1', [userId]);
+  return rows[0] ? { contractId: rows[0].contract_id, resumeAt: new Date(rows[0].resume_at).getTime(), reworkReason: rows[0].rework_reason, department: rows[0].department } : null;
 }
 
-async function setBreakState(db, userId, contractId, resumeAt, reworkReason = null) {
-  await db.query('INSERT INTO user_break_state (user_id, contract_id, resume_at, rework_reason) VALUES ($1, $2, $3, $4)', [userId, contractId, new Date(resumeAt), reworkReason]);
+async function setBreakState(db, userId, contractId, resumeAt, reworkReason = null, department = null) {
+  await db.query('INSERT INTO user_break_state (user_id, contract_id, resume_at, rework_reason, department) VALUES ($1, $2, $3, $4, $5)', [userId, contractId, new Date(resumeAt), reworkReason, department]);
+}
+
+// The department a paused clock restarts under (Working in changed during a break).
+async function setBreakDepartment(db, userId, department) {
+  await db.query('UPDATE user_break_state SET department = $2 WHERE user_id = $1', [userId, department]);
+}
+
+/* Departments (migration 020). The choices are the departments of the people in
+ * Time Slide, from Entra ID. A person's department for a day is their own unless
+ * they picked another with Working in on that same day. */
+async function listDepartments(db) {
+  const { rows } = await db.query("SELECT DISTINCT department AS name FROM users WHERE included AND department IS NOT NULL AND btrim(department) <> '' ORDER BY 1");
+  return rows.map((r) => r.name);
+}
+
+// { home, working }: working is the department picked for `date` ('YYYY-MM-DD'), or null.
+async function findDepartments(db, userId, date) {
+  const { rows } = await db.query("SELECT department, working_department, to_char(working_department_on, 'YYYY-MM-DD') AS working_on FROM users WHERE id = $1", [userId]);
+  const row = rows[0] || {};
+  return { home: row.department || null, working: row.working_department && row.working_on === date ? row.working_department : null };
+}
+
+async function setWorkingDepartment(db, userId, department, date) {
+  await db.query('UPDATE users SET working_department = $2, working_department_on = $3 WHERE id = $1', [userId, department, department ? date : null]);
+}
+
+async function setSessionDepartment(db, id, department) {
+  await db.query('UPDATE time_sessions SET department = $2 WHERE id = $1', [id, department]);
 }
 
 async function clearBreakState(db, userId) {
@@ -168,7 +197,7 @@ async function addCommit(db, userId, date) {
  */
 // userIds: whose time blocks and committed days to include (null = everyone).
 async function getClockState(db, userId, userIds) {
-  const activeRows = (await db.query('SELECT user_id, contract_id, started_at, rework_reason FROM active_sessions')).rows;
+  const activeRows = (await db.query('SELECT user_id, contract_id, started_at, rework_reason, department FROM active_sessions')).rows;
   const activeSessions = {};
   activeRows.forEach((r) => {
     activeSessions[r.contract_id] = activeSessions[r.contract_id] || {};
@@ -187,7 +216,7 @@ async function getClockState(db, userId, userIds) {
     .map((r) => ({ userId: r.user_id, date: r.date }));
 
   const own = activeRows.find((r) => r.user_id === userId);
-  return { activeSessions, editSessions, committedDates, breakState: await findBreakState(db, userId), activeReworkReason: own?.rework_reason || null };
+  return { activeSessions, editSessions, committedDates, breakState: await findBreakState(db, userId), activeReworkReason: own?.rework_reason || null, activeDepartment: own?.department || null };
 }
 
 /* Completed time blocks between two dates (inclusive) for Setup -> Data
@@ -197,7 +226,7 @@ async function findSessionsForExport(db, { from, to, userIds = null }) {
   const { rows } = await db.query(
     `SELECT s.id, s.user_id, s.contract_id, s.date, s.start_time, s.end_time, s.auto_stopped, s.rework_reason,
             s.entered_by, s.entered_at, eb.name AS entered_by_name,
-            u.name AS user_name, u.email, u.cost_centre, u.department,
+            u.name AS user_name, u.email, u.cost_centre, s.department, -- the block's own department, not the person's today
             c.system, c.number, c.suffix, c.suffix_description, c.customer_name, c.machine_type,
             (cd.user_id IS NOT NULL) AS committed
        FROM time_sessions s
@@ -216,7 +245,8 @@ module.exports = {
   lockUser, contractExists, findActive, setActive, clearActive, reworkReasonExists,
   insertTimeSession, findTimeSession, updateTimeSession, deleteTimeSession,
   markAutoNoticed, findUncheckedAutoStops, findScheduledClockUsers, findClockSchedule,
-  findBreakState, setBreakState, clearBreakState,
+  findBreakState, setBreakState, setBreakDepartment, clearBreakState,
+  listDepartments, findDepartments, setWorkingDepartment, setSessionDepartment,
   findDaySessions, contractIsRetired, keepRemoved, findRemoved, putBackRemoved,
   isCommitted, addCommit, getClockState, findSessionsForExport,
 };

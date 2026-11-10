@@ -29,7 +29,67 @@ async function getState(actor) {
   // so nobody is shown a clock still waiting for the next sweep.
   await runClockSchedule(Date.now(), [actor.id]).catch((err) => console.error('Clock schedule failed:', err));
   const db = getPool();
-  return clockRepo.getClockState(db, actor.id, await teamService.visibleUserIds(db, actor)); // a manager sees their team's (changing them stays own-or-admin)
+  const clock = await clockRepo.getClockState(db, actor.id, await teamService.visibleUserIds(db, actor)); // a manager sees their team's (changing them stays own-or-admin)
+  const departments = await clockRepo.listDepartments(db);
+  const { home, working } = await clockRepo.findDepartments(db, actor.id, localDate(new Date()));
+  return { ...clock, departments, homeDepartment: home, workingDepartment: working };
+}
+
+/* Departments (migration 020): every block records the department its time is
+ * for. A person's department for a day is their own (Entra ID) unless they
+ * picked another with Working in that day; the pick is forgotten overnight. */
+async function departmentFor(db, userId, date) {
+  const { home, working } = await clockRepo.findDepartments(db, userId, date);
+  return working || home;
+}
+
+// A department must be one of the list (people's Entra departments) or the person's own.
+async function checkDepartment(db, userId, value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value !== 'string') throw new ApiError(400, 'department must be text');
+  const name = value.trim();
+  const { home } = await clockRepo.findDepartments(db, userId, '');
+  if (name !== home && !(await clockRepo.listDepartments(db)).includes(name)) throw new ApiError(400, `"${name}" is not a department in Time Slide`);
+  return name;
+}
+
+/* Working in: the caller picks the department their clocking is for today
+ * (null or their own department = back to their own). A running clock is split
+ * at this moment, so time before the change keeps the old department; a clock
+ * paused for a break restarts under the new one. */
+async function setWorkingDepartment(actor, value) {
+  await withTransaction(async (db) => {
+    await clockRepo.lockUser(db, actor.id);
+    const name = await checkDepartment(db, actor.id, value);
+    const today = localDate(new Date());
+    const { home } = await clockRepo.findDepartments(db, actor.id, today);
+    const department = name && name !== home ? name : null;
+    const now = Date.now();
+    await applyClockSchedule(db, actor.id, now);
+    await clockRepo.setWorkingDepartment(db, actor.id, department, today);
+    const effective = department || home;
+    const active = await clockRepo.findActive(db, actor.id);
+    if (active && (active.department || null) !== (effective || null) && !(await clockRepo.isCommitted(db, actor.id, today))) {
+      await closeActive(db, actor.id, now);
+      await clockRepo.setActive(db, actor.id, active.contractId, new Date(now), active.reworkReason, effective);
+    }
+    if (await clockRepo.findBreakState(db, actor.id)) await clockRepo.setBreakDepartment(db, actor.id, effective);
+  });
+  return getState(actor);
+}
+
+// Edit times: change the department of one finished block (own, or anyone's for an admin), not on a committed day.
+async function setSessionDepartment(actor, id, value) {
+  await withTransaction(async (db) => {
+    const session = await clockRepo.findTimeSession(db, id);
+    if (!session) throw new ApiError(404, 'Time block not found');
+    assertCanActOn(actor, session.userId);
+    await assertNotCommitted(db, actor, session.userId, session.date);
+    const name = await checkDepartment(db, session.userId, value);
+    if (!name) throw new ApiError(400, 'Choose a department');
+    await clockRepo.setSessionDepartment(db, id, name);
+  });
+  return getState(actor);
 }
 
 // Stops the user's running clock, if any, and records it as completed
@@ -40,7 +100,7 @@ async function closeActive(db, userId, endMs, { autoStopped = false } = {}) {
   if (!active) return null;
   const pieces = splitByDay(active.startedAt, endMs);
   for (const [index, piece] of pieces.entries()) {
-    await clockRepo.insertTimeSession(db, { id: uid('session'), contractId: active.contractId, userId, ...piece, reworkReason: active.reworkReason, autoStopped: autoStopped && index === pieces.length - 1 });
+    await clockRepo.insertTimeSession(db, { id: uid('session'), contractId: active.contractId, userId, ...piece, reworkReason: active.reworkReason, department: active.department, autoStopped: autoStopped && index === pieces.length - 1 });
   }
   await clockRepo.clearActive(db, userId);
   return active;
@@ -80,7 +140,7 @@ async function applyClockSchedule(db, userId, now) {
       if (!paused || paused.resumeAt > now) return;
       await clockRepo.clearBreakState(db, userId);
       if (!(await clockRepo.isCommitted(db, userId, localDate(new Date(paused.resumeAt))))) {
-        await clockRepo.setActive(db, userId, paused.contractId, new Date(paused.resumeAt), paused.reworkReason);
+        await clockRepo.setActive(db, userId, paused.contractId, new Date(paused.resumeAt), paused.reworkReason, paused.department);
       }
       continue;
     }
@@ -94,7 +154,7 @@ async function applyClockSchedule(db, userId, now) {
     if (nextBreak && nextBreak.start <= now) {
       const resumes = nextBreak.end < cutoff;
       await closeActive(db, userId, nextBreak.start, { autoStopped: !resumes });
-      if (resumes) await clockRepo.setBreakState(db, userId, active.contractId, nextBreak.end, active.reworkReason);
+      if (resumes) await clockRepo.setBreakState(db, userId, active.contractId, nextBreak.end, active.reworkReason, active.department);
       continue;
     }
     if (cutoff <= now) {
@@ -136,13 +196,15 @@ async function start(actor, contractId, reworkReason = null) {
       if (contractId === 'non-contract') throw new ApiError(400, "Non-contract time can't be rework");
       if (!(await clockRepo.reworkReasonExists(db, reason))) throw new ApiError(400, `"${reason}" is not in the rework reasons list`);
     }
-    await assertNotCommitted(db, actor, actor.id, localDate(new Date()));
+    const today = localDate(new Date());
+    await assertNotCommitted(db, actor, actor.id, today);
     const now = Date.now();
     await applyClockSchedule(db, actor.id, now); // a missed break or clock-out is recorded first, at its own time
+    const department = await departmentFor(db, actor.id, today);
     const active = await clockRepo.findActive(db, actor.id);
-    if (active && active.contractId === contractId && (active.reworkReason || null) === reason) return;
+    if (active && active.contractId === contractId && (active.reworkReason || null) === reason && (active.department || null) === (department || null)) return;
     await closeActive(db, actor.id, now);
-    await clockRepo.setActive(db, actor.id, contractId, new Date(now), reason);
+    await clockRepo.setActive(db, actor.id, contractId, new Date(now), reason, department);
     await clockRepo.clearBreakState(db, actor.id);
   });
   return getState(actor);
@@ -259,7 +321,7 @@ async function takeTime(db, actor, userId, date, start, end, changes) {
     }
     if (from > blockFrom && to < blockTo) {
       const pieceId = uid('session');
-      await clockRepo.insertTimeSession(db, { id: pieceId, contractId: block.contractId, userId, date, start: end, end: block.end, autoStopped: block.autoStopped, reworkReason: block.reworkReason, enteredBy: block.enteredBy, enteredAt: block.enteredAt });
+      await clockRepo.insertTimeSession(db, { id: pieceId, contractId: block.contractId, userId, date, start: end, end: block.end, autoStopped: block.autoStopped, reworkReason: block.reworkReason, department: block.department, enteredBy: block.enteredBy, enteredAt: block.enteredAt });
       await clockRepo.updateTimeSession(db, pieceId, { start: end, end: block.end, unlinkedStart: false, unlinkedEnd: block.unlinkedEnd, autoStopped: block.autoStopped });
       await clockRepo.updateTimeSession(db, block.id, { start: block.start, end: start, unlinkedStart: block.unlinkedStart, unlinkedEnd: false, autoStopped: false });
       changes.pieces.push(pieceId);
@@ -296,9 +358,11 @@ async function addSession(actor, body, { take = false } = {}) {
       if (!(await clockRepo.reworkReasonExists(db, reason))) throw new ApiError(400, `"${reason}" is not in the rework reasons list`);
     }
     await assertNotCommitted(db, actor, userId, date);
+    // The person's department for that day (their own, or today's Working in); changed afterwards from the block if needed.
+    const department = (await checkDepartment(db, userId, body.department)) || (await departmentFor(db, userId, date));
     if (take) await takeTime(db, actor, userId, date, start, end, changes);
     else await assertFree(db, userId, date, start, end);
-    await clockRepo.insertTimeSession(db, { id, contractId, userId, date, start, end, reworkReason: reason, enteredBy: actor.id, enteredAt: now });
+    await clockRepo.insertTimeSession(db, { id, contractId, userId, date, start, end, reworkReason: reason, department, enteredBy: actor.id, enteredAt: now });
   });
   return { ...(await getState(actor)), addedId: id, changes };
 }
@@ -343,5 +407,6 @@ async function markAutoNoticed(actor, ids) {
 
 module.exports = {
   getState, start, stop, updateSessions, restoreSession, addSession, removeSession, commit, markAutoNoticed,
+  setWorkingDepartment, setSessionDepartment,
   autoClockOutAt, runClockSchedule, startClockSchedule,
 };

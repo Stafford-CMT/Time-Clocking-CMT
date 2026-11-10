@@ -14,6 +14,7 @@
 const usersRepo = require('./usersRepo');
 const workingPatternsRepo = require('./workingPatternsRepo');
 const { uid } = require('../utils/ids');
+const { localDate } = require('../utils/time');
 const ApiError = require('../utils/ApiError');
 
 function timeToHm(value) {
@@ -21,12 +22,12 @@ function timeToHm(value) {
   return value ? value.slice(0, 5) : value;
 }
 
-// Tiles are shared; hidden, pinned and order are the caller's own. A tile the
+// Tiles are shared; hidden and order are the caller's own. A tile the
 // caller has no settings row for (one someone else added) is hidden for them.
 async function getSetup(db, userId) {
   const contracts = (await db.query(
     `SELECT c.id, c.customer_name, c.number, c.suffix, c.suffix_description, c.machine_type, c.image_id, c.system,
-       c.contract_info_suffix_id, c.retired, s.hidden AS my_hidden, s.pinned AS my_pinned FROM contracts c
+       c.contract_info_suffix_id, c.retired, s.hidden AS my_hidden FROM contracts c
      LEFT JOIN user_tile_settings s ON s.contract_id = c.id AND s.user_id = $1
      ORDER BY s.sort_order NULLS LAST, c.sort_order`,
     [userId]
@@ -38,7 +39,6 @@ async function getSetup(db, userId) {
     suffixDescription: c.suffix_description,
     machineType: c.machine_type,
     imageId: c.image_id, // the picture is fetched from /api/images/:id, not sent here
-    pinned: c.my_pinned ?? false,
     hidden: c.system ? false : c.my_hidden ?? true,
     system: c.system, // the built-in Non-contract clock: never a tile
     linked: c.contract_info_suffix_id !== null, // made from a Contract information suffix: only its image is edited on the tile
@@ -83,6 +83,8 @@ async function getSetup(db, userId) {
     email: u.email || '',
     userType: u.user_type,
     costCentre: u.cost_centre || '',
+    department: u.department || '', // their own, from Entra ID
+    workingDepartment: u.working_department && u.working_department_on === localDate(new Date()) ? u.working_department : '', // Working in, today only
     autoClockOut: u.auto_clock_out ? timeToHm(u.auto_clock_out) : '', // '' = at the end of their working day
     patternId: u.working_pattern_id || '', // '' = no working pattern
   }));
@@ -128,7 +130,7 @@ async function setTileSettings(db, userId, c) {
      SELECT $1::text, id, $3, $4, (SELECT COALESCE(MAX(sort_order) + 1, 0) FROM user_tile_settings WHERE user_id = $1::text)
      FROM contracts WHERE id = $2 AND NOT system
      ON CONFLICT (user_id, contract_id) DO UPDATE SET hidden = EXCLUDED.hidden, pinned = EXCLUDED.pinned`,
-    [userId, c.id, !!c.hidden, !!c.pinned]
+    [userId, c.id, !!c.hidden, false] /* pinning tiles was dropped 10 Nov 2026; the column stays, always false */
   );
 }
 
@@ -164,6 +166,20 @@ async function renameCostCentre(db, from, to) {
 
 async function deleteCostCentre(db, name) {
   await db.query('DELETE FROM cost_centres WHERE name = $1', [name]);
+}
+
+async function listNames(db, table) {
+  return (await db.query(`SELECT name FROM ${table}`)).rows.map((r) => r.name);
+}
+
+// Contract information rows that aren't blank: contracts with a number or a lettered suffix, and suffixes with a letter.
+async function filledContractInfoIds(db) {
+  const contracts = (await db.query(
+    `SELECT i.id FROM contract_info i
+      WHERE trim(i.number) <> '' OR EXISTS (SELECT 1 FROM contract_info_suffixes s WHERE s.contract_info_id = i.id AND trim(s.letter) <> '')`
+  )).rows.map((r) => r.id);
+  const suffixes = (await db.query("SELECT id FROM contract_info_suffixes WHERE trim(letter) <> ''")).rows.map((r) => r.id);
+  return { contracts, suffixes };
 }
 
 async function replaceNameList(db, table, names) {
@@ -259,5 +275,5 @@ async function syncContractTiles(db) {
 module.exports = {
   getSetup, upsertContract, setTileSettings, setTileOrder, replaceNameList, replaceNonWorking,
   setAutoClockOutDelay, replaceContractInfo, syncContractTiles,
-  listCostCentres, costCentreUsage, renameCostCentre, deleteCostCentre,
+  listCostCentres, costCentreUsage, renameCostCentre, deleteCostCentre, listNames, filledContractInfoIds,
 };

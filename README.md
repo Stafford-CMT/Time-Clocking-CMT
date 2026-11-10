@@ -27,7 +27,7 @@ It runs against a local PostgreSQL 16 database. It has not yet been tried with a
 
 ### Tile dashboard
 
-Each tile represents one contract and shows the contract number and suffix, machine type, an image, your accumulated and current-session time, and a start/stop button. Tiles can be dragged to reposition, pinned in place, and hidden. Starting one contract stops whichever one you had running.
+Each tile represents one contract and shows the contract number and suffix, machine type, an image, your accumulated and current-session time, and a start/stop button. Tiles can be dragged to reposition and hidden. Starting one contract stops whichever one you had running.
 
 ### Working times and breaks
 
@@ -35,7 +35,7 @@ Each user has a working-time schedule with breaks. A running clock pauses automa
 
 ### Edit or Commit times
 
-A per-day timeline of your recorded time blocks. Drag a block's edges to correct start/end times (linked neighbours move with it; long-press a block to unlink it), double-click to delete. Committing a day locks it; only an admin can edit or unlock a committed day. Admins can view and correct anyone's times.
+A per-day timeline of your recorded time blocks. Drag a block's edges to correct start/end times (linked neighbours move with it; long-press a block to unlink it), hold a block (or right-click it on a PC) for its menu: change department or delete. Committing a day locks it; only an admin can edit or unlock a committed day. Admins can view and correct anyone's times.
 
 ### Non-working time table (planned)
 

@@ -182,7 +182,7 @@ async function buildWorkbook(rows) {
       enteredBy: row.entered_by ? `${row.entered_by_name || 'Yes'}${row.entered_at ? `, ${new Date(row.entered_at).toLocaleDateString('en-GB')}` : ''}` : '',
       blockId: row.id,
     });
-    const key = [row.user_id, row.date, person.contract, person.suffix, person.reworkReason].join('|'); // rework kept apart from ordinary time
+    const key = [row.user_id, row.date, person.contract, person.suffix, person.reworkReason, person.department].join('|'); // rework, and time for another department, kept apart
     if (!totals.has(key)) totals.set(key, { ...person, seconds: 0 });
     totals.get(key).seconds += end - start;
   });

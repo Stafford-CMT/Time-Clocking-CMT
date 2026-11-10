@@ -133,4 +133,69 @@ async function testEnet({ fetchImpl = fetch, timeoutMs = 10000 } = {}) {
   return { ok: true, message: 'Logged on to Syspro and off again.' };
 }
 
-module.exports = { getSettings, saveSettings, testEnet };
+// The mssql connection settings for the saved syspro_settings row.
+function sqlConfig(row, { timeoutMs = 15000, requestTimeoutMs = timeoutMs, poolMax = 4 } = {}) {
+  // "SERVER\INSTANCE" connects through the named instance (SQL Browser) instead of a fixed port.
+  const [server, instanceName] = row.sql_server.split('\\');
+  const config = {
+    server,
+    database: row.sql_database,
+    user: row.sql_user,
+    password: row.sql_password ? decrypt(row.sql_password) : '',
+    connectionTimeout: timeoutMs,
+    requestTimeout: requestTimeoutMs,
+    pool: { max: poolMax, min: 0, idleTimeoutMillis: 60000 },
+    options: { encrypt: Boolean(row.sql_encrypt), trustServerCertificate: Boolean(row.sql_trust_server_certificate), ...(instanceName ? { instanceName } : {}) },
+    ...(instanceName ? {} : { port: row.sql_port || 1433 }),
+  };
+  return { config, where: instanceName ? row.sql_server : `${server}:${config.port}` };
+}
+
+/* A shared pool for reading Syspro (Configuration -> Syspro tables). It is
+ * rebuilt whenever the saved settings change, so a new password or server is
+ * picked up without restarting Time Slide. */
+let sharedPool = null;
+let sharedPoolKey = null;
+async function getSqlPool() {
+  const row = await sysproSettingsRepo.get();
+  if (!row.sql_server || !row.sql_database || !row.sql_user) throw new ApiError(400, 'Fill in the Syspro SQL Server details in Configuration first');
+  const key = String(row.updated_at);
+  if (sharedPool && sharedPoolKey === key) return sharedPool;
+  if (sharedPool) sharedPool.then((pool) => pool.close()).catch(() => {});
+  const sql = require('mssql');
+  const { config, where } = sqlConfig(row, { requestTimeoutMs: 60000 });
+  sharedPoolKey = key;
+  sharedPool = new sql.ConnectionPool(config).connect().catch((err) => {
+    sharedPool = null;
+    throw new ApiError(502, `Could not connect to Syspro SQL Server ${where}: ${(err.originalError?.message || err.message).trim()}`);
+  });
+  return sharedPool;
+}
+
+// Logs in to the Syspro SQL Server with the saved details, checks the login can
+// open the company database, then disconnects. Reads nothing from it.
+async function testSql({ timeoutMs = 10000 } = {}) {
+  const row = await sysproSettingsRepo.get();
+  const missing = [];
+  if (!row.sql_server) missing.push('server');
+  if (!row.sql_database) missing.push('company database');
+  if (!row.sql_user) missing.push('SQL login');
+  if (missing.length) return { ok: false, message: `Fill in the ${missing.join(', ')} and save first.` };
+
+  const sql = require('mssql');
+  const { config, where } = sqlConfig(row, { timeoutMs, poolMax: 1 });
+  const pool = new sql.ConnectionPool(config);
+  try {
+    await pool.connect();
+    const result = await pool.request().query('SELECT DB_NAME() AS db, @@VERSION AS version');
+    const version = String(result.recordset[0]?.version || '').split('\n')[0].trim();
+    return { ok: true, message: `Logged in to ${where} as ${row.sql_user} and opened ${result.recordset[0]?.db || row.sql_database}.${version ? ` ${version}` : ''}` };
+  } catch (err) {
+    const reason = (err.originalError?.message || err.message || 'no reason given').trim();
+    return { ok: false, message: `Could not connect to ${where}: ${reason}` };
+  } finally {
+    pool.close().catch(() => {});
+  }
+}
+
+module.exports = { getSettings, saveSettings, testEnet, testSql, getSqlPool };

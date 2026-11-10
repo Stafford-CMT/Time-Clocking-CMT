@@ -44,6 +44,8 @@ router.post('/sessions', clockController.restoreSession); // undo a removed bloc
 router.post('/sessions/take', clockController.takeSession); // the same, drawn over other time: the blocks under it are trimmed or split (never a running clock)
 router.post('/sessions/add', clockController.addSession); // time entered by hand (body: contractId, userId, date, start, end, reworkReason?): own, or anyone's for admin; last 28 days
 router.delete('/sessions/:id', clockController.removeSession); // own sessions, or anyone's for admin
+router.put('/sessions/:id/department', clockController.setSessionDepartment); // body: department; own sessions, or anyone's for admin
+router.put('/me/working-department', clockController.setWorkingDepartment); // body: department (null = your own); for today, splits a running clock
 router.post('/commits/:userId/:date', clockController.commit); // own day, or anyone's for admin
 router.post('/sessions/auto-noticed', clockController.markAutoNoticed); // own sessions: the "stopped automatically" message was seen
 
@@ -75,5 +77,8 @@ router.post('/export/reminders', requireRole('admin'), exportController.sendRemi
 router.get('/config/syspro', requireRole('admin'), configController.getSyspro); // passwords come back only as "set" flags
 router.put('/config/syspro', requireRole('admin'), configController.saveSyspro);
 router.post('/config/syspro/test-enet', requireRole('admin'), configController.testSysproEnet);
+router.post('/config/syspro/test-sql', requireRole('admin'), configController.testSysproSql);
+router.get('/config/syspro/tables', requireRole('admin'), configController.listSysproTables);
+router.get('/config/syspro/tables/:schema/:name', requireRole('admin'), configController.readSysproTable);
 
 module.exports = router;

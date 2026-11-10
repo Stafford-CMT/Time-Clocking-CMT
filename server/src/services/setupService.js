@@ -22,6 +22,25 @@ const SECTIONS = ['contracts', 'autoClockOutDelay', ...ARRAY_SECTIONS];
 // Company-wide settings only an admin may change (the Cost centre and Rework reasons tabs), and the
 // auto clock-out delay (Working patterns tab), which managers may change too.
 const ADMIN_SECTIONS = ['costCentres', 'reworkReasons'];
+// Lists anyone can add to, but only an admin can remove from.
+const ADMIN_REMOVES = { machineTypes: 'machine types', suffixDescriptions: 'suffix descriptions', customers: 'customers' };
+
+/* Refuses a non-admin's save that would remove a machine type, suffix description or customer, or a filled-in contract or
+ * suffix from Contract information (a blank row -- no number and no suffix letters, or a suffix with no letter -- can go). */
+async function assertNothingRemoved(db, patch) {
+  for (const [key, label] of Object.entries(ADMIN_REMOVES)) {
+    if (!patch[key]) continue;
+    const kept = new Set(patch[key].map((name) => name.toLowerCase()));
+    const missing = (await setupRepo.listNames(db, NAME_LISTS[key])).filter((name) => !kept.has(name.toLowerCase()));
+    if (missing.length) throw new ApiError(403, `Only an admin can remove ${label} (${missing.join(', ')})`);
+  }
+  if (!patch.contractInfo) return;
+  const filled = await setupRepo.filledContractInfoIds(db);
+  const keptContracts = new Set(patch.contractInfo.map((record) => record.id));
+  const keptSuffixes = new Set(patch.contractInfo.flatMap((record) => (record.suffixes || []).map((suffix) => suffix.id)));
+  if (filled.contracts.some((id) => !keptContracts.has(id))) throw new ApiError(403, 'Only an admin can remove a contract from Contract information');
+  if (filled.suffixes.some((id) => !keptSuffixes.has(id))) throw new ApiError(403, 'Only an admin can remove a suffix from Contract information');
+}
 
 // Placeholder tiles for a brand-new, empty database only (dev/test
 // convenience) -- delete them in the app once real contracts are entered.
@@ -62,7 +81,7 @@ async function getFullState(actor) {
 /* Applies only the sections present in `patch` -- the frontend sends just
  * what changed, so one person's edit to (say) the customer list can't
  * overwrite another's newer contract-information change with a stale copy.
- * Tile hidden/pinned/order are saved for `actor` only (the demo seed has none).
+ * Tile hidden/order are saved for `actor` only (the demo seed has none).
  */
 async function applyPatch(patch, actor) {
   if (!patch || typeof patch !== 'object') throw new ApiError(400, 'Expected a JSON object');
@@ -90,6 +109,7 @@ async function applyPatch(patch, actor) {
   });
 
   await withTransaction(async (db) => {
+    if (actor && actor.userType !== 'admin') await assertNothingRemoved(db, patch);
     if (patch.contracts) {
       for (const contract of patch.contracts.upsert || []) {
         if (!contract.id) throw new ApiError(400, 'Every contract needs an id');
