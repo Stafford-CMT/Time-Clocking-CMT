@@ -17,6 +17,8 @@
   const bigH = (h) => fmtH(h).replace(/ (h|min)$/, '<small>$1</small>'); // the big figure: number large, unit small
   const fmtDate = (s) => new Date(`${s}T00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   const LIB = 'vendor/3d-force-graph-1.80.1.min.js';
+  const THREE_LIB = '/vendor/three-0.186.1-company-ball.min.mjs';
+  const HUB_VAL = 60, GLASS_COLOUR = '#2fb3a8'; // the company ball: size (as a ball of 900 h would be) and colour
   const COMPANY = 'Clifford Machines & Technology'; // the ball in the middle that every contract hangs from
 
   // ---------- Reports screen: tiles <-> one report ----------
@@ -58,9 +60,25 @@
       return cache.get(key);
     }
 
+    let THREE = null; // just the three.js parts the company ball is built from (vendor/three-...-company-ball, r186 like the viewer's own)
     function loadLibrary() {
-      if (window.ForceGraph3D) return Promise.resolve();
-      return loading ||= new Promise((resolve, reject) => { const s = document.createElement('script'); s.src = LIB; s.onload = resolve; s.onerror = () => reject(new Error('The 3D viewer did not load. Refresh the page to try again.')); document.head.append(s); });
+      const failed = () => new Error('The 3D viewer did not load. Refresh the page to try again.');
+      return loading ||= Promise.all([
+        window.ForceGraph3D ? null : new Promise((resolve, reject) => { const s = document.createElement('script'); s.src = LIB; s.onload = resolve; s.onerror = () => reject(failed()); document.head.append(s); }),
+        import(THREE_LIB).then((m) => { THREE = m; }),
+      ]).catch((error) => { loading = null; throw error?.message?.startsWith('The 3D') ? error : failed(); });
+    }
+
+    // The company in the middle: a see-through teal glass ball, clear in the middle and glowing towards its edge.
+    // Always the same size: it is not hours. Option C from the company ball options page, without its band (11 Nov 2026).
+    function companyBall() {
+      const dark = document.documentElement.dataset.theme === 'dark', fade = focusSet ? 0.3 : 1;
+      return new THREE.Mesh(new THREE.SphereGeometry(3 * Math.cbrt(HUB_VAL), 64, 48), new THREE.ShaderMaterial({
+        uniforms: { c: { value: new THREE.Color(GLASS_COLOUR) }, s: { value: (dark ? 0.9 : 0.75) * fade } },
+        vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+        fragmentShader: 'uniform vec3 c; uniform float s; varying vec3 vN; varying vec3 vV; void main(){ float r = pow(1.0 - abs(dot(vN, vV)), 2.6); gl_FragColor = vec4(c, (0.05 + r * 0.85) * s); }',
+        transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: dark ? THREE.AdditiveBlending : THREE.NormalBlending,
+      }));
     }
 
     const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -79,7 +97,8 @@
         .nodeRelSize(3).nodeResolution(18).nodeOpacity(0.95)
         .nodeVal((n) => n.val)
         .nodeLabel((n) => `${esc(n.label)} · ${fmtH(n.hours)}`)
-        .nodeColor((n) => (n.type === 'hub' ? rgba(COL.hub, focusSet ? 0.15 : 0.45) : focusSet && !focusSet.has(n.id) ? rgba(COL[n.type], 0.12) : COL[n.type]))
+        .nodeThreeObject((n) => (n.type === 'hub' ? companyBall() : null)) // everything else: the viewer's own balls
+        .nodeColor((n) => (n.type === 'hub' ? COL.hub : focusSet && !focusSet.has(n.id) ? rgba(COL[n.type], 0.12) : COL[n.type]))
         .linkColor((l) => (focusSet && !(focusSet.has(idOf(l.source)) && focusSet.has(idOf(l.target))) ? rgba(COL.link, 0.05) : rgba(COL.link, 0.55)))
         .linkOpacity(0.6)
         .linkWidth((l) => Math.min(4, Math.max(0.4, Math.sqrt(l.hours) / 7)))
@@ -164,7 +183,7 @@
       }
       // The company: pinned in the middle, always the same size (it is not scaled by hours), drawn as a see-through wire sphere
       const hub = nodes.get('h:company');
-      if (hub) Object.assign(hub, { val: 60, fx: 0, fy: 0, fz: 0 });
+      if (hub) Object.assign(hub, { val: HUB_VAL, fx: 0, fy: 0, fz: 0 });
       nodesById = nodes; linksAll = [...links.values()];
       if (state.focus && !nodes.has(state.focus)) state.focus = null;
       computeFocus();
@@ -180,7 +199,7 @@
       focusSet = new Set([state.focus]);
       for (const l of linksAll) { const a = idOf(l.source), b = idOf(l.target); if (a === state.focus) focusSet.add(b); if (b === state.focus) focusSet.add(a); }
     }
-    const refreshColours = () => Graph.nodeColor(Graph.nodeColor()).linkColor(Graph.linkColor()).linkDirectionalParticleColor(Graph.linkDirectionalParticleColor());
+    const refreshColours = () => Graph.nodeThreeObject(Graph.nodeThreeObject()).nodeColor(Graph.nodeColor()).linkColor(Graph.linkColor()).linkDirectionalParticleColor(Graph.linkDirectionalParticleColor());
     function select(key, fly) {
       state.focus = key && nodesById.has(key) ? key : null;
       computeFocus(); refreshColours(); renderPanel();
@@ -271,8 +290,6 @@
     function drawTags() {
       requestAnimationFrame(drawTags);
       if (!visible || !Graph) return;
-      const shell = nodesById.get('h:company')?.__threeObj?.material; // the company's ball: wire, so it reads as hollow (its colour is its own, so no other ball shares this material)
-      if (shell && !shell.wireframe) { shell.wireframe = true; shell.needsUpdate = true; }
       const box = el('ball-tags'), cam = Graph.camera(), dir = cam.getWorldDirection(cam.position.clone()), want = new Set();
       for (const n of nodesById.values()) {
         if (n.x === undefined) continue;
