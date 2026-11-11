@@ -317,8 +317,6 @@ h2 { font-size: 27px; }
 .auto-clock-out.is-fixed .auto-clock-out-handle { cursor: default; }
 .auto-clock-out.is-fixed .auto-clock-out-handle::before { display: none; }
 .legend-swatch.auto-clock-out-swatch { width: 2px; border-radius: 0; background: var(--teal-dark-solid); }
-/* painted strips, not inset shadows: their inner edge stays straight instead of bending round the rounded corners */
-.edit-session-block.is-auto-stopped { background-image: linear-gradient(var(--teal-dark), var(--teal-dark)) !important; background-size: 3px 100% !important; background-position: 100% 0 !important; background-repeat: no-repeat !important; }
 .auto-stop-badge { position: absolute; top: 50%; right: 7px; z-index: 3; display: grid; place-items: center; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; background: var(--teal-dark-solid); color: #fff; transform: translateY(-50%); cursor: pointer; }
 .auto-stop-badge:hover { background: var(--teal); }
 .clock-icon { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -679,12 +677,13 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
 /* Days time can't be added to (older than 28 days, or not happened yet): clicking explains why */
 .edit-times-card.no-draw-day:not(.is-locked) .edit-session-row .timeline-lane { cursor: not-allowed; }
 .edit-session-block.is-drawing { z-index: 3; pointer-events: none; border: 1.5px dashed var(--teal); background: var(--mint); opacity: .85; }
-.edit-session-block.is-hand-entered { outline: 1.5px dashed var(--teal-dark); outline-offset: -2px; }
-.edit-session-block.is-hand-entered.is-rework { outline-color: var(--rework); }
-.hand-entered-mark { position: absolute; top: 50%; left: 6px; display: grid; place-items: center; width: 14px; height: 14px; color: var(--teal-dark); transform: translateY(-50%); pointer-events: none; }
+/* Entered by hand: an ordinary bar with a pencil in it, close to its start so it shows on short bars too (the dashed
+ * outline looked like a bar still being drawn) */
+.hand-entered-mark { position: absolute; top: 50%; left: 2px; display: grid; place-items: center; width: 14px; height: 14px; color: var(--teal-dark); transform: translateY(-50%); pointer-events: none; }
 .is-rework .hand-entered-mark { color: var(--rework-dark); }
 .hand-entered-mark svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; }
-.legend-swatch.hand-entered-swatch { background: var(--c-cfe8df); outline: 1.5px dashed var(--teal-dark); outline-offset: -2px; }
+.legend-swatch.hand-entered-swatch { display: inline-grid; place-items: center; background: var(--c-cfe8df); color: var(--teal-dark); }
+.legend-swatch.hand-entered-swatch svg { width: 8px; height: 8px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
 .add-time-button { width: auto; padding: 4px 14px; }
 /* Edit times: + Add contract sits at the far right of the header, away from undo and redo */
 .edit-times-card .schedule-toolbar .edit-user-block { flex: 1 1 auto; width: auto; }
@@ -823,18 +822,18 @@ table.syspro-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 
 /* Working in (migration 020): the department this person's clocking is for today. Normally their own; another one
  * (picked for the day, forgotten overnight) turns the button yellow and tags every tile, so it's hard to miss. */
-.working-in { display: flex; align-self: stretch; align-items: center; gap: 6px; max-width: 280px; padding: 0 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--c-ffffff); color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; }
-.working-in strong { overflow: hidden; color: var(--ink); text-overflow: ellipsis; }
-.working-in:hover { border-color: var(--teal); }
-.working-in.is-away { border-color: var(--yellow); background: color-mix(in srgb, var(--yellow) 28%, var(--panel)); color: var(--ink); }
+/* Your department, in the profile badge under your name: click or tap to pick another for today (yellow while you do) */
+.profile-dept { display: inline-flex; align-items: center; gap: 5px; justify-self: start; max-width: 190px; margin: 1px 0 1px -5px; padding: 2px 5px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ink); font: inherit; font-size: 11px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.profile-dept:hover { border-color: var(--line); }
+.profile-dept::after { content: ''; flex: 0 0 auto; width: 5px; height: 5px; margin-top: -3px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); opacity: .6; }
+.profile-dept.is-away { border-color: var(--yellow); background: color-mix(in srgb, var(--yellow) 28%, var(--panel)); }
+@media (pointer: coarse) { .profile-dept { min-height: 30px; padding: 4px 8px; font-size: 12px; } }
 .dept-chip { max-width: 120px; overflow: hidden; padding: 6px 9px; border: 1px solid var(--yellow); border-radius: 999px; background: color-mix(in srgb, var(--yellow) 22%, var(--panel)); color: var(--ink); font-size: 10px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
 .department-option-note { margin-left: 6px; color: var(--muted); font-size: 11px; font-weight: 500; }
 /* Edit times: a block for another department has a yellow top edge and its department written in it */
 .edit-session-block.is-other-department { background-image: linear-gradient(var(--yellow), var(--yellow)) !important; background-size: 100% 3px !important; background-position: 0 0 !important; background-repeat: no-repeat !important; }
-.edit-session-block.is-other-department.is-auto-stopped { background-image: linear-gradient(var(--yellow), var(--yellow)), linear-gradient(var(--teal-dark), var(--teal-dark)) !important; background-size: 100% 3px, 3px 100% !important; background-position: 0 0, 100% 0 !important; background-repeat: no-repeat !important; }
 .dept-tag { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: calc(100% - 20px); overflow: hidden; color: var(--ink); font-size: 9px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
 @media (pointer: coarse) { .tile .dept-chip { min-height: 36px; display: inline-flex; align-items: center; padding: 8px 12px; font-size: 11px; } }
-@media (max-width: 650px) { .working-in { max-width: none; justify-content: center; } }
 .legend-swatch.other-department-swatch { background: var(--c-cfe8df); box-shadow: inset 0 3px 0 var(--yellow); }
 /* Tablet: finger-sized department choices */
 @media (pointer: coarse) { #department-options .rework-reason-option { min-height: 48px; padding: 13px 14px; font-size: 15px; } }
@@ -857,3 +856,12 @@ table.syspro-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 @media (pointer: coarse) { .block-menu-item { min-height: 44px; font-size: 14px; } }
 /* Remove buttons only an admin can use: greyed out for everyone else */
 .list-items .remove-list-item:disabled, .delete-row:disabled, .list-items .remove-list-item:disabled:hover, .delete-row:disabled:hover { color: var(--c-b3bfbd); opacity: .4; cursor: not-allowed; }
+/* Edit times (wide screens), the same as Working times: the page stays put -- title, day strip, the card's toolbar and
+   time heading stay in view, and only the contract rows scroll, inside the card. */
+@media (min-width: 901px) {
+  .main-content:has(> [data-view-panel="edit-times"]:not(.is-hidden)) { display: flex; flex-direction: column; height: 100vh; padding-bottom: 24px; }
+  [data-view-panel="edit-times"] { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  #edit-times-card { display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; }
+  #edit-times-card .schedule-scroll { flex: 0 1 auto; min-height: 0; overflow: auto; }
+  #edit-times-card .schedule-header { position: sticky; top: 0; z-index: 5; }
+}
