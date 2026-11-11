@@ -19,6 +19,7 @@ const costCentreController = require('../controllers/costCentreController');
 const imagesController = require('../controllers/imagesController');
 const workingPatternsController = require('../controllers/workingPatternsController');
 const contractImportController = require('../controllers/contractImportController');
+const reportsController = require('../controllers/reportsController');
 
 const router = express.Router();
 
@@ -74,7 +75,9 @@ router.get('/export/batches/:id/file', requireRole('admin'), exportController.ba
 router.delete('/export/batches/:id', requireRole('admin'), exportController.undoBatch);
 router.post('/export/reminders', requireRole('admin'), exportController.sendReminders); // emails people with uncommitted days
 
-router.get('/config/syspro', requireRole('admin'), configController.getSyspro); // passwords come back only as "set" flags
+router.get('/reports/contract-hours', reportsController.contractHours); // any logged-in session, everyone's contract time (query: from, to)
+
+router.get('/config/syspro',requireRole('admin'), configController.getSyspro); // passwords come back only as "set" flags
 router.put('/config/syspro', requireRole('admin'), configController.saveSyspro);
 router.post('/config/syspro/test-enet', requireRole('admin'), configController.testSysproEnet);
 router.post('/config/syspro/test-sql', requireRole('admin'), configController.testSysproSql);

@@ -22,6 +22,7 @@
         <button class="nav-item is-active" data-view="dashboard" type="button">Dashboard</button>
         <button class="nav-item" data-view="edit-times" type="button">Edit or Commit times</button>
         <button class="nav-item" id="nav-data-export" data-view="data-export" type="button">Data export</button>
+        <button class="nav-item" data-view="reports" type="button">Reports</button>
         <div class="nav-group">
           <button class="nav-item nav-parent" id="nav-setup-toggle" type="button" aria-expanded="false">Setup<span class="nav-chevron"></span></button>
           <div class="nav-children is-hidden" id="nav-setup-children">
@@ -201,6 +202,73 @@
         <div class="table-card export-batches is-hidden" id="export-batches">
           <div class="table-intro"><div><strong>Exports</strong><span>Each export holds the committed days it took. Undo one to let its days be exported again.</span></div></div>
           <div class="table-scroll"><table><thead><tr><th>Exported</th><th>By</th><th>Dates</th><th>Days</th><th></th></tr></thead><tbody id="export-batch-rows"></tbody></table></div>
+        </div>
+      </section>
+      <section class="view is-hidden" data-view-panel="reports">
+        <div class="section-heading">
+          <div><span class="section-kicker">Where the time went</span><h2 id="reports-title">Reports</h2></div>
+          <div class="section-heading-actions"><button class="secondary-button is-hidden" id="reports-back" type="button">All reports</button></div>
+        </div>
+        <div class="report-tiles" id="report-tiles">
+          <button class="report-tile" type="button" data-report="contract-ball">
+            <svg class="report-tile-art" viewBox="0 0 200 120" aria-hidden="true">
+              <g class="rt-links"><path d="M100 60 L62 34 M100 60 L140 30 M100 60 L146 84 M100 60 L66 88 M62 34 L34 20 M62 34 L40 50 M140 30 L170 18 M140 30 L172 46 M146 84 L176 98 M66 88 L36 100 M66 88 L84 108 M34 20 L18 34 M172 46 L188 62 M40 50 L22 64 M100 60 L118 100"/></g>
+              <circle class="rt-contract" cx="100" cy="60" r="13"/><circle class="rt-rework" cx="118" cy="100" r="6"/>
+              <circle class="rt-suffix" cx="62" cy="34" r="8"/><circle class="rt-suffix" cx="140" cy="30" r="9"/><circle class="rt-suffix" cx="146" cy="84" r="7"/><circle class="rt-suffix" cx="66" cy="88" r="7"/>
+              <circle class="rt-dept" cx="34" cy="20" r="6"/><circle class="rt-dept" cx="40" cy="50" r="5"/><circle class="rt-dept" cx="170" cy="18" r="6"/><circle class="rt-dept" cx="172" cy="46" r="7"/><circle class="rt-dept" cx="176" cy="98" r="5"/><circle class="rt-dept" cx="36" cy="100" r="6"/><circle class="rt-dept" cx="84" cy="108" r="4"/>
+              <circle class="rt-person" cx="18" cy="34" r="3"/><circle class="rt-person" cx="188" cy="62" r="3"/><circle class="rt-person" cx="22" cy="64" r="3"/>
+            </svg>
+            <strong>Contract Ball</strong>
+            <span>Contracts, their suffixes, the departments and people who worked on them, as a 3D ball. Bigger means more hours.</span>
+          </button>
+        </div>
+        <div class="report-view is-hidden" id="report-contract-ball">
+          <div class="ball-toolbar">
+            <div class="ball-row">
+              <span class="ball-label">Contracts</span>
+              <div class="ball-contracts" id="ball-contracts" role="group" aria-label="Contracts with time in the last 12 months"></div>
+              <div class="ball-group"><button class="ball-btn" id="ball-all" type="button">All</button><button class="ball-btn" id="ball-none" type="button">Clear</button></div>
+            </div>
+            <div class="ball-row">
+              <div class="ball-group">
+                <label class="ball-label" for="ball-span">Time</label>
+                <select id="ball-span">
+                  <option value="week">This week</option>
+                  <option value="month">This month</option>
+                  <option value="3m">Last 3 months</option>
+                  <option value="12m" selected>Last 12 months</option>
+                  <option value="custom">Custom…</option>
+                </select>
+                <span class="ball-group is-hidden" id="ball-custom"><input type="date" id="ball-from" aria-label="From"><span class="ball-label">to</span><input type="date" id="ball-to" aria-label="To"></span>
+              </div>
+              <div class="ball-group">
+                <button class="ball-btn" id="ball-people" type="button" aria-pressed="true">People</button>
+                <button class="ball-btn" id="ball-spin" type="button" aria-pressed="true">Spin</button>
+                <button class="ball-btn" id="ball-flow" type="button" aria-pressed="true">Flow</button>
+                <label class="ball-label" for="ball-labels">Labels</label>
+                <select id="ball-labels"><option value="key" selected>Contracts &amp; suffixes</option><option value="all">All</option><option value="off">Off</option></select>
+                <button class="ball-btn" id="ball-fit" type="button">Reset view</button>
+              </div>
+              <div class="ball-group">
+                <button class="ball-btn" id="ball-saver" type="button" aria-pressed="false" title="Show the ball, full screen, when this device is left alone. This device only.">Screen saver</button>
+                <select id="ball-saver-mins" class="is-hidden" aria-label="Start the screen saver after"><option value="2">after 2 min</option><option value="5">after 5 min</option><option value="10">after 10 min</option><option value="15">after 15 min</option><option value="30">after 30 min</option></select>
+                <button class="ball-btn is-hidden" id="ball-saver-try" type="button">Preview</button>
+              </div>
+              <div class="ball-totals" id="ball-totals"></div>
+            </div>
+          </div>
+          <div class="ball-body">
+            <div class="ball-stage" id="ball-stage">
+              <div class="ball-canvas" id="ball-canvas"></div>
+              <div class="ball-tags" id="ball-tags"></div>
+              <div class="ball-legend" aria-hidden="true">
+                <span><i style="background:var(--ball-hub)"></i>Company</span><span><i style="background:var(--ball-contract)"></i>Contract</span><span><i style="background:var(--ball-suffix)"></i>Suffix</span><span><i style="background:var(--ball-dept)"></i>Department</span><span><i style="background:var(--ball-person)"></i>Person</span><span><i style="background:var(--ball-rework)"></i>Rework</span><span>Size = hours</span>
+              </div>
+              <div class="ball-hint">Drag to spin · right-drag to move · scroll to zoom<br>Click a ball for details</div>
+              <div class="ball-empty" id="ball-empty">Loading…</div>
+            </div>
+            <aside class="ball-panel" id="ball-panel" aria-live="polite"></aside>
+          </div>
         </div>
       </section>
       <section class="view is-hidden" data-view-panel="contract-information">
@@ -403,5 +471,6 @@
   <div class="toast" id="toast" role="status"></div>
   <div class="drag-tooltip is-hidden" id="drag-tooltip" role="status"></div>
   <script src="app.js"></script>
+  <script src="reports.js"></script>
 </body>
 </html>
