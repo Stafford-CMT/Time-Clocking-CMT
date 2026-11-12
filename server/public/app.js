@@ -940,22 +940,6 @@ sidebarResize.addEventListener('pointermove', (event) => { if (!sidebarResize.ha
 sidebarResize.addEventListener('pointerup', (event) => { sidebarResize.releasePointerCapture(event.pointerId); document.body.classList.remove('is-resizing'); });
 // Pick up other people's changes when coming back to the tab (unless a form is open).
 document.addEventListener('visibilitychange', () => { if (state && document.visibilityState === 'visible' && !document.querySelector('.modal-backdrop:not(.is-hidden)')) reloadState(); });
-// Browser tab: while your clock is running, the tab's icon shrinks a little and a coloured arc runs round it, clear
-// of its edge (purple for rework, orange for Non-contract, teal for a contract tile), so you can see it from other tabs. A paused (break) clock shows none.
-// Background tabs only redraw about once a second, so there it turns more slowly.
-const TAB_RING_STEPS = 60; // positions per turn: 60 x 70ms is about 4 seconds a turn, smooth enough to look like it glides
-let tabIconBase = null; let tabRingStep = 0; let tabIconShown = '';
-fetch('favicon.svg').then((response) => response.text()).then((svg) => { tabIconBase = svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, ''); }).catch(() => {}); // just what is inside <svg>
-function updateTabIndicator() {
-  const link = document.querySelector('link[rel="icon"]'); if (!link) return;
-  const running = state?.contracts?.find((contract) => contract.activeSessions?.[currentUserId]);
-  if (!running || !tabIconBase) { if (tabIconShown) { link.href = 'favicon.svg'; tabIconShown = ''; } return; }
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) tabRingStep = (tabRingStep + 1) % TAB_RING_STEPS;
-  const ring = `<rect x="3" y="3" width="58" height="58" rx="15" fill="none" stroke="${state.activeReworkReason ? '#9a78e6' : running.system ? '#f08a2c' : '#3fe0c8'}" stroke-width="6" stroke-linecap="round" pathLength="100" stroke-dasharray="38 62" stroke-dashoffset="${(-100 * tabRingStep) / TAB_RING_STEPS}"/>`;
-  const icon = `<g transform="translate(9 9) scale(0.71875)">${tabIconBase}</g>`; // 46px of the 64, leaving a 3px gap inside the ring
-  const href = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">${icon}${ring}</svg>`)}`;
-  if (href !== tabIconShown) { link.href = href; tabIconShown = href; }
-}
 document.querySelectorAll('.schedule-scroll').forEach((scroller) => scroller.addEventListener('scroll', updateNowMarkers, { passive: true })); window.addEventListener('resize', updateNowMarkers);
 /* A link can open Edit times on a day: /#edit-times/2026-11-02 (the commit reminder email uses it).
  * login.html keeps the link in sessionStorage when someone has to sign in first. */
@@ -966,6 +950,6 @@ function openFromLink() {
   history.replaceState(null, '', location.pathname + location.search);
   openExportDay(currentUserId, match[1] || TODAY);
 }
-loadState().then(() => { renderAll(); openFromLink(); updateNowMarkers(); setInterval(tick, 1000); setInterval(updateTabIndicator, 70); }).catch((error) => showToast(`Could not load data: ${error.message}`));
+loadState().then(() => { renderAll(); openFromLink(); updateNowMarkers(); setInterval(tick, 1000); }).catch((error) => showToast(`Could not load data: ${error.message}`));
 // Screen titles: solid background only once the page starts scrolling under them
 { const markScrolled = () => document.documentElement.classList.toggle('page-scrolled', window.scrollY > 0); window.addEventListener('scroll', markScrolled, { passive: true }); markScrolled(); }
