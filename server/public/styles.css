@@ -831,6 +831,12 @@ table.syspro-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 .sj-pill.is-matched { background: var(--mint); color: var(--teal-dark); }
 .sj-pill.is-problem { background: var(--c-fff0e9); color: var(--c-9c4e3e); }
 .sj-pill.is-info { background: var(--c-eef2f0); color: var(--muted); }
+.sj-table tr.sj-rework { cursor: pointer; }
+.sj-table tr.sj-rework:hover td { background: var(--c-f7fbf9); }
+.sj-table td.sj-code { position: relative; }
+.sj-toggle { position: absolute; top: 50%; left: 6px; width: 16px; transform: translateY(-50%); margin: 0; padding: 0; border: 0; background: transparent; color: var(--rework-dark, var(--teal-dark)); font-size: 15px; line-height: 1; cursor: pointer; }
+.sj-table tr.sj-part td { padding-top: 8px; padding-bottom: 8px; background: var(--c-fafcf9); color: var(--muted); font-size: 11px; }
+.sj-table tr.sj-part td.sj-code { padding-left: 45px; font: 500 12px 'DM Sans', sans-serif; color: var(--muted); }
 .sj-idle { margin-top: 18px; }
 .sj-idle summary { cursor: pointer; list-style: none; }
 .sj-idle summary::-webkit-details-marker { display: none; }

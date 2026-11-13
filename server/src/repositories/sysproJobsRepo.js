@@ -5,12 +5,12 @@
  */
 
 // Contract time (never Non-contract) in a date range, added up per contract
-// number, suffix, rework or not, and committed or not. Stopped time blocks only.
+// number, suffix, rework reason ('' = ordinary time), and committed or not. Stopped time blocks only.
 async function contractTime(db, { from, to }) {
   const { rows } = await db.query(
     `SELECT c.number, c.suffix,
             MAX(c.suffix_description) AS suffix_description, MAX(c.customer_name) AS customer_name,
-            COALESCE(s.rework_reason, '') <> '' AS rework,
+            COALESCE(s.rework_reason, '') AS rework_reason,
             cd.user_id IS NOT NULL AS committed,
             SUM(EXTRACT(EPOCH FROM s.end_time - s.start_time))::int AS seconds
        FROM time_sessions s

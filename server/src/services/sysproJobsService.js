@@ -63,20 +63,30 @@ async function jobHours({ from, to }) {
   // Time Slide hours per code.
   const rows = new Map();
   for (const t of timeRows) {
+    const rework = Boolean(t.rework_reason);
     const number = (t.number || '').trim();
-    const suffix = t.rework ? REWORK_SUFFIX : (t.suffix || '').trim().toUpperCase();
+    const ownSuffix = (t.suffix || '').trim().toUpperCase();
+    const suffix = rework ? REWORK_SUFFIX : ownSuffix;
     const code = codeOf(number, suffix);
     if (!rows.has(code)) {
       rows.set(code, {
-        code, number, suffix, rework: t.rework,
-        description: t.rework ? 'Rework' : (t.suffix_description || ''),
+        code, number, suffix, rework,
+        description: rework ? 'Rework' : (t.suffix_description || ''),
         customer: t.customer_name || '',
         committedSeconds: 0, uncommittedSeconds: 0,
+        ...(rework ? { parts: new Map() } : {}),
       });
     }
     const row = rows.get(code);
     if (t.committed) row.committedSeconds += t.seconds; else row.uncommittedSeconds += t.seconds;
     if (!row.description && t.suffix_description) row.description = t.suffix_description;
+    // A rework row also keeps where its time came from: each suffix and rework reason.
+    if (rework) {
+      const key = `${ownSuffix}\n${t.rework_reason}`;
+      if (!row.parts.has(key)) row.parts.set(key, { code: codeOf(number, ownSuffix), reason: t.rework_reason, committedSeconds: 0, uncommittedSeconds: 0 });
+      const part = row.parts.get(key);
+      if (t.committed) part.committedSeconds += t.seconds; else part.uncommittedSeconds += t.seconds;
+    }
   }
 
   const timeCodes = new Set(rows.keys());
@@ -87,7 +97,8 @@ async function jobHours({ from, to }) {
     else if (!jobs.length) status = 'no-job';
     else if (jobs.length > 1) status = 'two-jobs';
     else status = 'matched';
-    return { ...row, jobs: jobs.map((j) => j.job), status };
+    const parts = row.parts && [...row.parts.values()].sort((a, b) => a.code.localeCompare(b.code, 'en-GB', { numeric: true }) || a.reason.localeCompare(b.reason));
+    return { ...row, ...(parts ? { parts } : {}), jobs: jobs.map((j) => j.job), status };
   }).sort((a, b) => a.code.localeCompare(b.code, 'en-GB', { numeric: true }));
 
   // Syspro jobs with no Time Slide time in these dates; says whether a tile exists for them.
