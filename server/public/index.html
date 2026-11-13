@@ -185,11 +185,11 @@
         </form>
         <p class="sj-summary" id="sj-summary" role="status"></p>
         <div class="table-card">
-          <div class="table-intro"><div><strong>Time Slide hours by Syspro job</strong><span>Contract time only (no Non-contract). Each contract and suffix (4663A) is matched to the Syspro job in MrpJobMaster whose description and stock code are both that code. Rework on any suffix goes to the contract's rework job (4663RW).</span></div></div>
+          <div class="table-intro"><div><strong>Time Slide hours by Syspro job</strong><span>Contract time only (no Non-contract). Each contract and suffix (4663A) is matched to the open Syspro job in WipMaster whose description and stock code are both that code. Rework on any suffix goes to the contract's rework job (4663RW).</span></div></div>
           <div class="table-scroll"><table class="sj-table" id="sj-table"></table></div>
         </div>
         <details class="table-card sj-idle" id="sj-idle">
-          <summary class="table-intro"><div><strong id="sj-idle-title">Syspro jobs with no time in these dates</strong><span>Syspro jobs for a contract and suffix that nobody clocked in these dates.</span></div></summary>
+          <summary class="table-intro"><div><strong id="sj-idle-title">Syspro jobs with no time in these dates</strong><span>Open Syspro jobs for a contract and suffix that nobody clocked in these dates.</span></div></summary>
           <div class="table-scroll"><table class="sj-table" id="sj-idle-table"></table></div>
         </details>
       </section>

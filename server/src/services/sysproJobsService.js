@@ -3,7 +3,9 @@
 /* Setup -> Syspro jobs (admins only, read only): which Syspro job each Time
  * Slide contract/suffix's hours belong to.
  *
- * Syspro side: MrpJobMaster rows whose JobDescription equals their StockCode.
+ * Syspro side: open WipMaster jobs (Complete <> 'Y') whose JobDescription
+ * equals their StockCode. WipMaster is Syspro's job table; MrpJobMaster was
+ * tried first but is a planning copy that stopped updating (Stafford, 13 Nov).
  * The StockCode is the contract number with its suffix joined on (4663A); a
  * code ending in a digit is a bare contract number (4663, D0135) and is
  * ignored. Rework has its own job per contract: <number>RW (4663RW).
@@ -30,8 +32,8 @@ async function sysproJobsByCode() {
   const result = await pool.request().query(`
     SELECT RTRIM(Job) AS job, RTRIM(StockCode) AS code, RTRIM(CustomerName) AS customer,
            Complete AS complete, JobStartDate AS started
-      FROM MrpJobMaster
-     WHERE JobDescription = StockCode AND RTRIM(StockCode) <> ''`);
+      FROM WipMaster
+     WHERE JobDescription = StockCode AND RTRIM(StockCode) <> '' AND Complete <> 'Y'`);
   const byCode = new Map();
   for (const row of result.recordset) {
     const code = codeOf(row.code);
