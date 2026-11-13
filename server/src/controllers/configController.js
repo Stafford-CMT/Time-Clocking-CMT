@@ -2,6 +2,7 @@
 
 const sysproService = require('../services/sysproService');
 const sysproBrowseService = require('../services/sysproBrowseService');
+const sysproJobsService = require('../services/sysproJobsService');
 
 async function getSyspro(req, res, next) {
   try {
@@ -57,4 +58,12 @@ async function readSysproTable(req, res, next) {
   }
 }
 
-module.exports = { getSyspro, saveSyspro, testSysproEnet, testSysproSql, listSysproTables, readSysproTable };
+async function sysproJobHours(req, res, next) {
+  try {
+    res.json(await sysproJobsService.jobHours({ from: req.query.from, to: req.query.to }));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getSyspro, saveSyspro, testSysproEnet, testSysproSql, listSysproTables, readSysproTable, sysproJobHours };

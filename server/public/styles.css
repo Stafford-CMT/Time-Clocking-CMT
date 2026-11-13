@@ -818,6 +818,25 @@ table.syspro-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 .syspro-grid td.is-null { color: var(--c-b3bfbd); font-style: italic; }
 .syspro-grid tbody tr:hover td { background: var(--c-f7fbf9); }
 .syspro-grid .syspro-grid-empty { padding: 30px; color: var(--muted); text-align: center; white-space: normal; }
+/* Setup -> Syspro jobs: Time Slide hours per Syspro job. Statuses are pills: teal matched, coral can't send, grey no time. */
+.sj-summary { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+.sj-summary strong { color: var(--ink); }
+.sj-summary.is-error { color: var(--coral); }
+.sj-table td.sj-code { font: 600 13px 'Space Grotesk'; white-space: nowrap; }
+.sj-table .sj-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sj-table td.sj-num.is-zero { color: var(--c-b3bfbd); }
+.sj-table tfoot td { font-weight: 700; background: var(--c-fafcf9); }
+.sj-table .sj-empty { padding: 30px; color: var(--muted); text-align: center; }
+.sj-pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.sj-pill.is-matched { background: var(--mint); color: var(--teal-dark); }
+.sj-pill.is-problem { background: var(--c-fff0e9); color: var(--c-9c4e3e); }
+.sj-pill.is-info { background: var(--c-eef2f0); color: var(--muted); }
+.sj-idle { margin-top: 18px; }
+.sj-idle summary { cursor: pointer; list-style: none; }
+.sj-idle summary::-webkit-details-marker { display: none; }
+.sj-idle summary::after { content: '▸'; color: var(--muted); font-size: 14px; }
+.sj-idle[open] summary::after { content: '▾'; }
+.sj-idle:not([open]) summary { border-bottom: 0; }
 @media (max-width: 900px) { .syspro-browser { grid-template-columns: 1fr; } .syspro-table-list { height: 300px; min-height: 0; } .syspro-table-view { height: 70vh; } }
 
 /* Working in (migration 020): the department this person's clocking is for today. Normally their own; another one

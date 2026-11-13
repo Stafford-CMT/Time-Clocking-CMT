@@ -83,5 +83,6 @@ router.post('/config/syspro/test-enet', requireRole('admin'), configController.t
 router.post('/config/syspro/test-sql', requireRole('admin'), configController.testSysproSql);
 router.get('/config/syspro/tables', requireRole('admin'), configController.listSysproTables);
 router.get('/config/syspro/tables/:schema/:name', requireRole('admin'), configController.readSysproTable);
+router.get('/config/syspro/job-hours', requireRole('admin'), configController.sysproJobHours); // Time Slide hours per Syspro job (query: from, to); reads only
 
 module.exports = router;

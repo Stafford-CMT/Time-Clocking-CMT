@@ -31,6 +31,7 @@
             <button class="nav-item nav-child" id="nav-lists-open" type="button">Lists</button>
             <button class="nav-item nav-child is-hidden" id="nav-configuration" data-view="configuration" type="button">Configuration</button>
             <button class="nav-item nav-child is-hidden" id="nav-syspro-tables" data-view="syspro-tables" type="button">Syspro tables</button>
+            <button class="nav-item nav-child is-hidden" id="nav-syspro-jobs" data-view="syspro-jobs" type="button">Syspro jobs</button>
           </div>
         </div>
       </nav>
@@ -172,6 +173,25 @@
             <div class="syspro-grid-scroll"><table class="syspro-grid" id="syspro-grid"></table></div>
           </div>
         </div>
+      </section>
+      <section class="view is-hidden" data-view-panel="syspro-jobs">
+        <div class="section-heading">
+          <div><span class="section-kicker">Admins only · read only</span><h2>Syspro jobs</h2></div>
+        </div>
+        <form class="export-range" id="sj-form" autocomplete="off">
+          <label>From<input id="sj-from" type="date" required></label>
+          <label>To<input id="sj-to" type="date" required></label>
+          <div class="export-quick" role="group" aria-label="Quick dates"><button type="button" data-sj-range="last-week">Last week</button><button type="button" data-sj-range="this-week">This week</button><button type="button" data-sj-range="last-month">Last month</button><button type="button" data-sj-range="this-month">This month</button></div>
+        </form>
+        <p class="sj-summary" id="sj-summary" role="status"></p>
+        <div class="table-card">
+          <div class="table-intro"><div><strong>Time Slide hours by Syspro job</strong><span>Contract time only (no Non-contract). Each contract and suffix (4663A) is matched to the Syspro job in MrpJobMaster whose description and stock code are both that code. Rework on any suffix goes to the contract's rework job (4663RW).</span></div></div>
+          <div class="table-scroll"><table class="sj-table" id="sj-table"></table></div>
+        </div>
+        <details class="table-card sj-idle" id="sj-idle">
+          <summary class="table-intro"><div><strong id="sj-idle-title">Syspro jobs with no time in these dates</strong><span>Syspro jobs for a contract and suffix that nobody clocked in these dates.</span></div></summary>
+          <div class="table-scroll"><table class="sj-table" id="sj-idle-table"></table></div>
+        </details>
       </section>
       <section class="view is-hidden" data-view-panel="data-export">
         <div class="section-heading">
@@ -353,6 +373,7 @@
             <tr><th scope="row">Working patterns (add, change, delete) and the auto clock-out delay</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Cost centres, rework reasons</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Configuration (Syspro connection)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Syspro tables and Syspro jobs (read only)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
           </tbody>
         </table>
       </div>
