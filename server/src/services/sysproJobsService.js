@@ -1,6 +1,6 @@
 'use strict';
 
-/* Setup -> Syspro jobs (admins only, read only): which Syspro job each Time
+/* Reports -> Hours by Syspro job and Syspro jobs with no time (admins only, read only): which Syspro job each Time
  * Slide contract/suffix's hours belong to.
  *
  * Syspro side: open WipMaster jobs (Complete <> 'Y') whose JobDescription

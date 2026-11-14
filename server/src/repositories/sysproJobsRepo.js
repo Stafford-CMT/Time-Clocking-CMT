@@ -1,6 +1,6 @@
 'use strict';
 
-/* Raw SQL for Setup -> Syspro jobs. Every function takes `db` -- the pool, or a
+/* Raw SQL for the Syspro job reports (Reports screen). Every function takes `db` -- the pool, or a
  * transaction client from withTransaction. Read only.
  */
 

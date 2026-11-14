@@ -52,7 +52,13 @@ app.use('/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 20, skip: () => Bool
 
 // login.html (and its icon) must load before anyone can log in; everything
 // else in public/ requires a session, including index.html itself.
-app.get('/login.html', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'login.html')));
+// Someone already signed in (pressing Back past their first screen, say) goes straight back into Time Slide.
+// no-store: so Back asks the server again instead of showing a kept copy of the sign-in page.
+app.get('/login.html', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  if (req.session.user) return res.redirect('/');
+  res.sendFile(path.join(PUBLIC_DIR, 'login.html'));
+});
 app.get('/favicon.svg', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'favicon.svg')));
 
 app.use('/api', requireAuth, apiRoutes);

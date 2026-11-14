@@ -1,4 +1,5 @@
 /* Reports: a tile per report on the Reports screen; opening one swaps the tiles for it.
+ * The Contract Ball is here; Hours by Syspro job and Syspro jobs with no time (admins) are in app.js.
  *
  * Contract Ball -- a spinning 3D ball of contract time (3d-force-graph, kept in vendor/ and only loaded when the
  * ball first opens). Contracts sit in the middle with their suffixes round them; each suffix has its own ball for
@@ -23,15 +24,32 @@
 
   // ---------- Reports screen: tiles <-> one report ----------
   const section = document.querySelector('[data-view-panel="reports"]');
-  const openReport = (name) => {
+  // Each report: its title, and what to do as it opens. The two Syspro job reports are admins only (their tiles are hidden
+  // for others) and live in app.js: prepareSysproJobs.
+  const REPORTS = {
+    'contract-ball': { title: 'Contract Ball', open: () => ball.show() },
+    'syspro-hours': { title: 'Hours by Syspro job', open: () => prepareSysproJobs('hours') },
+    'syspro-idle': { title: 'Syspro jobs with no time', open: () => prepareSysproJobs('idle') },
+  };
+  // Opening a report or going back to the tiles is a step in the browser's history (app.js rememberScreen), so Back
+  // and Forward move between them; app.js showScreen calls openReport for an address like #reports/syspro-hours.
+  let current = null;
+  const openReport = (wanted) => {
+    const tile = wanted && document.querySelector(`[data-report="${wanted}"]`);
+    const name = tile && !tile.classList.contains('is-hidden') ? wanted : null; // unknown, or an admin report for someone else: the tiles
+    current = name;
+    window.rememberScreen?.();
     el('report-tiles').classList.toggle('is-hidden', Boolean(name));
-    el('report-contract-ball').classList.toggle('is-hidden', name !== 'contract-ball');
+    Object.keys(REPORTS).forEach((key) => el(`report-${key}`).classList.toggle('is-hidden', name !== key));
     el('reports-back').classList.toggle('is-hidden', !name);
-    el('reports-title').textContent = name === 'contract-ball' ? 'Contract Ball' : 'Reports';
-    if (name === 'contract-ball') ball.show(); else ball.hide();
+    el('reports-title').textContent = REPORTS[name]?.title || 'Reports';
+    if (name !== 'contract-ball') ball.hide();
+    REPORTS[name]?.open();
   };
   document.querySelectorAll('[data-report]').forEach((tile) => tile.addEventListener('click', () => openReport(tile.dataset.report)));
   el('reports-back').addEventListener('click', () => openReport(null));
+  window.openReport = openReport;
+  window.currentReport = () => current;
   // Leaving Reports for another screen stops the ball drawing; coming back starts it again.
   new MutationObserver(() => { if (section.classList.contains('is-hidden')) ball.hide(); else if (!el('report-contract-ball').classList.contains('is-hidden')) ball.show(); })
     .observe(section, { attributes: true, attributeFilter: ['class'] });

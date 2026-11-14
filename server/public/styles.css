@@ -818,7 +818,7 @@ table.syspro-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 .syspro-grid td.is-null { color: var(--c-b3bfbd); font-style: italic; }
 .syspro-grid tbody tr:hover td { background: var(--c-f7fbf9); }
 .syspro-grid .syspro-grid-empty { padding: 30px; color: var(--muted); text-align: center; white-space: normal; }
-/* Setup -> Syspro jobs: Time Slide hours per Syspro job. Statuses are pills: teal matched, coral can't send, grey no time. */
+/* Reports -> Hours by Syspro job, and Syspro jobs with no time. Statuses are pills: teal matched, coral can't send, grey no time. */
 .sj-summary { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
 .sj-summary strong { color: var(--ink); }
 .sj-summary.is-error { color: var(--coral); }
@@ -837,12 +837,6 @@ table.syspro-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 .sj-toggle { position: absolute; top: 50%; left: 6px; width: 16px; transform: translateY(-50%); margin: 0; padding: 0; border: 0; background: transparent; color: var(--rework-dark, var(--teal-dark)); font-size: 15px; line-height: 1; cursor: pointer; }
 .sj-table tr.sj-part td { padding-top: 8px; padding-bottom: 8px; background: var(--c-fafcf9); color: var(--muted); font-size: 11px; }
 .sj-table tr.sj-part td.sj-code { padding-left: 45px; font: 500 12px 'DM Sans', sans-serif; color: var(--muted); }
-.sj-idle { margin-top: 18px; }
-.sj-idle summary { cursor: pointer; list-style: none; }
-.sj-idle summary::-webkit-details-marker { display: none; }
-.sj-idle summary::after { content: '▸'; color: var(--muted); font-size: 14px; }
-.sj-idle[open] summary::after { content: '▾'; }
-.sj-idle:not([open]) summary { border-bottom: 0; }
 @media (max-width: 900px) { .syspro-browser { grid-template-columns: 1fr; } .syspro-table-list { height: 300px; min-height: 0; } .syspro-table-view { height: 70vh; } }
 
 /* Working in (migration 020): the department this person's clocking is for today. Normally their own; another one
@@ -901,6 +895,11 @@ table.syspro-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 .report-tile span { color: var(--muted); font-size: 13px; line-height: 1.45; }
 .report-tile-art { width: 100%; height: auto; margin-bottom: 4px; border-radius: 10px; background: var(--ball-stage); }
 .rt-links path { fill: none; stroke: var(--ball-link); stroke-width: 1.2; opacity: .6; }
+/* The Syspro job report tiles: a little table of codes, status pills and hour bars. */
+.rt-rows path { fill: none; stroke: var(--ball-link); stroke-width: 1; opacity: .35; }
+.rt-code { fill: var(--ball-contract); opacity: .85; } .rt-pill-ok { fill: var(--ball-suffix); } .rt-pill-bad { fill: var(--ball-rework); } .rt-pill-info { fill: var(--ball-person); opacity: .6; }
+.rt-bar { fill: var(--ball-suffix); opacity: .55; } .rt-total { fill: var(--ball-link); opacity: .35; }
+.rt-empty path { fill: none; stroke: var(--ball-link); stroke-width: 2; stroke-dasharray: 4 5; stroke-linecap: round; opacity: .55; }
 .rt-contract { fill: var(--ball-contract); } .rt-suffix { fill: var(--ball-suffix); } .rt-dept { fill: var(--ball-dept); } .rt-person { fill: var(--ball-person); } .rt-rework { fill: var(--ball-rework); }
 
 .report-view { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--c-ffffff); box-shadow: var(--shadow); }

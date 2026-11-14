@@ -31,7 +31,6 @@
             <button class="nav-item nav-child" id="nav-lists-open" type="button">Lists</button>
             <button class="nav-item nav-child is-hidden" id="nav-configuration" data-view="configuration" type="button">Configuration</button>
             <button class="nav-item nav-child is-hidden" id="nav-syspro-tables" data-view="syspro-tables" type="button">Syspro tables</button>
-            <button class="nav-item nav-child is-hidden" id="nav-syspro-jobs" data-view="syspro-jobs" type="button">Syspro jobs</button>
           </div>
         </div>
       </nav>
@@ -174,25 +173,6 @@
           </div>
         </div>
       </section>
-      <section class="view is-hidden" data-view-panel="syspro-jobs">
-        <div class="section-heading">
-          <div><span class="section-kicker">Admins only · read only</span><h2>Syspro jobs</h2></div>
-        </div>
-        <form class="export-range" id="sj-form" autocomplete="off">
-          <label>From<input id="sj-from" type="date" required></label>
-          <label>To<input id="sj-to" type="date" required></label>
-          <div class="export-quick" role="group" aria-label="Quick dates"><button type="button" data-sj-range="last-week">Last week</button><button type="button" data-sj-range="this-week">This week</button><button type="button" data-sj-range="last-month">Last month</button><button type="button" data-sj-range="this-month">This month</button></div>
-        </form>
-        <p class="sj-summary" id="sj-summary" role="status"></p>
-        <div class="table-card">
-          <div class="table-intro"><div><strong>Time Slide hours by Syspro job</strong><span>Contract time only (no Non-contract). Each contract and suffix (4663A) is matched to the open Syspro job in WipMaster whose description and stock code are both that code. Rework on any suffix goes to the contract's rework job (4663RW).</span></div></div>
-          <div class="table-scroll"><table class="sj-table" id="sj-table"></table></div>
-        </div>
-        <details class="table-card sj-idle" id="sj-idle">
-          <summary class="table-intro"><div><strong id="sj-idle-title">Syspro jobs with no time in these dates</strong><span>Open Syspro jobs for a contract and suffix that nobody clocked in these dates.</span></div></summary>
-          <div class="table-scroll"><table class="sj-table" id="sj-idle-table"></table></div>
-        </details>
-      </section>
       <section class="view is-hidden" data-view-panel="data-export">
         <div class="section-heading">
           <div><span class="section-kicker">Check, then download for Excel</span><h2>Data export</h2></div>
@@ -241,6 +221,51 @@
             <strong>Contract Ball</strong>
             <span>Contracts, their suffixes, the departments and people who worked on them, as a 3D ball. Bigger means more hours.</span>
           </button>
+          <button class="report-tile is-hidden" type="button" data-report="syspro-hours" data-report-admin>
+            <svg class="report-tile-art" viewBox="0 0 200 120" aria-hidden="true">
+              <g class="rt-rows"><path d="M16 26 H184 M16 50 H184 M16 74 H184 M16 98 H184"/></g>
+              <rect class="rt-code" x="20" y="31" width="30" height="14" rx="3"/><rect class="rt-code" x="20" y="55" width="26" height="14" rx="3"/><rect class="rt-code" x="20" y="79" width="32" height="14" rx="3"/>
+              <rect class="rt-pill-ok" x="62" y="33" width="34" height="10" rx="5"/><rect class="rt-pill-ok" x="62" y="57" width="34" height="10" rx="5"/><rect class="rt-pill-bad" x="62" y="81" width="34" height="10" rx="5"/>
+              <rect class="rt-bar" x="108" y="34" width="72" height="8" rx="4"/><rect class="rt-bar" x="136" y="58" width="44" height="8" rx="4"/><rect class="rt-bar" x="122" y="82" width="58" height="8" rx="4"/>
+              <rect class="rt-total" x="20" y="104" width="160" height="8" rx="4"/>
+            </svg>
+            <strong>Hours by Syspro job</strong>
+            <span>Time Slide's contract hours in your chosen dates, matched to the open Syspro job for each contract and suffix. Shows what is ready to send and what isn't. Admins only.</span>
+          </button>
+          <button class="report-tile is-hidden" type="button" data-report="syspro-idle" data-report-admin>
+            <svg class="report-tile-art" viewBox="0 0 200 120" aria-hidden="true">
+              <g class="rt-rows"><path d="M16 26 H184 M16 50 H184 M16 74 H184 M16 98 H184"/></g>
+              <rect class="rt-code" x="20" y="31" width="30" height="14" rx="3"/><rect class="rt-code" x="20" y="55" width="26" height="14" rx="3"/><rect class="rt-code" x="20" y="79" width="32" height="14" rx="3"/><rect class="rt-code" x="20" y="103" width="28" height="12" rx="3"/>
+              <g class="rt-empty"><path d="M108 38 H180 M108 62 H180 M108 86 H180 M108 109 H180"/></g>
+              <rect class="rt-pill-info" x="62" y="57" width="34" height="10" rx="5"/><rect class="rt-pill-bad" x="62" y="104" width="34" height="10" rx="5"/>
+            </svg>
+            <strong>Syspro jobs with no time</strong>
+            <span>Open Syspro jobs for a contract and suffix that nobody clocked in your chosen dates, and whether Time Slide has a tile for them. Admins only.</span>
+          </button>
+        </div>
+        <div class="is-hidden" id="report-syspro-hours">
+          <form class="export-range" autocomplete="off">
+            <label>From<input id="sj-hours-from" type="date" required></label>
+            <label>To<input id="sj-hours-to" type="date" required></label>
+            <div class="export-quick" role="group" aria-label="Quick dates"><button type="button" data-sj-range="last-week">Last week</button><button type="button" data-sj-range="this-week">This week</button><button type="button" data-sj-range="last-month">Last month</button><button type="button" data-sj-range="this-month">This month</button></div>
+          </form>
+          <p class="sj-summary" id="sj-hours-summary" role="status"></p>
+          <div class="table-card">
+            <div class="table-intro"><div><strong>Time Slide hours by Syspro job</strong><span>Read only: nothing is sent to Syspro from here. Contract time only (no Non-contract). Each contract and suffix (4663A) is matched to the open Syspro job in WipMaster whose description and stock code are both that code. Rework on any suffix goes to the contract's rework job (4663RW).</span></div></div>
+            <div class="table-scroll"><table class="sj-table" id="sj-table"></table></div>
+          </div>
+        </div>
+        <div class="is-hidden" id="report-syspro-idle">
+          <form class="export-range" autocomplete="off">
+            <label>From<input id="sj-idle-from" type="date" required></label>
+            <label>To<input id="sj-idle-to" type="date" required></label>
+            <div class="export-quick" role="group" aria-label="Quick dates"><button type="button" data-sj-range="last-week">Last week</button><button type="button" data-sj-range="this-week">This week</button><button type="button" data-sj-range="last-month">Last month</button><button type="button" data-sj-range="this-month">This month</button></div>
+          </form>
+          <p class="sj-summary" id="sj-idle-summary" role="status"></p>
+          <div class="table-card">
+            <div class="table-intro"><div><strong>Syspro jobs with no time in these dates</strong><span>Read only. Open Syspro jobs for a contract and suffix that nobody clocked in these dates.</span></div></div>
+            <div class="table-scroll"><table class="sj-table" id="sj-idle-table"></table></div>
+          </div>
         </div>
         <div class="report-view is-hidden" id="report-contract-ball">
           <div class="ball-toolbar">
@@ -373,7 +398,7 @@
             <tr><th scope="row">Working patterns (add, change, delete) and the auto clock-out delay</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Cost centres, rework reasons</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Configuration (Syspro connection)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
-            <tr><th scope="row">Syspro tables and Syspro jobs (read only)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
+            <tr><th scope="row">Syspro tables, and the Syspro job reports (read only)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
           </tbody>
         </table>
       </div>
