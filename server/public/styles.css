@@ -888,6 +888,8 @@ table.syspro-grid { width: auto; min-width: 100%; border-collapse: separate; bor
 /* Reports. A tile per report; opening one swaps the tiles for that report. */
 :root { --ball-stage: #f2f6f4; --ball-contract: #c97a0a; --ball-suffix: #147d78; --ball-dept: #6a55c9; --ball-person: #6b8090; --ball-rework: #d2533a; --ball-hub: #2fb3a8; --ball-link: #7d8f8c; }
 :root[data-theme="dark"] { --ball-stage: #0c1315; --ball-contract: #f0a644; --ball-suffix: #4fbdb3; --ball-dept: #a395f2; --ball-person: #93a8b6; --ball-rework: #ef8a72; --ball-hub: #2fb3a8; --ball-link: #8aa09c; }
+/* All reports sits in the middle of the gap between the report's name and the light/dark button. */
+[data-view-panel="reports"] .section-heading-actions { flex: 1; justify-content: center; }
 .report-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 .report-tile { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--c-ffffff); box-shadow: var(--shadow); color: var(--ink); text-align: left; }
 .report-tile:hover { border-color: var(--teal); }
