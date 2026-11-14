@@ -304,7 +304,7 @@ the signed-in user; each returns the refreshed clock state.
 | `POST /working-patterns` · `PUT /working-patterns/:id` · `DELETE /working-patterns/:id` · `PUT /working-patterns/:id/default` | Lists → Working patterns: add one (a copy of `copyFrom`) · save its name and seven days · delete it (refused while anyone is on it, or for the default) · make it the pattern new people start on. Each returns the whole list. | admin |
 | `GET /export/overview?from=&to=` | Setup → Data export grid: each person's days with hours and status (not committed / committed / exported / changed since export), plus the exports covering those dates | own row; everyone for admin |
 | `GET /export/times?from=&to=&userId=` | Preview spreadsheet (.xlsx) — marks nothing as exported (no `userId` = everyone, admins only) | own times; anyone's for admin |
-| `POST /export/batches` | Export: every committed, not-yet-exported day in `{from, to}` becomes one batch and is returned as .xlsx; a day is never in two live batches | admin |
+| `POST /export/batches` | Export: every committed, not-yet-exported day in `{from, to}` becomes one batch and is returned as .xlsx (first sheet: the Syspro WIP Labor Import sheet, then what is not in it; needs Syspro reachable); a day is never in two live batches | admin |
 | `GET /export/batches/:id/file` · `DELETE /export/batches/:id` | Download an export again exactly as it was · undo it so its days can be exported again | admin |
 | `POST /export/reminders` | Email everyone with uncommitted days before today in `{from, to}` (needs `MAIL_FROM` and Graph `Mail.Send`) | admin |
 | `GET /config/syspro` · `PUT /config/syspro` | Syspro connection details (passwords only as "set" flags) · save them | admin |

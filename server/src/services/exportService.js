@@ -10,8 +10,10 @@
  *   then flags it as changed since export.
  * - Commit reminders (admins): emails everyone with uncommitted time before
  *   today in the range.
+ *   Its first sheet is the Syspro import (sysproImportSheet.js), so Syspro must
+ *   be reachable to export.
  * - Preview: the same spreadsheet for any dates without marking anything
- *   (your own times, or anyone's for an admin).
+ *   (your own times, or anyone's for an admin), without the Syspro sheets.
  */
 const ExcelJS = require('exceljs');
 const clockRepo = require('../repositories/clockRepo');
@@ -21,6 +23,8 @@ const env = require('../config/env');
 const { getPool, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 const teamService = require('./teamService');
+const sysproJobsService = require('./sysproJobsService');
+const { buildSysproImport, addSysproSheets } = require('./sysproImportSheet');
 const { uid } = require('../utils/ids');
 const { localDate, timeToSeconds, DATE_RE } = require('../utils/time');
 
@@ -133,9 +137,11 @@ function addHeader(sheet) {
 }
 
 // Sheet 1: every time block. Sheet 2: hours per person, day and contract (rework apart, per reason).
-async function buildWorkbook(rows) {
+// syspro ({ jobsByCode, entryDate }, exports only) puts the Syspro import and what's not in it first.
+async function buildWorkbook(rows, syspro = null) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Time Slide';
+  if (syspro) addSysproSheets(workbook, buildSysproImport(rows, syspro.jobsByCode), syspro.entryDate);
   const contractCells = (row) => (row.system
     ? { contract: 'Non-contract', suffix: '', suffixDescription: '', customer: '', machineType: '' }
     : { contract: row.number, suffix: row.suffix, suffixDescription: row.suffix_description, customer: row.customer_name, machineType: row.machine_type });
@@ -218,6 +224,11 @@ async function exportTimes(actor, { from, to, userId, ids }) {
 async function createBatch(actor, { from, to }) {
   assertAdmin(actor);
   assertRange(from, to);
+  // Syspro's jobs first, outside the lock: if Syspro can't be reached nothing is exported.
+  let jobsByCode;
+  try { jobsByCode = await sysproJobsService.sysproJobsByCode(); } catch (err) {
+    throw new ApiError(502, `Nothing was exported: the Syspro import sheet needs Syspro's job list, and Syspro could not be read (${err.message}). Try again when Syspro is back.`);
+  }
   return withTransaction(async (db) => {
     await exportRepo.lockExports(db);
     const scope = { from, to }; // everyone
@@ -230,7 +241,7 @@ async function createBatch(actor, { from, to }) {
 
     const keys = new Set(ready.map((d) => dayKey(d.userId, d.date)));
     const rows = (await clockRepo.findSessionsForExport(db, scope)).filter((row) => keys.has(dayKey(row.user_id, row.date)));
-    const file = await buildWorkbook(rows);
+    const file = await buildWorkbook(rows, { jobsByCode, entryDate: excelDate(to) });
     const batchId = uid('export');
     await exportRepo.insertBatch(db, { id: batchId, createdBy: actor.id, from, to, file });
     for (const day of ready) await exportRepo.insertExportedDay(db, { ...day, batchId });

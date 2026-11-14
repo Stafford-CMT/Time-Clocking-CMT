@@ -115,4 +115,4 @@ async function jobHours({ from, to }) {
   return { from, to, rows: result, idle, sysproCodes: byCode.size };
 }
 
-module.exports = { jobHours, codeOf, hasSuffix };
+module.exports = { jobHours, sysproJobsByCode, codeOf, hasSuffix };
