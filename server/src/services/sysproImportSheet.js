@@ -9,8 +9,9 @@
  * the export added up, dated the export's "to" date. The job comes from the
  * contract + suffix (rework: contract + RW), exactly as Reports -> Hours by
  * Syspro job. The work centre and operation come from the time block's
- * department (from Microsoft 365, or "Working in"):
- *   Assembly -> ASSY, operation 1;  Design -> DESI, operation 2.
+ * department (from Microsoft 365, or "Working in"), looked up in the table
+ * admins keep in Setup -> Configuration -> Syspro work centres (migration 022):
+ * ASSY is operation 1, DESI operation 2. A department not in it isn't sent.
  * Anything that can't go in (Non-contract time, no suffix, no Syspro job or
  * two of them, a department with no work centre yet) is listed on the next
  * sheet, "Not in Syspro import", so no hours go missing without anyone seeing.
@@ -18,11 +19,8 @@
 const { codeOf, hasSuffix } = require('./sysproJobsService');
 const { timeToSeconds } = require('../utils/time');
 
-// Department (as in the Users list, any case) -> Syspro work centre and its operation on every job.
-const WORK_CENTRES = {
-  assembly: { workCentre: 'ASSY', operation: 1 },
-  design: { workCentre: 'DESI', operation: 2 },
-};
+// Syspro's two work centres and the operation each is on every job.
+const OPERATIONS = { ASSY: 1, DESI: 2 };
 const REWORK_SUFFIX = 'RW';
 
 const HEADERS = ['Job', 'Operation', 'Work center', 'Work center rate', 'Employee', 'Machine', 'Entry date', 'Run time',
@@ -36,8 +34,9 @@ const hoursOf = (seconds) => Math.round(seconds / 36) / 100;
 
 /* rows: the export's time blocks (clockRepo.findSessionsForExport).
  * jobsByCode: open Syspro jobs per contract+suffix (sysproJobsService.sysproJobsByCode).
+ * workCentres: Map of department (trimmed, lower case) -> 'ASSY' | 'DESI' (sysproWorkCentresRepo.map).
  * Returns { lines: [{ job, operation, workCentre, seconds }], skipped: [{ code, department, reason, seconds }] }. */
-function buildSysproImport(rows, jobsByCode) {
+function buildSysproImport(rows, jobsByCode, workCentres) {
   const lines = new Map();
   const skipped = new Map();
   const skip = (code, department, reason, seconds) => {
@@ -59,8 +58,9 @@ function buildSysproImport(rows, jobsByCode) {
     const jobs = jobsByCode.get(code) || [];
     if (!jobs.length) { skip(code, department, `No open Syspro job for ${code}`, seconds); continue; }
     if (jobs.length > 1) { skip(code, department, `${code} has ${jobs.length} open Syspro jobs (${jobs.map((j) => j.job).join(', ')}): close all but one`, seconds); continue; }
-    const centre = WORK_CENTRES[department.toLowerCase()];
-    if (!centre) { skip(code, department, department ? `No Syspro work centre for the ${department} department yet` : 'The time has no department', seconds); continue; }
+    const workCentre = workCentres.get(department.toLowerCase());
+    if (!workCentre) { skip(code, department, department ? `The ${department} department is not sent to Syspro (Setup → Configuration → Syspro work centres)` : 'The time has no department', seconds); continue; }
+    const centre = { workCentre, operation: OPERATIONS[workCentre] };
 
     const key = `${jobs[0].job}|${centre.workCentre}`;
     if (!lines.has(key)) lines.set(key, { job: jobs[0].job, ...centre, seconds: 0 });
@@ -118,4 +118,4 @@ function addSysproSheets(workbook, { lines, skipped }, entryDate) {
     .forEach(([label, hours]) => { const row = left.addRow({ code: label, hours }); row.font = { bold: true }; });
 }
 
-module.exports = { buildSysproImport, addSysproSheets, WORK_CENTRES };
+module.exports = { buildSysproImport, addSysproSheets, OPERATIONS };

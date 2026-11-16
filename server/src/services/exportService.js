@@ -25,6 +25,7 @@ const ApiError = require('../utils/ApiError');
 const teamService = require('./teamService');
 const sysproJobsService = require('./sysproJobsService');
 const { buildSysproImport, addSysproSheets } = require('./sysproImportSheet');
+const sysproWorkCentresRepo = require('../repositories/sysproWorkCentresRepo');
 const { uid } = require('../utils/ids');
 const { localDate, timeToSeconds, DATE_RE } = require('../utils/time');
 
@@ -137,11 +138,11 @@ function addHeader(sheet) {
 }
 
 // Sheet 1: every time block. Sheet 2: hours per person, day and contract (rework apart, per reason).
-// syspro ({ jobsByCode, entryDate }, exports only) puts the Syspro import and what's not in it first.
+// syspro ({ jobsByCode, workCentres, entryDate }, exports only) puts the Syspro import and what's not in it first.
 async function buildWorkbook(rows, syspro = null) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Time Slide';
-  if (syspro) addSysproSheets(workbook, buildSysproImport(rows, syspro.jobsByCode), syspro.entryDate);
+  if (syspro) addSysproSheets(workbook, buildSysproImport(rows, syspro.jobsByCode, syspro.workCentres), syspro.entryDate);
   const contractCells = (row) => (row.system
     ? { contract: 'Non-contract', suffix: '', suffixDescription: '', customer: '', machineType: '' }
     : { contract: row.number, suffix: row.suffix, suffixDescription: row.suffix_description, customer: row.customer_name, machineType: row.machine_type });
@@ -241,7 +242,8 @@ async function createBatch(actor, { from, to }) {
 
     const keys = new Set(ready.map((d) => dayKey(d.userId, d.date)));
     const rows = (await clockRepo.findSessionsForExport(db, scope)).filter((row) => keys.has(dayKey(row.user_id, row.date)));
-    const file = await buildWorkbook(rows, { jobsByCode, entryDate: excelDate(to) });
+    const workCentres = await sysproWorkCentresRepo.map(db);
+    const file = await buildWorkbook(rows, { jobsByCode, workCentres, entryDate: excelDate(to) });
     const batchId = uid('export');
     await exportRepo.insertBatch(db, { id: batchId, createdBy: actor.id, from, to, file });
     for (const day of ready) await exportRepo.insertExportedDay(db, { ...day, batchId });

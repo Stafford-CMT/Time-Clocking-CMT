@@ -984,3 +984,10 @@ button.ball-bar:hover { background: var(--paper); }
 .ball-saver-caption span { color: var(--muted); font-size: 14px; }
 .ball-saver-wake { position: absolute; right: 28px; bottom: 20px; z-index: 2; color: var(--muted); font-size: 13px; pointer-events: none; }
 html:has(.ball-saver-screen:not(.is-hidden)), html:has(.ball-saver-screen:not(.is-hidden)) body { overflow: hidden; } /* no page scrollbar behind it */
+/* Configuration -> Syspro work centres: department -> ASSY / DESI / not sent */
+.work-centre-card { max-width: 980px; margin-top: 20px; }
+.work-centre-table { min-width: 0; }
+.work-centre-table th, .work-centre-table td { padding: 8px 25px; }
+.work-centre-table td:nth-child(2) { color: var(--muted); }
+.work-centre-table select { max-width: 260px; padding: 6px 28px 6px 8px; border: 1px solid var(--line); border-radius: 7px; background-color: var(--c-ffffff); background-position: right 10px center; }
+.work-centre-table tr.is-not-sent td:first-child { color: var(--muted); }
