@@ -190,6 +190,17 @@ async function addCommit(db, userId, date) {
   await db.query('INSERT INTO committed_dates (user_id, date) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, date]);
 }
 
+// Uncommit: only ever called for a day that isn't in a live export (checked under the export lock).
+async function removeCommit(db, userId, date) {
+  await db.query('DELETE FROM committed_dates WHERE user_id = $1 AND date = $2', [userId, date]);
+}
+
+// In a live export? (An undone export's days are deleted from exported_days.)
+async function isExported(db, userId, date) {
+  const { rows } = await db.query('SELECT 1 FROM exported_days WHERE user_id = $1 AND date = $2', [userId, date]);
+  return rows.length > 0;
+}
+
 /* The clocking half of GET /api/state. Running clocks are visible for
  * everyone (the dashboard's "active contracts" count uses them); completed
  * sessions and commits only for the viewer, unless they are an admin, who
@@ -212,8 +223,12 @@ async function getClockState(db, userId, userIds) {
     (editSessions[contractId] = editSessions[contractId] || []).push(session);
   });
 
-  const committedDates = (await db.query(`SELECT user_id, date FROM committed_dates ${scope[0]} ORDER BY date`, scope[1])).rows
-    .map((r) => ({ userId: r.user_id, date: r.date }));
+  // exported: the day is in a live export, so it can no longer be uncommitted.
+  const committedDates = (await db.query(
+    `SELECT c.user_id, c.date, (e.user_id IS NOT NULL) AS exported
+       FROM committed_dates c LEFT JOIN exported_days e ON e.user_id = c.user_id AND e.date = c.date
+       ${userIds === null ? '' : 'WHERE c.user_id = ANY($1)'} ORDER BY c.date`, scope[1])).rows
+    .map((r) => ({ userId: r.user_id, date: r.date, exported: r.exported }));
 
   const own = activeRows.find((r) => r.user_id === userId);
   return { activeSessions, editSessions, committedDates, breakState: await findBreakState(db, userId), activeReworkReason: own?.rework_reason || null, activeDepartment: own?.department || null };
@@ -248,5 +263,5 @@ module.exports = {
   findBreakState, setBreakState, setBreakDepartment, clearBreakState,
   listDepartments, findDepartments, setWorkingDepartment, setSessionDepartment,
   findDaySessions, contractIsRetired, keepRemoved, findRemoved, putBackRemoved,
-  isCommitted, addCommit, getClockState, findSessionsForExport,
+  isCommitted, addCommit, removeCommit, isExported, getClockState, findSessionsForExport,
 };

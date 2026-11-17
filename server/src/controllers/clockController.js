@@ -21,6 +21,7 @@ module.exports = {
   addSession: handle((req) => clockService.addSession(req.session.user, req.body)),
   takeSession: handle((req) => clockService.addSession(req.session.user, req.body, { take: true })),
   commit: handle((req) => clockService.commit(req.session.user, req.params.userId, req.params.date)),
+  uncommit: handle((req) => clockService.uncommit(req.session.user, req.params.userId, req.params.date)),
   markAutoNoticed: handle((req) => clockService.markAutoNoticed(req.session.user, req.body && req.body.ids)),
   setWorkingDepartment: handle((req) => clockService.setWorkingDepartment(req.session.user, req.body && req.body.department)),
   setSessionDepartment: handle((req) => clockService.setSessionDepartment(req.session.user, req.params.id, req.body && req.body.department)),

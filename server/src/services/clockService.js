@@ -6,6 +6,7 @@
  * Each action returns the fresh clock state for the caller to re-render.
  */
 const clockRepo = require('../repositories/clockRepo');
+const exportRepo = require('../repositories/exportRepo');
 const { getPool, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 const teamService = require('./teamService');
@@ -18,8 +19,9 @@ function assertCanActOn(actor, userId) {
   if (actor.id !== userId && !isAdmin(actor)) throw new ApiError(403, 'You can only change your own times');
 }
 
-// Committed is final: nobody, admins included, can change or uncommit the day,
-// so what goes to Syspro can never differ from what Time Slide holds.
+// A committed day can't be changed. It can be uncommitted (own, or anyone's for
+// an admin) until it is exported; after that it is final, so what has gone to
+// finance / Syspro can never differ from what Time Slide holds.
 async function assertNotCommitted(db, actor, userId, date) {
   if (await clockRepo.isCommitted(db, userId, date)) throw new ApiError(409, `Times for ${date} are committed and can't be changed`);
 }
@@ -398,6 +400,20 @@ async function commit(actor, userId, date) {
   return getState(actor);
 }
 
+// Uncommit: allowed until the day is exported. Done under the export lock, so
+// a day can't be uncommitted while an export is taking it.
+async function uncommit(actor, userId, date) {
+  assertCanActOn(actor, userId);
+  if (!DATE_RE.test(date)) throw new ApiError(400, 'date must be YYYY-MM-DD');
+  await withTransaction(async (db) => {
+    await exportRepo.lockExports(db);
+    if (!(await clockRepo.isCommitted(db, userId, date))) throw new ApiError(409, `Times for ${date} aren't committed`);
+    if (await clockRepo.isExported(db, userId, date)) throw new ApiError(409, `Times for ${date} have been exported, so they can't be uncommitted`);
+    await clockRepo.removeCommit(db, userId, date);
+  });
+  return getState(actor);
+}
+
 // The dashboard's "stopped automatically" message was seen (own sessions only).
 async function markAutoNoticed(actor, ids) {
   if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) throw new ApiError(400, 'ids must be an array of session ids');
@@ -406,7 +422,7 @@ async function markAutoNoticed(actor, ids) {
 }
 
 module.exports = {
-  getState, start, stop, updateSessions, restoreSession, addSession, removeSession, commit, markAutoNoticed,
+  getState, start, stop, updateSessions, restoreSession, addSession, removeSession, commit, uncommit, markAutoNoticed,
   setWorkingDepartment, setSessionDepartment,
   autoClockOutAt, runClockSchedule, startClockSchedule,
 };

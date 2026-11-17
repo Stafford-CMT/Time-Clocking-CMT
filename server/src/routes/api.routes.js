@@ -48,6 +48,7 @@ router.delete('/sessions/:id', clockController.removeSession); // own sessions, 
 router.put('/sessions/:id/department', clockController.setSessionDepartment); // body: department; own sessions, or anyone's for admin
 router.put('/me/working-department', clockController.setWorkingDepartment); // body: department (null = your own); for today, splits a running clock
 router.post('/commits/:userId/:date', clockController.commit); // own day, or anyone's for admin
+router.delete('/commits/:userId/:date', clockController.uncommit); // the same people, only until the day is exported
 router.post('/sessions/auto-noticed', clockController.markAutoNoticed); // own sessions: the "stopped automatically" message was seen
 
 router.get('/users', usersController.list); // any logged-in session -- needed for the working-times dropdowns (people in Time Slide only)
