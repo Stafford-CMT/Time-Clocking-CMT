@@ -20,7 +20,7 @@
       </div>
       <nav class="primary-nav" aria-label="Primary navigation">
         <button class="nav-item is-active" data-view="dashboard" type="button">Dashboard</button>
-        <button class="nav-item" data-view="edit-times" type="button">Edit or Commit times</button>
+        <button class="nav-item" data-view="edit-times" type="button">Review times</button>
         <button class="nav-item" id="nav-data-export" data-view="data-export" type="button">Data export</button>
         <button class="nav-item" data-view="reports" type="button">Reports</button>
         <div class="nav-group">
@@ -62,7 +62,7 @@
             <span class="section-kicker">Today at a glance</span>
             <h2>Contract dashboard</h2>
           </div>
-          <button class="today-gantt" id="today-gantt" type="button" aria-label="Today's times: open Edit or Commit times"></button>
+          <button class="today-gantt" id="today-gantt" type="button" aria-label="Today's times: open Review times"></button>
           <div class="metrics metrics-compact" aria-label="Daily summary">
             <article class="metric-card accent-teal" title="Tracked today: across all contracts"><span class="metric-label">Tracked today</span><strong id="tracked-total">00:00:00</strong><small>Across all contracts</small></article>
             <article class="metric-card accent-orange" id="non-contract-card" title="Non-contract: time not booked to a contract"><span class="metric-label">Non-contract</span><strong id="non-contract-total">00:00:00</strong><small>Time not booked to a contract</small><button class="metric-clock-button" id="non-contract-clock" type="button">Start</button></article>
@@ -100,7 +100,7 @@
 
       <section class="view is-hidden" data-view-panel="edit-times">
         <div class="section-heading">
-          <div><span class="section-kicker">Correct recorded contract time</span><h2>Edit times</h2></div>
+          <div><span class="section-kicker">Check, correct and commit your time</span><h2>Review times</h2></div>
           <div class="section-heading-actions">
             <div class="zoom-bar" role="group" aria-label="Zoom timeline"><button class="zoom-button" id="edit-zoom-out" type="button" title="Zoom out" aria-label="Zoom out">&#8722;</button><input id="edit-zoom-range" type="range" min="0.5" max="24" step="0.25" value="1" aria-label="Zoom level"><button class="zoom-button" id="edit-zoom-in" type="button" title="Zoom in" aria-label="Zoom in">&#43;</button><button class="zoom-value" id="edit-zoom-value" type="button" title="Reset to 05:00 - 18:00">1x</button></div>
           </div>
@@ -194,7 +194,7 @@
         <div class="export-summary" id="export-summary" role="status"><p id="export-summary-text"></p><button class="secondary-button is-hidden" id="export-remind" type="button">Email reminders</button></div>
         <div class="table-card">
           <div class="export-grid-scroll"><table class="export-grid" id="export-grid"></table></div>
-          <div class="schedule-legend"><span><i class="legend-swatch export-swatch-uncommitted"></i>Not committed</span><span><i class="legend-swatch export-swatch-committed"></i>Committed, waiting to export</span><span><i class="legend-swatch export-swatch-exported"></i>Exported</span><span><i class="legend-swatch export-swatch-changed"></i>Changed since export</span><span class="legend-tips">Hours shown as h:mm · click a day to open it in Edit times</span></div>
+          <div class="schedule-legend"><span><i class="legend-swatch export-swatch-uncommitted"></i>Not committed</span><span><i class="legend-swatch export-swatch-committed"></i>Committed, waiting to export</span><span><i class="legend-swatch export-swatch-exported"></i>Exported</span><span><i class="legend-swatch export-swatch-changed"></i>Changed since export</span><span class="legend-tips">Hours shown as h:mm · click a day to open it in Review times</span></div>
         </div>
         <div class="table-card export-preview-card" id="export-preview-card">
           <div class="table-intro"><div><strong>Preview</strong><span>Every stopped time block in these dates that you may see: your own, your team's (managers) or everyone's (admins). Filter and group it here; Preview .xlsx downloads just what the filters show.</span></div></div>
@@ -384,7 +384,7 @@
             <tr><th scope="row">Change your own times (uncommitted days)</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Commit your own days</th><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr class="role-group"><th colspan="4" scope="colgroup">Other people's time</th></tr>
-            <tr><th scope="row">See other people's times (Edit times, Data export)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-some">Their team, view only</td><td class="role-some">Everyone</td></tr>
+            <tr><th scope="row">See other people's times (Review times, Data export)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-some">Their team, view only</td><td class="role-some">Everyone</td></tr>
             <tr><th scope="row">Change other people's times (uncommitted days)</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr><th scope="row">Commit other people's days</th><td class="role-no" aria-label="No">&ndash;</td><td class="role-no" aria-label="No">&ndash;</td><td class="role-yes" aria-label="Yes">&#10003;</td></tr>
             <tr class="role-group"><th colspan="4" scope="colgroup">Data export</th></tr>

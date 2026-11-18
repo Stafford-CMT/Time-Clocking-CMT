@@ -33,7 +33,7 @@ Each tile represents one contract and shows the contract number and suffix, mach
 
 Each user has a working-time schedule with breaks. A running clock pauses automatically when your break starts and resumes when it ends (while the app is open).
 
-### Edit or Commit times
+### Review times
 
 A per-day timeline of your recorded time blocks. Drag a block's edges to correct start/end times (linked neighbours move with it; long-press a block to unlink it), hold a block (or right-click it on a PC) for its menu: change department or delete. Committing a day locks it; only an admin can edit or unlock a committed day. Admins can view and correct anyone's times.
 

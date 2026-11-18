@@ -1004,6 +1004,7 @@ html:has(.ball-saver-screen:not(.is-hidden)), html:has(.ball-saver-screen:not(.i
 .tg-bar.is-non-contract.is-running { background: var(--c-e09a52); }
 .tg-bar.is-rework.is-running { background: var(--rework-dark); } /* after .is-running, so a running rework clock is purple from the start */
 .tg-tick, .tg-now { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--line); }
+.tg-tick { background: color-mix(in srgb, var(--line), var(--ink) 5%); } /* hour lines: a touch stronger than the row tracks */
 .tg-now { z-index: 1; width: 1.5px; background: var(--now); }
 .tg-empty { color: var(--muted); font-size: 11px; text-align: center; }
 @media (max-width: 900px) { .today-gantt { display: none; } } /* phone/narrow layouts: later */
