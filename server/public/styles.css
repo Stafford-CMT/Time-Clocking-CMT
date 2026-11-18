@@ -991,3 +991,19 @@ html:has(.ball-saver-screen:not(.is-hidden)), html:has(.ball-saver-screen:not(.i
 .work-centre-table td:nth-child(2) { color: var(--muted); }
 .work-centre-table select { max-width: 260px; padding: 6px 28px 6px 8px; border: 1px solid var(--line); border-radius: 7px; background-color: var(--c-ffffff); background-position: right 10px center; }
 .work-centre-table tr.is-not-sent td:first-child { color: var(--muted); }
+/* Dashboard: today's mini Gantt between the title and the three figures, as tall as the figures; bars 4px, at most 10 */
+.today-gantt { position: relative; flex: 1 1 0; min-width: 120px; align-self: flex-start; box-sizing: border-box; height: var(--badge-height, 64px); margin: 0 4px 0 24px; padding: 3px 6px; display: grid; align-content: center; border: 0; border-radius: 8px; background: transparent; font: inherit; cursor: pointer; }
+.today-gantt:hover { background: var(--glass-45); }
+.today-gantt:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.tg-plot { position: relative; display: grid; gap: 2px; }
+.tg-row { position: relative; display: block; height: 4px; border-radius: 2px; background: var(--line); }
+.tg-bar { position: absolute; top: 0; bottom: 0; min-width: 2px; border-radius: 2px; background: var(--c-7cc3b4); }
+.tg-bar.is-non-contract { background: var(--c-e9a660); }
+.tg-bar.is-rework { background: var(--rework); }
+.tg-bar.is-running { background: var(--teal); }
+.tg-bar.is-non-contract.is-running { background: var(--c-e09a52); }
+.tg-bar.is-rework.is-running { background: var(--rework-dark); } /* after .is-running, so a running rework clock is purple from the start */
+.tg-tick, .tg-now { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--line); }
+.tg-now { z-index: 1; width: 1.5px; background: var(--now); }
+.tg-empty { color: var(--muted); font-size: 11px; text-align: center; }
+@media (max-width: 900px) { .today-gantt { display: none; } } /* phone/narrow layouts: later */
