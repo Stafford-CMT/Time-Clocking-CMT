@@ -1013,3 +1013,123 @@ html:has(.ball-saver-screen:not(.is-hidden)), html:has(.ball-saver-screen:not(.i
 .tg-now { z-index: 1; width: 1.5px; background: var(--now); }
 .tg-empty { color: var(--muted); font-size: 11px; text-align: center; }
 @media (max-width: 900px) { .today-gantt { display: none; } } /* phone/narrow layouts: later */
+
+/* ===== Phone held sideways (app.js applyPhoneMode sets body.is-phone; 19 Nov 2026) =====
+   Management chose phones, not tablets, for clocking. Only the tiles (Clock) and Review times; a slim top bar with a menu
+   button replaces the side menu and profile badge. Laptops and tablets never get body.is-phone, so nothing here touches them. */
+.phone-bar, .phone-drawer, .phone-scrim, .turn-phone, .phone-zoom-hint, .phone-whole-day { display: none; }
+body.is-phone .sidebar, body.is-phone .topbar, body.is-phone .dashboard-head > .section-heading, body.is-phone .dashboard-toolbar,
+body.is-phone [data-view-panel="edit-times"] > .section-heading, body.is-phone .day-strip-bar,
+body.is-phone #edit-times-card .schedule-toolbar, body.is-phone #edit-times-card .schedule-legend { display: none !important; }
+body.is-phone .app-shell { display: block; min-height: 100vh; }
+body.is-phone .main-content { padding: 0 !important; }
+body.is-phone .dashboard-head { position: static; margin: 0; padding: 0; background: none; box-shadow: none; }
+body.is-phone .auto-notice { margin: 10px 12px 0; }
+
+/* Top bar */
+body.is-phone .phone-bar { display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 8; height: 46px; padding: 0 10px 0 4px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.phone-menu-button { flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 10px; background: transparent; color: var(--ink); }
+.phone-menu-button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.phone-bar-title { font: 600 16px 'Space Grotesk'; white-space: nowrap; }
+.phone-bar-spacer { flex: 1; }
+.phone-bar-group { display: none; align-items: center; gap: 6px; min-width: 0; }
+body.is-phone[data-phone-view="dashboard"] .phone-bar-clock, body.is-phone[data-phone-view="edit-times"] .phone-bar-review { display: flex; }
+@media (max-width: 760px) { body.is-phone[data-phone-view="edit-times"] .phone-bar-title { display: none; } }
+/* what's running, top right on the tiles screen */
+.run-pill { display: flex; align-items: center; gap: 7px; min-width: 0; max-width: min(400px, 52vw); min-height: 32px; padding: 5px 12px 5px 10px; border: 0; border-radius: 999px; background: var(--mint); color: var(--teal-dark); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.run-pill-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+.run-pill.is-running .run-pill-dot { animation: run-pill-pulse 1.6s ease-in-out infinite; }
+.run-pill-what { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.run-pill-time { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.run-pill.is-paused { background: color-mix(in srgb, var(--yellow) 25%, var(--panel)); color: var(--ink); }
+.run-pill.is-paused .run-pill-dot { background: var(--yellow); }
+.run-pill.is-idle { background: color-mix(in srgb, var(--coral) 14%, var(--panel)); color: var(--coral); }
+.run-pill.is-idle .run-pill-dot { background: var(--coral); }
+@keyframes run-pill-pulse { 50% { opacity: .35; } }
+.phone-arrange-hint, .phone-done { display: none; }
+body.is-arranging .phone-bar-clock .run-pill { display: none; }
+body.is-arranging .phone-arrange-hint { display: inline; color: var(--muted); font-size: 12px; white-space: nowrap; }
+body.is-arranging .phone-done { display: inline-block; height: 36px; padding: 0 18px; border: 0; border-radius: 9px; background: var(--teal); color: #fff; font-size: 13px; font-weight: 700; }
+/* Review times: < day >, then undo/redo, + Add contract and Commit (moved in from the card) */
+.phone-icon-button { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--ink); }
+.phone-icon-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.phone-icon-button:disabled { opacity: .35; }
+.phone-day { position: relative; min-width: 100px; height: 38px; display: grid; place-items: center; padding: 0 6px; border-radius: 9px; font: 600 13px 'Space Grotesk'; white-space: nowrap; cursor: pointer; }
+.phone-day input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; } /* a tap opens the phone's own date picker */
+.phone-review-tools { display: flex; align-items: center; gap: 6px; margin-left: 4px; }
+#phone-review-tools .undo-redo { display: flex; align-self: center; gap: 4px; }
+#phone-review-tools .undo-redo-button { width: 38px; height: 38px; min-height: 38px; }
+#phone-review-tools .commit-times-button { align-self: center; width: auto; height: 38px; min-height: 38px; margin: 0; padding: 0 12px; font-size: 12px; }
+
+/* Tiles: no picture or times, three across; the running tile still glows */
+body.is-phone .tile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 10px; padding: 12px 12px 18px; }
+body.is-phone .tile { min-height: 0; padding: 10px 10px 10px 12px; }
+body.is-phone .tile .tile-image, body.is-phone .tile .tile-times, body.is-phone .tile .drag-handle, body.is-phone .tile .delete-contract { display: none; }
+body.is-phone .tile-meta { margin-top: 4px; padding-left: 0; }
+body.is-phone .tile-footer { margin-top: auto; padding-top: 8px; border-top: 0; }
+body.is-phone .tile-nc { border-color: color-mix(in srgb, var(--coral) 35%, var(--line)); background: color-mix(in srgb, var(--coral) 7%, var(--panel)); }
+body.is-phone .tile-nc .tile-customer-name { color: var(--coral); }
+body.is-phone .empty-dashboard { padding: 24px; }
+/* Arranging: every tile wiggles; drag one anywhere; its x takes it off the dashboard */
+body.is-arranging .tile:not(.tile-nc) { animation: tile-wiggle .28s ease-in-out infinite alternate; touch-action: none; cursor: grab; }
+body.is-arranging .tile:not(.tile-nc):nth-child(even) { animation-delay: -.14s; }
+body.is-arranging .tile .tile-footer-right { opacity: .4; pointer-events: none; }
+body.is-arranging .tile .delete-contract { display: inline-grid; width: 36px; height: 36px; }
+body.is-phone .tile.is-lifted { position: relative; z-index: 6; animation: none; box-shadow: 0 16px 34px rgba(0, 0, 0, .28); transition: none; cursor: grabbing; }
+@keyframes tile-wiggle { from { transform: rotate(-.7deg); } to { transform: rotate(.7deg); } }
+@media (prefers-reduced-motion: reduce) { body.is-arranging .tile:not(.tile-nc) { animation: none; outline: 2px dashed var(--teal); outline-offset: 2px; } }
+
+/* Review times: the card fills the screen under the top bar; only its rows scroll, the hour heading stays in view */
+body.is-phone .main-content:has(> [data-view-panel="edit-times"]:not(.is-hidden)) { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+body.is-phone [data-view-panel="edit-times"] { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+body.is-phone #edit-times-card { display: flex; flex-direction: column; flex: 1; min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
+body.is-phone #edit-times-card .schedule-scroll { flex: 1; min-height: 0; overflow: auto; }
+body.is-phone #edit-times-card .schedule-header { position: sticky; top: 0; z-index: 5; }
+body.is-phone .zoomable.edit-times-card { --name-column: 150px; }
+body.is-phone .edit-times-card .schedule-row, body.is-phone .edit-times-card .timeline-lane { height: 54px; min-height: 54px; }
+body.is-phone .edit-session-row .user-cell { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; gap: 1px 6px; height: 54px; padding: 3px 8px 3px 10px; line-height: 1.2; }
+body.is-phone .edit-contract-text { grid-column: 1 / -1; min-width: 0; gap: 1px; }
+body.is-phone .edit-contract-top { gap: 5px; }
+body.is-phone .edit-contract-top strong { font-size: 12px; }
+body.is-phone .edit-contract-top .edit-contract-code { order: -1; flex: 0 0 auto; color: var(--ink); font-size: 11px; font-weight: 700; } /* the number first, never cut short */
+body.is-phone .edit-times-card .user-column-heading { padding: 6px 8px 6px 10px; }
+body.is-phone .edit-times-card .timeline-heading span { padding: 8px 0; }
+body.is-phone .edit-row-total { grid-column: 1; flex: none; font-size: 11px; text-align: left; }
+body.is-phone .edit-rework-chip { grid-column: 2; max-width: 70px; min-height: 0; margin-left: 0; padding: 1px 6px; font-size: 9.5px; }
+body.is-phone .edit-column-heading { align-items: center; padding-left: 10px; padding-right: 8px; }
+body.is-phone .edit-column-heading > span:not(.phone-zoom-hint) { display: none; }
+body.is-phone .phone-zoom-hint { display: inline; color: var(--muted); font-size: 10px; font-weight: 500; text-transform: none; letter-spacing: 0; }
+body.is-phone #edit-times-card.is-zoomed .phone-zoom-hint { display: none; }
+body.is-phone #edit-times-card.is-zoomed .phone-whole-day { display: inline-grid; place-items: center; height: 26px; padding: 0 10px; border: 1px solid var(--teal); border-radius: 7px; background: var(--mint); color: var(--teal-dark); font-size: 11px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+
+/* Menu */
+body.is-phone .phone-scrim { display: block; position: fixed; inset: 0; z-index: 30; background: var(--backdrop); opacity: 0; pointer-events: none; transition: opacity .2s; }
+body.is-phone .phone-drawer { display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 31; width: 290px; max-width: 85vw; background: var(--panel); box-shadow: var(--shadow); transform: translateX(-102%); visibility: hidden; transition: transform .22s ease, visibility 0s linear .22s; }
+body.phone-menu-open .phone-scrim { opacity: 1; pointer-events: auto; }
+body.phone-menu-open .phone-drawer { transform: none; visibility: visible; transition: transform .22s ease; }
+.phone-who { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; align-items: center; gap: 10px; padding: 8px 6px 8px 14px; border-bottom: 1px solid var(--line); }
+.phone-who .avatar { width: 40px; height: 40px; }
+.phone-who strong { display: block; overflow: hidden; font: 600 14px 'Space Grotesk'; white-space: nowrap; text-overflow: ellipsis; }
+.phone-who small { color: var(--muted); font-size: 11px; }
+.phone-who .modal-close { width: 40px; height: 40px; }
+.phone-nav { flex: 1; display: grid; align-content: start; gap: 2px; padding: 6px 8px; overflow-y: auto; }
+.phone-item { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: var(--ink); font-size: 14px; font-weight: 600; text-align: left; }
+.phone-item svg { flex: 0 0 auto; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.phone-item.is-active { background: var(--mint); color: var(--teal-dark); }
+.phone-aside { margin-left: auto; padding: 3px 8px; border-radius: 999px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.phone-dept { max-width: 120px; overflow: hidden; border: 1px solid var(--line); color: var(--ink); white-space: nowrap; text-overflow: ellipsis; }
+.phone-dept.is-away { border-color: var(--yellow); background: color-mix(in srgb, var(--yellow) 22%, var(--panel)); }
+.phone-sep { height: 1px; margin: 4px; background: var(--line); }
+
+/* Windows (Add tile, Add contract, Working in, ...) fit the short screen */
+body.is-phone .modal-backdrop { padding: 8px; }
+body.is-phone .modal { max-height: calc(100dvh - 16px); padding: 16px 18px; }
+
+/* A phone held upright */
+@media (pointer: coarse) and (orientation: portrait) and (max-width: 600px) {
+  .turn-phone { display: grid; place-items: center; position: fixed; inset: 0; z-index: 60; padding: 24px; background: var(--paper); text-align: center; }
+  .turn-phone > div { display: grid; justify-items: center; gap: 8px; }
+  .turn-phone svg { width: 56px; height: 56px; fill: none; stroke: var(--teal); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .turn-phone strong { color: var(--ink); font: 600 18px 'Space Grotesk'; }
+  .turn-phone span { color: var(--muted); font-size: 13px; }
+}

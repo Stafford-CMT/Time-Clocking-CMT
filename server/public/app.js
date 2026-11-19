@@ -190,7 +190,7 @@ function enableDrawTime(lane, daySessions, date) {
     if (event.button !== 0 || event.target !== lane || $('#edit-times-card').classList.contains('is-locked') || viewingOthersTimes()) return; // only the empty part of a row
     if (event.pointerType === 'mouse') { draw(event); return; }
     // By finger a swipe scrolls the timeline; hold still for a moment (it buzzes), then slide, to draw
-    const timer = setTimeout(() => { stop(); if (draw(event)) navigator.vibrate?.(15); }, 350);
+    const timer = setTimeout(() => { stop(); if (phonePinching) return; if (draw(event)) navigator.vibrate?.(15); }, 350);
     const moved = (pointer) => { if (Math.hypot(pointer.clientX - event.clientX, pointer.clientY - event.clientY) > 8) stop(); };
     const stop = () => { clearTimeout(timer); lane.removeEventListener('pointermove', moved); lane.removeEventListener('pointerup', stop); lane.removeEventListener('pointercancel', stop); };
     lane.addEventListener('pointermove', moved); lane.addEventListener('pointerup', stop); lane.addEventListener('pointercancel', stop);
@@ -243,7 +243,7 @@ async function addHandTime(contractId, date, pieces, takes = []) {
   const span = `${name} ${minutesToTime(pieces[0][0])}–${minutesToTime(pieces.at(-1)[1])}`;
   showToast(`${span} added${pieces.length > 1 ? ' (break left out)' : ''}${reworkReason ? ` as rework (${reworkReason})` : ''}${takes.some(Boolean) ? ', taken from the time it covered' : ''} — ${undoHint()}`);
 }
-function renderEditTimes() { const heading = $('#edit-timeline-heading'); if (!heading) return; editTimesZoom.renderHeading(); const date = $('#edit-times-date').value; updateCommittedUi(); renderDayStrip(); const rows = $('#edit-time-rows'); const daySessions = sessionsForDate(date); const firstStart = {}; daySessions.forEach(({ contractId, session }) => { if (!(contractId in firstStart)) firstStart[contractId] = timeToMinutes(session.start); }); const boundSessions = daySessions.slice(); state.contracts.forEach((contract) => { const run = runningSpan(contract, date); if (!run) return; firstStart[contract.id] = Math.min(firstStart[contract.id] ?? Infinity, run.from); boundSessions.push({ contractId: contract.id, session: { id: `running-${contract.id}`, start: minutesToTime(run.from), end: minutesToTime(run.to), running: true } }); }); boundSessions.sort((a, b) => timeToMinutes(a.session.start) - timeToMinutes(b.session.start)); (addedRows[`${editTimesUserId}|${date}`] || []).forEach((id) => { if (!(id in firstStart)) firstStart[id] = 2000; }); /* added, no time yet: last */ const sortedContracts = state.contracts.filter((contract) => contract.id in firstStart).sort((a, b) => (b.system - a.system) || (firstStart[a.id] - firstStart[b.id])); $('#edit-empty-state').classList.toggle('is-hidden', sortedContracts.length > 0); $('#edit-empty-state').textContent = canAddTimeOn(date) && !isDateCommitted(date) && !viewingOthersTimes() ? 'No time booked on this day. Forgot to clock? Use + Add contract, then drag on its timeline.' : 'No time booked on this day.'; rows.innerHTML = sortedContracts.map((contract) => editContractTemplate(contract, date)).join('') + editBreakBandsTemplate(); rows.querySelectorAll('.edit-session-handle').forEach((handle) => enableEditSessionHandle(handle, boundSessions)); rows.querySelectorAll('.auto-stop-badge').forEach((badge) => badge.addEventListener('click', () => keepAutoClockOut(badge.dataset.sessionId))); rows.querySelectorAll('[data-draw-contract]').forEach((lane) => enableDrawTime(lane, boundSessions, date)); rows.querySelectorAll('[data-draw-rework]').forEach((chip) => chip.addEventListener('click', () => openReworkPicker(chip.dataset.drawRework, 'draw'))); rows.querySelectorAll('.edit-session-block').forEach(enableBlockMenu); }
+function renderEditTimes() { const heading = $('#edit-timeline-heading'); if (!heading) return; editTimesZoom.renderHeading(); const date = $('#edit-times-date').value; updateCommittedUi(); renderDayStrip(); const rows = $('#edit-time-rows'); const daySessions = sessionsForDate(date); const firstStart = {}; daySessions.forEach(({ contractId, session }) => { if (!(contractId in firstStart)) firstStart[contractId] = timeToMinutes(session.start); }); const boundSessions = daySessions.slice(); state.contracts.forEach((contract) => { const run = runningSpan(contract, date); if (!run) return; firstStart[contract.id] = Math.min(firstStart[contract.id] ?? Infinity, run.from); boundSessions.push({ contractId: contract.id, session: { id: `running-${contract.id}`, start: minutesToTime(run.from), end: minutesToTime(run.to), running: true } }); }); boundSessions.sort((a, b) => timeToMinutes(a.session.start) - timeToMinutes(b.session.start)); (addedRows[`${editTimesUserId}|${date}`] || []).forEach((id) => { if (!(id in firstStart)) firstStart[id] = 2000; }); /* added, no time yet: last */ const sortedContracts = state.contracts.filter((contract) => contract.id in firstStart).sort((a, b) => (b.system - a.system) || (firstStart[a.id] - firstStart[b.id])); $('#edit-empty-state').classList.toggle('is-hidden', sortedContracts.length > 0); $('#edit-empty-state').textContent = canAddTimeOn(date) && !isDateCommitted(date) && !viewingOthersTimes() ? 'No time booked on this day. Forgot to clock? Use + Add contract, then drag on its timeline.' : 'No time booked on this day.'; rows.innerHTML = sortedContracts.map((contract) => editContractTemplate(contract, date)).join('') + editBreakBandsTemplate(); rows.querySelectorAll('.edit-session-handle').forEach((handle) => enableEditSessionHandle(handle, boundSessions)); rows.querySelectorAll('.auto-stop-badge').forEach((badge) => badge.addEventListener('click', () => keepAutoClockOut(badge.dataset.sessionId))); rows.querySelectorAll('[data-draw-contract]').forEach((lane) => enableDrawTime(lane, boundSessions, date)); rows.querySelectorAll('[data-draw-rework]').forEach((chip) => chip.addEventListener('click', () => openReworkPicker(chip.dataset.drawRework, 'draw'))); rows.querySelectorAll('.edit-session-block').forEach(enableBlockMenu); updatePhoneDay(); }
 /* A time block's menu, the same on the PC and a tablet: hold the block (not its ends) for half a second, or right-click it
  * on the PC. It says what the block is and offers Change department… and Delete, greyed out with the reason where they
  * can't be used. Delete doesn't ask first: Undo puts it back. By finger a plain tap still says what the block is. */
@@ -256,6 +256,8 @@ function blockMenuElement() {
   menu.addEventListener('click', (event) => {
     const item = event.target.closest('[data-block-action]'); if (!item || item.disabled || !blockMenuFor) return;
     const { contractId, sessionId, running, block } = blockMenuFor; closeBlockMenu();
+    if (item.dataset.blockAction === 'zoom') { phoneZoomTo(editTimesZoom.zoom > phoneFitZoom() * 1.05 ? editTimesZoom.zoom * 2 : phoneVisibleWidth() / 120, blockMenuZoomAt); return; } /* two hours across, then half as much each time */
+    if (item.dataset.blockAction === 'whole-day') { phoneZoomTo(null); return; }
     if (item.dataset.blockAction === 'delete') removeSession(contractId, sessionId);
     else if (running) openWorkingIn(); else openBlockDepartment(block);
   });
@@ -268,7 +270,11 @@ function openBlockMenu(block, x, y) {
   const why = $('#edit-times-card').classList.contains('is-locked') && !viewingOthersTimes() ? (isDateExported($('#edit-times-date').value) ? 'This day is committed and exported, so its times can’t change.' : 'This day is committed. Uncommit it to change its times.') : viewingOthersTimes() ? 'You can look at these times but not change them.' : '';
   const note = why || (running ? 'Stop the clock to delete it. Changing its department changes what you’re working in for the rest of today.' : '');
   const menu = blockMenuElement();
-  menu.innerHTML = `<div class="block-menu-head"><strong>${esc(blockName(contractId))}</strong><span>${esc(blockAbout(block))}</span></div><button class="block-menu-item" data-block-action="department" role="menuitem" type="button"${why ? ' disabled' : ''}>Change department…</button><button class="block-menu-item is-danger" data-block-action="delete" role="menuitem" type="button"${why || running ? ' disabled' : ''}>Delete</button>${note ? `<p class="block-menu-note">${note}</p>` : ''}`;
+  /* Phone: zoom from the hold, centred where the finger held (there is no zoom bar on a phone) */
+  const lane = block.closest('.timeline-lane'); blockMenuZoomAt = lane ? minuteAt(lane, x) : null;
+  const zoomedIn = editTimesZoom.zoom > phoneFitZoom() * 1.05;
+  const zoomItems = isPhone() && lane ? `<button class="block-menu-item" data-block-action="zoom" role="menuitem" type="button"${editTimesZoom.zoom >= ZOOM_MAX ? ' disabled' : ''}>${zoomedIn ? 'Zoom in more here' : 'Zoom in here'}</button>${zoomedIn ? '<button class="block-menu-item" data-block-action="whole-day" role="menuitem" type="button">Show the whole day</button>' : ''}` : '';
+  menu.innerHTML = `<div class="block-menu-head"><strong>${esc(blockName(contractId))}</strong><span>${esc(blockAbout(block))}</span></div>${zoomItems}<button class="block-menu-item" data-block-action="department" role="menuitem" type="button"${why ? ' disabled' : ''}>Change department…</button><button class="block-menu-item is-danger" data-block-action="delete" role="menuitem" type="button"${why || running ? ' disabled' : ''}>Delete</button>${note ? `<p class="block-menu-note">${note}</p>` : ''}`;
   blockMenuFor = { contractId, sessionId: block.dataset.sessionId, running, block }; block.classList.add('is-menu-open');
   menu.classList.remove('is-hidden'); menu.style.left = '0px'; menu.style.top = '0px';
   const { width, height } = menu.getBoundingClientRect();
@@ -282,7 +288,7 @@ function enableBlockMenu(block) {
   block.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || event.target.closest('.schedule-handle, .auto-stop-badge')) return;
     from = { x: event.clientX, y: event.clientY }; block.classList.add('is-holding');
-    timer = setTimeout(() => { cancel(); navigator.vibrate?.(15); openBlockMenu(block, from.x, from.y); }, 500);
+    timer = setTimeout(() => { cancel(); if (phonePinching) return; navigator.vibrate?.(15); openBlockMenu(block, from.x, from.y); }, 500);
   });
   block.addEventListener('pointermove', (event) => { if (timer && Math.hypot(event.clientX - from.x, event.clientY - from.y) > (event.pointerType === 'mouse' ? 4 : 10)) cancel(); });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach((type) => block.addEventListener(type, () => { if (timer) cancel(); }));
@@ -298,9 +304,11 @@ const ZOOM_MIN = 0.5; /* below 1x so 05:00-18:00 still fits beside a wide name c
 function zoomLabelStep(zoom) { return zoom >= 16 ? 5 : zoom >= 8 ? 10 : zoom >= 4 ? 15 : zoom >= 2 ? 30 : zoom >= 0.9 ? 60 : 120; }
 function createTimelineZoom({ card, heading, prefix, nameColumn }) {
   const zoomer = { zoom: 1, workdayShown: false };
+  /* the name column's width comes from the card's --name-column (narrower on a phone), falling back to the given width */
+  const nameCol = () => parseFloat(getComputedStyle($(card)).getPropertyValue('--name-column')) || nameColumn; zoomer.nameColumn = nameCol;
   zoomer.renderHeading = () => { const step = zoomLabelStep(zoomer.zoom); const el = $(heading); el.style.gridTemplateColumns = `repeat(${1440 / step}, 1fr)`; el.innerHTML = Array.from({ length: 1440 / step }, (_, index) => `<span>${minutesToTime(index * step)}</span>`).join(''); };
-  zoomer.set = (value, centreAt) => { const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, centreAt === undefined ? Math.round(value * 4) / 4 : value)); const scroller = $(`${card} .schedule-scroll`); const visible = scroller.clientWidth - nameColumn; const centreMinute = centreAt ?? (scroller.scrollLeft + visible / 2) / zoomer.zoom; zoomer.zoom = zoom; $(card).style.setProperty('--zoom', zoom); $(card).style.setProperty('--grid-minutes', zoom >= 6 ? 1 : 5); $(`#${prefix}-zoom-range`).value = zoom; $(`#${prefix}-zoom-value`).textContent = `${Number(zoom.toFixed(2))}x`; zoomer.renderHeading(); scroller.scrollLeft = centreMinute * zoom - visible / 2; updateNowMarkers(); };
-  zoomer.showWorkday = () => { const visible = $(`${card} .schedule-scroll`).clientWidth - nameColumn; zoomer.set(visible / (WORKDAY_END - WORKDAY_START), (WORKDAY_START + WORKDAY_END) / 2); };
+  zoomer.set = (value, centreAt) => { const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, centreAt === undefined ? Math.round(value * 4) / 4 : value)); const scroller = $(`${card} .schedule-scroll`); const visible = scroller.clientWidth - nameCol(); const centreMinute = centreAt ?? (scroller.scrollLeft + visible / 2) / zoomer.zoom; zoomer.zoom = zoom; $(card).style.setProperty('--zoom', zoom); $(card).style.setProperty('--grid-minutes', zoom >= 6 ? 1 : 5); $(`#${prefix}-zoom-range`).value = zoom; $(`#${prefix}-zoom-value`).textContent = `${Number(zoom.toFixed(2))}x`; zoomer.renderHeading(); scroller.scrollLeft = centreMinute * zoom - visible / 2; updateNowMarkers(); zoomer.onChange?.(); };
+  zoomer.showWorkday = () => { const visible = $(`${card} .schedule-scroll`).clientWidth - nameCol(); zoomer.set(visible / (WORKDAY_END - WORKDAY_START), (WORKDAY_START + WORKDAY_END) / 2); };
   zoomer.wire = (view) => { $(`#${prefix}-zoom-range`).addEventListener('input', (event) => zoomer.set(Number(event.target.value))); $(`#${prefix}-zoom-in`).addEventListener('click', () => zoomer.set(zoomer.zoom * 1.5)); $(`#${prefix}-zoom-out`).addEventListener('click', () => zoomer.set(zoomer.zoom / 1.5)); $(`#${prefix}-zoom-value`).addEventListener('click', zoomer.showWorkday); document.querySelector(`.nav-item[data-view="${view}"]`).addEventListener('click', () => { if (zoomer.workdayShown) return; zoomer.workdayShown = true; zoomer.showWorkday(); }); };
   return zoomer;
 }
@@ -310,7 +318,7 @@ const workingTimesZoom = createTimelineZoom({ card: '#working-times-card', headi
 // Half a second after letting go (was 1 s until 19 Nov 2026) it eases back to the zoom and place you had. Grabbing another end before then stays zoomed.
 const HANDLE_ZOOM = 10; const handleZoom = { saved: null, timer: null, frame: null };
 function editScroller() { return $('#edit-times-card .schedule-scroll'); }
-function editCentreMinute() { const scroller = editScroller(); return (scroller.scrollLeft + (scroller.clientWidth - 320) / 2) / editTimesZoom.zoom; }
+function editCentreMinute() { const scroller = editScroller(); return (scroller.scrollLeft + (scroller.clientWidth - editTimesZoom.nameColumn()) / 2) / editTimesZoom.zoom; }
 function minuteAt(lane, clientX) { const box = lane.getBoundingClientRect(); return (clientX - box.left) / box.width * 1440; }
 // Eases the Edit times zoom to `toZoom` over `ms`; each frame calls place(zoom, progress) to set it. The zoom changes at an even rate to the eye (log scale).
 function animateEditZoom(toZoom, ms, place, done) {
@@ -334,7 +342,7 @@ function editContractTemplate(contract, date) { const sessions = (state.editSess
 function placeBlock(block, session) { if (!block) return; block.style.left = `${timeToMinutes(session.start) / 1440 * 100}%`; block.style.width = `${Math.max(1, timeToMinutes(session.end) - timeToMinutes(session.start)) / 1440 * 100}%`; }
 function enableEditSessionHandle(handle, daySessions) { const end = handle.dataset.handle; const session = state.editSessions[handle.dataset.contractId].find((item) => item.id === handle.dataset.sessionId); const neighbour = linkedNeighbour(daySessions, session, end); const others = daySessions.map((entry) => entry.session).filter((item) => item !== session); let resizing = false; let startX; let startMinute; let original; let holdTimer; let moved; let lastMove; let edgeFrame; const restore = () => { session.start = original.start; session.end = original.end; if (neighbour) { neighbour.start = original.neighbour.start; neighbour.end = original.neighbour.end; } }; const finish = (event) => { resizing = false; clearTimeout(holdTimer); cancelAnimationFrame(edgeFrame); if (event) zoomBackSoon(); if (event && handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId); document.body.classList.remove('is-resizing'); hideDragTooltip(); }; handle.addEventListener('pointerdown', (event) => { event.preventDefault(); resizing = true; startX = event.clientX; moved = false; const lane = handle.closest('.timeline-lane'); lastMove = event; edgeFrame = requestAnimationFrame(edgeScroll); startMinute = minuteAt(lane, event.clientX); original = { start: session.start, end: session.end, neighbour: neighbour && { start: neighbour.start, end: neighbour.end } }; handle.setPointerCapture(event.pointerId); document.body.classList.add('is-resizing'); updateDragTooltip(handle, session, event); holdTimer = setTimeout(() => { if (!resizing) return; finish(event); restore(); toggleEndLink(session, end); }, 700); }); const move = (event) => { const delta = Math.round(minuteAt(handle.closest('.timeline-lane'), event.clientX) - startMinute); /* in minutes under the finger, so it holds while the lane zooms or scrolls */ const originalStart = timeToMinutes(original.start); const originalEnd = timeToMinutes(original.end); if (end === 'start') { const floor = neighbour ? timeToMinutes(neighbour.start) : Math.min(originalStart, Math.max(0, ...others.filter((item) => timeToMinutes(item.start) < originalStart).map((item) => timeToMinutes(item.end)))); /* unlinked: stop at the bar before, never overlap it */ session.start = minutesToTime(Math.min(originalEnd, Math.max(floor, originalStart + delta))); if (neighbour) neighbour.end = session.start; } else { const ceiling = neighbour ? timeToMinutes(neighbour.end) : Math.max(originalEnd, Math.min(1440, ...others.filter((item) => timeToMinutes(item.start) > originalStart).map((item) => timeToMinutes(item.start)))); /* unlinked: stop at the bar after, never overlap it */ session.end = minutesToTime(Math.max(originalStart, Math.min(ceiling, originalEnd + delta))); if (neighbour) neighbour.start = session.end; } placeBlock(handle.closest('.scheduled-block'), session); if (neighbour) placeBlock(document.querySelector(`.edit-session-block[data-session-id="${CSS.escape(neighbour.id)}"]`), neighbour); updateDragTooltip(handle, session, event); };
   /* finger or mouse: holding near either side of the timeline scrolls it, faster the closer to the side */
-  const edgeScroll = () => { if (!resizing) return; if (moved && !handleZoom.frame) { /* not while the zoom is still easing in */ const scroller = editScroller(); const box = scroller.getBoundingClientRect(); const left = box.left + 320 + 40; const right = box.right - 40; const x = lastMove.clientX; const speed = x < left ? -Math.ceil((left - x) / 3) : x > right ? Math.ceil((x - right) / 3) : 0; if (speed) { const before = scroller.scrollLeft; scroller.scrollLeft += speed; if (scroller.scrollLeft !== before) move(lastMove); } } edgeFrame = requestAnimationFrame(edgeScroll); };
+  const edgeScroll = () => { if (!resizing) return; if (moved && !handleZoom.frame) { /* not while the zoom is still easing in */ const scroller = editScroller(); const box = scroller.getBoundingClientRect(); const left = box.left + editTimesZoom.nameColumn() + 40; const right = box.right - 40; const x = lastMove.clientX; const speed = x < left ? -Math.ceil((left - x) / 3) : x > right ? Math.ceil((x - right) / 3) : 0; if (speed) { const before = scroller.scrollLeft; scroller.scrollLeft += speed; if (scroller.scrollLeft !== before) move(lastMove); } } edgeFrame = requestAnimationFrame(edgeScroll); };
   handle.addEventListener('pointermove', (event) => { if (!resizing) return; if (Math.abs(event.clientX - startX) > (event.pointerType === 'mouse' ? 3 : 8)) { clearTimeout(holdTimer); /* a finger is never quite still */ if (!moved) { /* zoom only once the finger or mouse slides, so holding still to unlink never sees the view jump */ restore(); /* the small slide before the zoom doesn't count */ const lane = handle.closest('.timeline-lane'); zoomInOnHandle(lane, timeToMinutes(original[end]), event.clientX); startMinute = minuteAt(lane, event.clientX); } moved = true; } lastMove = event; move(event); }); handle.addEventListener('pointerup', (event) => { if (!resizing) return; finish(event); if (session.start === original.start && session.end === original.end) return; enforceMinimumDuration(session, end === 'start' ? neighbour : undefined, end === 'end' ? neighbour : undefined, end); saveSessions([session, neighbour].filter(Boolean)); }); handle.addEventListener('pointercancel', (event) => { if (!resizing) return; finish(event); restore(); renderEditTimes(); }); }
 function enforceMinimumDuration(session, prevSession, nextSession, handleType) { const MIN = 1; if (handleType === 'start') { if (timeToMinutes(session.end) - timeToMinutes(session.start) <= 0) session.start = minutesToTime(timeToMinutes(session.end) - MIN); if (prevSession && timeToMinutes(prevSession.end) - timeToMinutes(prevSession.start) <= 0) { prevSession.end = minutesToTime(timeToMinutes(prevSession.start) + MIN); session.start = prevSession.end; } } else { if (timeToMinutes(session.end) - timeToMinutes(session.start) <= 0) session.end = minutesToTime(timeToMinutes(session.start) + MIN); if (nextSession && timeToMinutes(nextSession.end) - timeToMinutes(nextSession.start) <= 0) { nextSession.start = minutesToTime(timeToMinutes(nextSession.end) - MIN); session.end = nextSession.start; } } }
 /* Find a tile: the dashboard's Add tile button opens a window listing every tile,
@@ -367,12 +375,13 @@ function addFoundTiles() { let ids = [...findTilesSelected]; if (!ids.length) { 
 function renderContracts() {
   const contracts = state.order.map((id) => state.contracts.find((contract) => contract.id === id)).filter((contract) => contract && !contract.hidden);
   renderWorkingIn();
-  $('#contract-grid').innerHTML = contracts.length ? contracts.map(contractTemplate).join('') : '<div class="empty-dashboard">No tiles on your dashboard yet. Use + Add tile to add your contracts.</div>';
+  const nonContract = isPhone() && state.contracts.find((contract) => contract.system); /* a phone has no dashboard figures, so Non-contract is the first tile */
+  $('#contract-grid').innerHTML = (nonContract ? nonContractTileTemplate(nonContract) : '') + (contracts.length ? contracts.map(contractTemplate).join('') : `<div class="empty-dashboard">No tiles on your dashboard yet. Use ${isPhone() ? 'Add tile in the menu' : '+ Add tile'} to add your contracts.</div>`);
   document.querySelectorAll('.clock-button').forEach((button) => button.addEventListener('click', () => toggleClock(button.dataset.id)));
   document.querySelectorAll('.rework-chip[data-rework-id]').forEach((button) => button.addEventListener('click', () => openReworkPicker(button.dataset.reworkId)));
   document.querySelectorAll('.edit-contract').forEach((button) => button.addEventListener('click', () => openContractModal(button.dataset.id)));
   document.querySelectorAll('.delete-contract').forEach((button) => button.addEventListener('click', () => toggleTileVisibility(button.dataset.id)));
-  document.querySelectorAll('.tile').forEach(enableDrag);
+  document.querySelectorAll('.tile:not(.tile-nc)').forEach(enableDrag);
   document.querySelectorAll('.tile-image img').forEach((img) => img.addEventListener('click', () => openImageViewer(img.getAttribute('src'))));
   renderAutoNotice();
   updateMetrics();
@@ -499,7 +508,7 @@ function renderTodayGantt() {
 }
 function openTodayInEditTimes() { editTimesUserId = currentUserId; renderEditUserPicker(); $('#edit-times-date').value = TODAY; document.querySelector('.nav-item[data-view="edit-times"]').click(); renderEditTimes(); }
 function updateMetrics() { renderTodayGantt(); const userId = currentUserId; const runningSeconds = (contract) => (contract.activeSessions?.[userId] ? Math.floor((Date.now() - Math.max(contract.activeSessions[userId], startOfTodayMs())) / 1000) : 0); /* only the part since midnight counts for today */ const nonContract = state.contracts.find((contract) => contract.system); const total = state.contracts.filter((contract) => !contract.system).reduce((sum, contract) => sum + todaySessionSecondsForUser(contract.id, userId) + runningSeconds(contract), 0); const active = state.contracts.filter((contract) => !contract.system && contract.activeSessions && Object.keys(contract.activeSessions).length).length; const nonWorking = nonWorkingSecondsToday(userId); const activeCount = $('#active-count'); $('#tracked-total').textContent = formatTime(total); if (activeCount) activeCount.textContent = active; $('#non-working-total').textContent = formatTime(nonWorking); if (nonContract) { const running = Boolean(nonContract.activeSessions?.[userId]); $('#non-contract-total').textContent = formatTime(todaySessionSecondsForUser(nonContract.id, userId) + runningSeconds(nonContract)); const button = $('#non-contract-clock'); const paused = !running && state.breakState?.contractId === nonContract.id; button.textContent = running || paused ? 'Stop' : 'Start'; button.classList.toggle('is-running', running); button.classList.toggle('is-paused', paused); button.title = paused ? `Paused for your break; restarts at ${hm(new Date(state.breakState.resumeAt).toTimeString())}. Stop it if you're not coming back to it.` : ''; $('#non-contract-card').classList.toggle('is-running', running); } }
-function saveTileOrder() { const ids = [...document.querySelectorAll('.tile')].map((item) => item.dataset.id); state.order = ids.concat(state.order.filter((id) => !ids.includes(id))); saveState(); }
+function saveTileOrder() { const ids = [...document.querySelectorAll('.tile:not(.tile-nc)')].map((item) => item.dataset.id); state.order = ids.concat(state.order.filter((id) => !ids.includes(id))); saveState(); }
 /* While a tile is being moved (mouse or finger), holding it near the top or bottom of the area the tiles scroll in scrolls
  * that area, up or down, faster the closer to the edge. */
 const tileScroll = { y: 0, frame: 0, scroller: null, after: null };
@@ -515,7 +524,7 @@ function tileScrollStep() {
 function stopTileScroll() { cancelAnimationFrame(tileScroll.frame); tileScroll.frame = 0; tileScroll.after = null; }
 document.addEventListener('dragover', (event) => { if (document.querySelector('.tile.is-dragging:not(.is-touch-dragging)')) tileScrollAt(event.clientY); });
 document.addEventListener('drop', stopTileScroll);
-function enableDrag(tile) { enableTouchDrag(tile); tile.addEventListener('dragstart', () => tile.classList.add('is-dragging')); tile.addEventListener('dragend', () => { stopTileScroll(); tile.classList.remove('is-dragging'); saveTileOrder(); }); tile.addEventListener('dragover', (event) => { event.preventDefault(); const dragging = document.querySelector('.is-dragging'); if (dragging && dragging !== tile) { const box = tile.getBoundingClientRect(); tile.parentNode.insertBefore(dragging, event.clientY < box.top + box.height / 2 ? tile : tile.nextSibling); } }); }
+function enableDrag(tile) { if (isPhone()) { enablePhoneArrange(tile); return; } enableTouchDrag(tile); tile.addEventListener('dragstart', () => tile.classList.add('is-dragging')); tile.addEventListener('dragend', () => { stopTileScroll(); tile.classList.remove('is-dragging'); saveTileOrder(); }); tile.addEventListener('dragover', (event) => { event.preventDefault(); const dragging = document.querySelector('.is-dragging'); if (dragging && dragging !== tile) { const box = tile.getBoundingClientRect(); tile.parentNode.insertBefore(dragging, event.clientY < box.top + box.height / 2 ? tile : tile.nextSibling); } }); }
 /* Tablets: hold a tile still for a moment (it buzzes and lifts), then slide it to its new place. Buttons on the tile still just
  * tap. A mouse keeps the browser's own drag and drop (enableDrag); Chrome on Android would start that too on a long press,
  * so a finger switches it off for the press. */
@@ -959,7 +968,7 @@ function rollOverDay() { const now = localDateString(Date.now()); if (now === TO
  * scrolling, hides when now is scrolled out of view or under the name column, and shows the time when you hover over it. */
 function placeNowMarker(card, heading, show) { const marker = $(`${card} .now-marker`); if (!marker) return; const head = $(heading); if (!show || !head || !head.offsetWidth) { marker.classList.add('is-hidden'); return; } const now = new Date(); const minutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60; const headBox = head.getBoundingClientRect(); const x = headBox.left + headBox.width * minutes / 1440; const from = $(`${card} .user-column-heading`).getBoundingClientRect().right; const to = $(`${card} .schedule-scroll`).getBoundingClientRect().right; const visible = x >= from && x <= to; marker.classList.toggle('is-hidden', !visible); if (!visible) return; marker.style.left = `${x - $(`${card} .schedule-toolbar`).getBoundingClientRect().left}px`; marker.title = `Now: ${hm(now.toTimeString())}`; }
 function updateNowMarkers() { placeNowMarker('#edit-times-card', '#edit-timeline-heading', $('#edit-times-date').value === TODAY); placeNowMarker('#working-times-card', '#timeline-heading', !workingTimesWeekday || workingTimesWeekday === isoWeekday(TODAY)); }
-function tick() { updateNowMarkers(); rollOverDay(); handleBreakState(); checkAutoClockOut(); updateRunningBars(); state.contracts.forEach((contract) => { const myStart = contract.activeSessions?.[currentUserId]; if (!myStart) return; const live = document.querySelector(`[data-live-id="${contract.id}"]`); if (live) live.textContent = formatTime(Math.floor((Date.now() - myStart) / 1000)); const accum = document.querySelector(`[data-accum-id="${contract.id}"]`); if (accum) accum.textContent = formatTime(contractSeconds(contract)); }); updateMetrics(); }
+function tick() { updateNowMarkers(); rollOverDay(); handleBreakState(); checkAutoClockOut(); updateRunningBars(); renderRunPill(); state.contracts.forEach((contract) => { const myStart = contract.activeSessions?.[currentUserId]; if (!myStart) return; const live = document.querySelector(`[data-live-id="${contract.id}"]`); if (live) live.textContent = formatTime(Math.floor((Date.now() - myStart) / 1000)); const accum = document.querySelector(`[data-accum-id="${contract.id}"]`); if (accum) accum.textContent = formatTime(contractSeconds(contract)); }); updateMetrics(); }
 document.querySelectorAll('.nav-item[data-view]').forEach((button) => button.addEventListener('click', () => { document.querySelectorAll('.nav-item[data-view]').forEach((item) => item.classList.toggle('is-active', item === button)); document.querySelectorAll('[data-view-panel]').forEach((panel) => panel.classList.toggle('is-hidden', panel.dataset.viewPanel !== button.dataset.view)); rememberScreen(); }));
 $('#nav-setup-toggle').addEventListener('click', () => { const toggle = $('#nav-setup-toggle'); const expanded = toggle.getAttribute('aria-expanded') === 'true'; toggle.setAttribute('aria-expanded', String(!expanded)); toggle.classList.toggle('is-expanded', !expanded); $('#nav-setup-children').classList.toggle('is-hidden', expanded); });
 $('#contract-form').addEventListener('submit', saveContract); $('#contract-number').addEventListener('change', () => { refreshContractSuffixOptions(); refreshContractDerivedFields(); }); $('#contract-suffix').addEventListener('change', refreshContractDerivedFields); enableFieldLongPress('#contract-customer-name', () => openListsModal('customers')); enableFieldLongPress('#contract-suffix-description', () => openListsModal('suffix-description')); enableFieldLongPress('#contract-machine-type', () => openListsModal('machine-type')); enableFieldLongPress('#contract-number', goToContractInformation); enableFieldLongPress('#contract-suffix', goToContractInformation); $('#close-contract-modal').addEventListener('click', closeContractModal); $('#contract-modal').addEventListener('click', (event) => { if (event.target.id === 'contract-modal') closeContractModal(); }); $('#edit-times-date').addEventListener('change', (event) => { if (event.target.value > TODAY) event.target.value = TODAY; renderEditTimes(); }); wireDayStrip(); $('#directory-search').addEventListener('input', renderUserList); $('#directory-filter').addEventListener('change', renderUserList); $('#directory-sync').addEventListener('click', () => loadDirectory(true)); editTimesZoom.wire('edit-times'); workingTimesZoom.wire('working-times'); $('#open-find-tiles').addEventListener('click', openFindTiles); $('#tile-search').addEventListener('input', renderFindTiles); $('#tile-search').addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); addFoundTiles(); } }); $('#find-tiles-add').addEventListener('click', addFoundTiles); $('#auto-notice-check').addEventListener('click', () => dismissAutoNotice(true)); $('#today-gantt').addEventListener('click', openTodayInEditTimes); $('#auto-notice-close').addEventListener('click', () => dismissAutoNotice(false)); $('#find-tiles-new').addEventListener('click', () => { const prefill = searchPrefill(tileSearchTokens()); closeFindTiles(); openContractModal(null, prefill); }); $('#close-find-tiles').addEventListener('click', closeFindTiles); $('#find-tiles-modal').addEventListener('click', (event) => { if (event.target.id === 'find-tiles-modal') closeFindTiles(); }); $('#find-tiles-modal').addEventListener('keydown', (event) => { if (event.key === 'Escape') closeFindTiles(); }); $('#commit-times').addEventListener('click', commitTimes); $('#edit-undo').addEventListener('click', () => undoRedo('undo')); $('#edit-redo').addEventListener('click', () => undoRedo('redo'));
@@ -1020,7 +1029,8 @@ let screenRouting = false; // true while showing a screen because of an address,
 function screenHash() { const view = document.querySelector('.nav-item[data-view].is-active')?.dataset.view || 'dashboard'; const report = view === 'reports' ? window.currentReport?.() : null; return `#${view}${report ? `/${report}` : ''}`; }
 function rememberScreen() { if (screenRouting) return; const hash = screenHash(); if (location.hash !== hash) history.pushState(null, '', hash); }
 function showScreen(hash) {
-  const [, view = 'dashboard', sub = null] = /^#([a-z-]+)(?:\/([0-9a-z-]+))?$/.exec(hash) || [];
+  let [, view = 'dashboard', sub = null] = /^#([a-z-]+)(?:\/([0-9a-z-]+))?$/.exec(hash) || [];
+  if (isPhone() && !PHONE_VIEWS.includes(view)) view = 'dashboard'; /* a phone only has the tiles and Review times */
   const button = document.querySelector(`.nav-item[data-view="${view}"]:not(.is-hidden)`) || document.querySelector('.nav-item[data-view="dashboard"]');
   screenRouting = true;
   try {
@@ -1037,6 +1047,179 @@ function openFromLink() {
   try { if (!hash) hash = sessionStorage.getItem('timeslide-open') || ''; sessionStorage.removeItem('timeslide-open'); } catch { /* no storage: the link still works when already signed in */ }
   showScreen(hash);
 }
-loadState().then(() => { renderAll(); openFromLink(); updateNowMarkers(); setInterval(tick, 1000); }).catch((error) => showToast(`Could not load data: ${error.message}`));
+/* Phone held sideways (19 Nov 2026: management chose phones, not tablets, for clocking). On a touch screen held landscape
+ * and no more than 500px tall the app becomes a phone app (body.is-phone): a slim top bar with a menu button replaces the
+ * side menu and profile badge; only the tiles ("Clock") and Review times; compact tiles, Non-contract first; hold a tile
+ * and they all wiggle to be arranged until Done; on Review times a narrower name column, ‹ day › arrows, pinch to zoom,
+ * and Zoom in here from a block's hold menu. Laptops and tablets are unchanged. A phone held upright is asked to turn
+ * sideways (styles.css .turn-phone). */
+const PHONE_QUERY = matchMedia('(pointer: coarse) and (orientation: landscape) and (max-height: 500px)');
+const PHONE_VIEWS = ['dashboard', 'edit-times'];
+const isPhone = () => document.body.classList.contains('is-phone');
+const activeView = () => document.querySelector('.nav-item[data-view].is-active')?.dataset.view || 'dashboard';
+let phonePinching = false; // two fingers on Review times: no hold may fire meanwhile
+let blockMenuZoomAt = null; // the minute a block's hold menu was opened at, for Zoom in here
+let arranging = false; // tiles wiggling, ready to be moved
+const phoneMoved = []; // Review times buttons moved into the phone bar: [element, its parent, next sibling], to put them back
+function applyPhoneMode() {
+  const phone = PHONE_QUERY.matches;
+  if (phone === isPhone() && phoneMoved.length === (phone ? 3 : 0)) return;
+  document.body.classList.toggle('is-phone', phone);
+  closePhoneMenu(); setArranging(false); closeBlockMenu();
+  if (phone) [$('#edit-undo').parentElement, $('#add-time'), $('#commit-times')].forEach((element) => { phoneMoved.push([element, element.parentElement, element.nextSibling]); $('#phone-review-tools').appendChild(element); });
+  else { phoneMoved.reverse().forEach(([element, parent, next]) => parent.insertBefore(element, next)); phoneMoved.length = 0; }
+  if (!state) return; // first run, before the data has loaded: renderAll follows
+  if (phone && !PHONE_VIEWS.includes(activeView())) document.querySelector('.nav-item[data-view="dashboard"]').click();
+  renderContracts();
+  editTimesZoom.workdayShown = activeView() === 'edit-times'; // the other screen fits the day when it's next opened
+  if (editTimesZoom.workdayShown) requestAnimationFrame(() => editTimesZoom.showWorkday());
+  updatePhoneBar();
+}
+function updatePhoneBar() {
+  const view = activeView();
+  document.body.dataset.phoneView = view;
+  if (view !== 'dashboard') setArranging(false);
+  $('#phone-bar-title').textContent = arranging ? 'Arrange tiles' : view === 'edit-times' ? 'Review times' : 'Clock';
+  document.querySelectorAll('[data-phone-view]').forEach((item) => item.classList.toggle('is-active', item.dataset.phoneView === view));
+  renderRunPill(); updatePhoneDay(); updateWholeDay();
+}
+document.querySelectorAll('.nav-item[data-view]').forEach((button) => button.addEventListener('click', updatePhoneBar));
+
+// Top bar on the tiles: what's running and for how long (the tiles no longer show times). Tap it for Review times today.
+function renderRunPill() {
+  if (!isPhone() || !state) return;
+  const name = (contract) => (contract.system ? 'Non-contract' : [contract.number, contract.customerName].filter(Boolean).join(' '));
+  const running = state.contracts.find((contract) => contract.activeSessions?.[currentUserId]);
+  const paused = !running && state.breakState ? state.contracts.find((contract) => contract.id === state.breakState.contractId) : null;
+  const pill = $('#run-pill');
+  pill.className = `run-pill ${running ? 'is-running' : paused ? 'is-paused' : 'is-idle'}`;
+  pill.innerHTML = `<span class="run-pill-dot"></span>${running ? `<span class="run-pill-what">${esc(name(running))}</span><span class="run-pill-time">${formatTime(Math.floor((Date.now() - running.activeSessions[currentUserId]) / 1000))}</span>` : paused ? `<span class="run-pill-what">${esc(name(paused))}</span><span class="run-pill-time">On break · back ${hm(new Date(state.breakState.resumeAt).toTimeString())}</span>` : '<span class="run-pill-what">No clock running</span>'}`;
+  pill.setAttribute('aria-label', `${pill.textContent}. Open Review times`);
+}
+$('#run-pill').addEventListener('click', openTodayInEditTimes);
+function nonContractTileTemplate(contract) {
+  const running = Boolean(contract.activeSessions?.[currentUserId]); const paused = !running && state.breakState?.contractId === contract.id;
+  return `<article class="tile tile-nc" data-id="${esc(contract.id)}"><div class="tile-title-bar"><strong class="tile-customer-name">Non-contract</strong></div><div class="tile-meta"><span class="tile-code">Time not booked to a contract</span></div><div class="tile-footer"><div class="tile-footer-left"></div><div class="tile-footer-right">${departmentChipTemplate(running, paused)}<button class="clock-button ${running ? 'is-running' : paused ? 'is-paused' : ''}" data-id="${esc(contract.id)}" type="button">${running || paused ? 'Stop clock' : 'Start clock'}</button></div></div></article>`;
+}
+
+/* Arranging tiles on a phone: hold a tile (not its buttons) and they all wiggle. Keep the finger down and that tile moves
+ * with it; then drag any tile straight away, no hold needed. Each one's x takes it off the dashboard. Done, a tap on empty
+ * space, the menu or another screen finishes. Non-contract stays first. */
+function setArranging(on) {
+  arranging = on; document.body.classList.toggle('is-arranging', on);
+  $('#phone-bar-title').textContent = on ? 'Arrange tiles' : activeView() === 'edit-times' ? 'Review times' : 'Clock';
+}
+$('#phone-arrange-done').addEventListener('click', () => setArranging(false));
+$('#contract-grid').addEventListener('pointerdown', (event) => { if (arranging && event.target === event.currentTarget) setArranging(false); });
+function enablePhoneArrange(tile) {
+  tile.draggable = false;
+  let drag = null;
+  tile.addEventListener('touchmove', (event) => { if (drag) event.preventDefault(); }, { passive: false }); // the page doesn't scroll under a moving tile
+  tile.addEventListener('contextmenu', (event) => event.preventDefault());
+  tile.addEventListener('click', (event) => { if ((arranging && !event.target.closest('.delete-contract')) || Date.now() < tileTapBlockedUntil) { event.preventDefault(); event.stopPropagation(); } }, true);
+  const place = () => { /* the tile follows the finger; passing over another tile swaps their places */
+    if (!drag) return;
+    const over = [...tile.parentNode.querySelectorAll('.tile:not(.tile-nc)')].find((other) => { if (other === tile) return false; const box = other.getBoundingClientRect(); return drag.x >= box.left && drag.x <= box.right && drag.y >= box.top && drag.y <= box.bottom; });
+    if (over) tile.parentNode.insertBefore(tile, tile.compareDocumentPosition(over) & Node.DOCUMENT_POSITION_FOLLOWING ? over.nextSibling : over);
+    tile.style.transform = 'none'; const box = tile.getBoundingClientRect();
+    tile.style.transform = `translate(${drag.x - drag.grabX - box.left}px, ${drag.y - drag.grabY - box.top}px)`;
+  };
+  const move = (pointer) => { drag.x = pointer.clientX; drag.y = pointer.clientY; tileScrollAt(pointer.clientY); place(); };
+  const finish = () => {
+    stopTileScroll(); tile.removeEventListener('pointermove', move); tile.removeEventListener('pointerup', finish); tile.removeEventListener('pointercancel', finish);
+    tile.classList.remove('is-lifted'); tile.style.transform = ''; drag = null; tileTapBlockedUntil = Date.now() + 400; saveTileOrder();
+  };
+  const lift = (x, y, pointerId) => {
+    const box = tile.getBoundingClientRect(); drag = { grabX: x - box.left, grabY: y - box.top, x, y };
+    tile.classList.add('is-lifted');
+    try { tile.setPointerCapture(pointerId); } catch { /* the finger has already gone */ }
+    tileScroll.after = place;
+    tile.addEventListener('pointermove', move); tile.addEventListener('pointerup', finish); tile.addEventListener('pointercancel', finish);
+    place();
+  };
+  tile.addEventListener('pointerdown', (event) => {
+    if (event.target.closest('.delete-contract')) return;
+    if (arranging) { event.preventDefault(); lift(event.clientX, event.clientY, event.pointerId); return; }
+    if (event.target.closest('button, a, input, select, textarea')) return; // Start, Rework and the chips still just tap
+    const timer = setTimeout(() => { cancel(); navigator.vibrate?.(15); setArranging(true); lift(event.clientX, event.clientY, event.pointerId); }, 450);
+    const moved = (pointer) => { if (Math.hypot(pointer.clientX - event.clientX, pointer.clientY - event.clientY) > 8) cancel(); }; // a swipe: let the page scroll
+    const cancel = () => { clearTimeout(timer); tile.removeEventListener('pointermove', moved); tile.removeEventListener('pointerup', cancel); tile.removeEventListener('pointercancel', cancel); };
+    tile.addEventListener('pointermove', moved); tile.addEventListener('pointerup', cancel); tile.addEventListener('pointercancel', cancel);
+  });
+}
+
+// The menu (three lines, top left): who you are and today's date, the two screens, Add tile, Working in, Dark mode, Sign out.
+function openPhoneMenu() {
+  setArranging(false);
+  const away = Boolean(state?.workingDepartment && state.workingDepartment !== state.homeDepartment);
+  $('#phone-avatar').textContent = $('#current-user-avatar').textContent;
+  $('#phone-user-name').textContent = $('#current-user-name').textContent;
+  $('#phone-user-sub').textContent = `${$('#current-user-role').textContent} · ${new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+  $('#phone-dept').textContent = (away ? state.workingDepartment : state?.homeDepartment) || 'None';
+  $('#phone-dept').classList.toggle('is-away', away);
+  $('#phone-theme-state').textContent = document.documentElement.dataset.theme === 'dark' ? 'On' : 'Off';
+  document.body.classList.add('phone-menu-open'); $('#phone-menu-open').setAttribute('aria-expanded', 'true');
+}
+function closePhoneMenu() { document.body.classList.remove('phone-menu-open'); $('#phone-menu-open').setAttribute('aria-expanded', 'false'); }
+$('#phone-menu-open').addEventListener('click', openPhoneMenu);
+$('#phone-menu-close').addEventListener('click', closePhoneMenu);
+$('#phone-scrim').addEventListener('click', closePhoneMenu);
+document.querySelectorAll('[data-phone-view]').forEach((item) => item.addEventListener('click', () => { closePhoneMenu(); document.querySelector(`.nav-item[data-view="${item.dataset.phoneView}"]`).click(); }));
+$('#phone-add-tile').addEventListener('click', () => { closePhoneMenu(); openFindTiles(); });
+$('#phone-working-in').addEventListener('click', () => { closePhoneMenu(); openWorkingIn(); });
+$('#phone-theme').addEventListener('click', () => { $('#theme-toggle').click(); $('#phone-theme-state').textContent = document.documentElement.dataset.theme === 'dark' ? 'On' : 'Off'; });
+$('#phone-sign-out').addEventListener('click', signOut);
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && isPhone()) { closePhoneMenu(); setArranging(false); } });
+
+// Review times on a phone: ‹ day › arrows either side of the day (tap it to pick another), in place of the four-week strip.
+function updatePhoneDay() {
+  if (!isPhone()) return;
+  const date = $('#edit-times-date').value; const day = new Date(`${date}T12:00`);
+  $('#phone-day-text').textContent = date === TODAY ? `Today ${day.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : day.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  $('#phone-date').value = date; $('#phone-date').max = TODAY;
+  $('#phone-day-next').disabled = date >= TODAY;
+}
+const shiftEditDay = (step) => selectEditDay(localDateString(new Date(`${$('#edit-times-date').value}T12:00`).getTime() + step * 86400000));
+$('#phone-day-prev').addEventListener('click', () => shiftEditDay(-1));
+$('#phone-day-next').addEventListener('click', () => shiftEditDay(1));
+$('#phone-date').addEventListener('change', (event) => { if (event.target.value) selectEditDay(event.target.value > TODAY ? TODAY : event.target.value); });
+
+/* Zoom on a phone: pinch on the timeline, or Zoom in here from a block's hold menu (two hours across, then half as much each
+ * time). Zoomed in, a sideways swipe scrolls along the day, and Whole day (above the contract names) goes back. Sliding a
+ * block end still zooms in by itself and eases back half a second after letting go (zoomInOnHandle). */
+const phoneVisibleWidth = () => $('#edit-times-card .schedule-scroll').clientWidth - editTimesZoom.nameColumn();
+const phoneFitZoom = () => Math.max(ZOOM_MIN, phoneVisibleWidth() / (WORKDAY_END - WORKDAY_START));
+function phoneZoomTo(zoom, minute) { /* a zoom the person asked for: forget a slide's automatic zoom-back */
+  clearTimeout(handleZoom.timer); cancelAnimationFrame(handleZoom.frame); handleZoom.frame = null; handleZoom.saved = null;
+  if (zoom === null) editTimesZoom.showWorkday(); else editTimesZoom.set(Math.min(ZOOM_MAX, zoom), minute);
+}
+function updateWholeDay() { $('#edit-times-card').classList.toggle('is-zoomed', isPhone() && editTimesZoom.zoom > phoneFitZoom() * 1.05); }
+editTimesZoom.onChange = updateWholeDay;
+$('#phone-whole-day').addEventListener('click', () => phoneZoomTo(null));
+{
+  const scroller = $('#edit-times-card .schedule-scroll'); let pinch = null;
+  const spread = (touches) => Math.max(20, Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY));
+  const middle = (touches) => (touches[0].clientX + touches[1].clientX) / 2;
+  const dayBox = () => $('#edit-timeline-heading').getBoundingClientRect(); // the hour heading lines up with every row's timeline
+  scroller.addEventListener('touchstart', (event) => {
+    if (!isPhone() || event.touches.length !== 2 || document.body.classList.contains('is-resizing')) return;
+    phonePinching = true; closeBlockMenu();
+    clearTimeout(handleZoom.timer); handleZoom.saved = null;
+    const box = dayBox(); pinch = { spread: spread(event.touches), zoom: editTimesZoom.zoom, minute: (middle(event.touches) - box.left) / box.width * 1440 };
+  }, { passive: true });
+  /* on the page, not the card: the hour labels under the fingers are redrawn as the zoom changes */
+  document.addEventListener('touchmove', (event) => {
+    if (!pinch || event.touches.length !== 2) return;
+    event.preventDefault(); // no page zoom or scroll meanwhile
+    editTimesZoom.set(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, pinch.zoom * spread(event.touches) / pinch.spread)), pinch.minute);
+    const box = dayBox(); scroller.scrollLeft += box.left + pinch.minute / 1440 * box.width - middle(event.touches); // that minute stays between the fingers
+  }, { passive: false });
+  const end = (event) => { if (event.touches.length < 2) pinch = null; if (!event.touches.length) setTimeout(() => { phonePinching = false; }, 0); };
+  document.addEventListener('touchend', end); document.addEventListener('touchcancel', end);
+}
+applyPhoneMode();
+PHONE_QUERY.addEventListener('change', applyPhoneMode);
+
+loadState().then(() => { renderAll(); openFromLink(); updatePhoneBar(); updateNowMarkers(); setInterval(tick, 1000); }).catch((error) => showToast(`Could not load data: ${error.message}`));
 // Screen titles: solid background only once the page starts scrolling under them
 { const markScrolled = () => document.documentElement.classList.toggle('page-scrolled', window.scrollY > 0); window.addEventListener('scroll', markScrolled, { passive: true }); markScrolled(); }
