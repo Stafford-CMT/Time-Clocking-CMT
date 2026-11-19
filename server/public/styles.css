@@ -1064,17 +1064,54 @@ body.is-arranging .phone-done { display: inline-block; height: 36px; padding: 0 
 /* Tiles: no picture or times, three across; the running tile still glows */
 body.is-phone .tile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 10px; padding: 12px 12px 18px; }
 body.is-phone .tile { min-height: 0; padding: 10px 10px 10px 12px; }
-body.is-phone .tile .tile-image, body.is-phone .tile .tile-times, body.is-phone .tile .drag-handle, body.is-phone .tile .delete-contract { display: none; }
+body.is-phone .tile .tile-image, body.is-phone .tile .tile-times, body.is-phone .tile .drag-handle { display: none; }
+body.is-phone .tile .delete-contract { width: 36px; height: 36px; margin-left: -8px; } /* the x stays on every tile: one tap takes it off the dashboard */
+/* Find a tile: no picture box on a phone; "On dashboard" stays as a small tag under the suffix */
+body.is-phone .find-tile-image { display: block; height: auto; margin-top: 6px; border: 0; overflow: visible; font-size: 0; }
+body.is-phone .find-tile-image img, body.is-phone .find-tile-image .find-tile-edit { display: none; }
+body.is-phone .find-tile-status { position: static; display: inline-block; background: var(--mint); }
+/* Find a tile and Add a contract on a phone: the title row on top (Find a tile's Add to dashboard sits
+   on it, left of the x; + Add a new tile is laptop only), then the number pad on the left and the contracts, then their suffixes, on the right. No search
+   box, so the phone's keyboard never covers the screen. */
+body.is-phone :is(.find-tiles-modal, .add-time-modal) { width: 100%; height: calc(100dvh - 16px); display: grid; grid-template-columns: 196px minmax(0, 1fr) auto auto; grid-template-rows: auto minmax(0, 1fr); align-items: center; gap: 10px 12px; padding: 12px 14px; }
+body.is-phone :is(.find-tiles-modal, .add-time-modal) > .modal-header { display: contents; }
+body.is-phone :is(.find-tiles-modal, .add-time-modal) .modal-header > div { grid-column: 1 / 3; grid-row: 1; min-width: 0; }
+body.is-phone :is(.find-tiles-modal, .add-time-modal) .modal-header h2 { margin: 0; }
+body.is-phone .find-tiles-modal .modal-header .section-kicker { display: none; }
+body.is-phone .find-tiles-modal > .find-tiles-actions { grid-column: 3; grid-row: 1; margin: 0; }
+body.is-phone #find-tiles-new { display: none; } /* new tiles are set up on a laptop; every Contract information suffix already has one */
+body.is-phone :is(.find-tiles-modal, .add-time-modal) .modal-header > .modal-close { grid-column: 4; grid-row: 1; }
+body.is-phone :is(.find-tiles-modal > .tile-search, .find-tiles-count, .add-time-modal > .rework-modal-hint, .add-time-search) { display: none; }
+body.is-phone .phone-pad { grid-column: 1; grid-row: 2; align-self: stretch; }
+body.is-phone :is(#find-tiles-list, #add-time-options) { grid-column: 2 / -1; grid-row: 2; align-self: stretch; max-height: none; min-height: 0; overflow-y: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: min-content; align-content: start; gap: 8px; padding: 2px; }
+.phone-pad { display: none; }
+body.is-phone .phone-pad { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px; min-height: 0; }
+.pad-readout { display: grid; gap: 3px; text-align: center; }
+.pad-digits { height: 40px; display: grid; place-items: center; border: 1.5px solid var(--teal); border-radius: 8px; background: var(--mint); color: var(--teal-dark); font: 600 22px 'Space Grotesk'; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+.pad-digits.is-empty { border-color: var(--line); background: var(--panel); color: var(--muted); font-size: 13px; letter-spacing: 0; }
+.pad-hint { min-height: 14px; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pad-keys { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: minmax(36px, 1fr); gap: 6px; min-height: 0; }
+.pad-key { display: grid; place-items: center; padding: 0; border: 0; border-radius: 10px; background: var(--c-eef3f1); color: var(--ink); font: 600 20px 'Space Grotesk'; font-variant-numeric: tabular-nums; touch-action: manipulation; -webkit-user-select: none; user-select: none; cursor: pointer; }
+.pad-key:active { background: var(--mint); }
+.pad-key:disabled { opacity: .35; cursor: default; }
+.pad-key.is-word { font-family: inherit; font-size: 12px; font-weight: 700; color: var(--muted); }
+.pad-key svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.pad-contract { width: 100%; min-height: 52px; display: grid; gap: 1px; align-content: center; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); text-align: left; cursor: pointer; }
+.pad-contract:active { border-color: var(--teal); background: var(--mint); }
+.pad-contract strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 600 13.5px 'Space Grotesk'; }
+.pad-contract span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--muted); font-size: 11px; }
+body.is-phone :is(#find-tiles-list, #add-time-options) :is(.list-empty, .find-tiles-empty) { grid-column: 1 / -1; }
+/* Add tile form on a phone: no picture (phone tiles show none) and no "Dashboard setup" label */
+body.is-phone #contract-form :is(.image-field, .section-kicker) { display: none; }
 body.is-phone .tile-meta { margin-top: 4px; padding-left: 0; }
 body.is-phone .tile-footer { margin-top: auto; padding-top: 8px; border-top: 0; }
 body.is-phone .tile-nc { border-color: color-mix(in srgb, var(--coral) 35%, var(--line)); background: color-mix(in srgb, var(--coral) 7%, var(--panel)); }
 body.is-phone .tile-nc .tile-customer-name { color: var(--coral); }
 body.is-phone .empty-dashboard { padding: 24px; }
-/* Arranging: every tile wiggles; drag one anywhere; its x takes it off the dashboard */
+/* Arranging: every tile wiggles; drag one anywhere */
 body.is-arranging .tile:not(.tile-nc) { animation: tile-wiggle .28s ease-in-out infinite alternate; touch-action: none; cursor: grab; }
 body.is-arranging .tile:not(.tile-nc):nth-child(even) { animation-delay: -.14s; }
 body.is-arranging .tile .tile-footer-right { opacity: .4; pointer-events: none; }
-body.is-arranging .tile .delete-contract { display: inline-grid; width: 36px; height: 36px; }
 body.is-phone .tile.is-lifted { position: relative; z-index: 6; animation: none; box-shadow: 0 16px 34px rgba(0, 0, 0, .28); transition: none; cursor: grabbing; }
 @keyframes tile-wiggle { from { transform: rotate(-.7deg); } to { transform: rotate(.7deg); } }
 @media (prefers-reduced-motion: reduce) { body.is-arranging .tile:not(.tile-nc) { animation: none; outline: 2px dashed var(--teal); outline-offset: 2px; } }
