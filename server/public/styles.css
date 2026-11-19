@@ -93,8 +93,12 @@ h2 { font-size: 27px; }
 @media (max-width: 1300px) { .tile-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .sidebar { width: 200px; }.main-content { padding: 30px 28px 55px; }.tile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 650px) { .app-shell { display: block; }.sidebar { width: 100%; flex-basis: auto; height: auto; padding: 17px 18px 12px; display: block; border-right: 0; border-bottom: 1px solid var(--line); }.sidebar-resize { display: none; }.brand-copy { margin: -31px 0 27px 55px; }.primary-nav { display: flex; gap: 5px; }.nav-item { flex: 1; padding: 9px 10px; justify-content: center; font-size: 11px; }.nav-group { flex: 1; }.sidebar-note { display: none; }.main-content { padding: 25px 16px 42px; }.topbar { margin-bottom: 40px; }.profile-text { display: none; }.section-heading, .dashboard-toolbar { align-items: flex-start; flex-direction: column; }.section-heading { gap: 16px; }.metrics { grid-template-columns: 1fr; gap: 9px; margin-bottom: 35px; }.metric-card { min-height: 103px; }.tile-grid { grid-template-columns: 1fr; }.toolbar-actions { width: 100%; justify-content: space-between; }.toolbar-hint { display: block; margin: 5px 0 0; }.add-button { align-self: stretch; justify-content: center; } }
-.tile:has(.clock-button.is-running) { border-color: var(--c-4eb9ac); box-shadow: 0 0 0 3px rgba(78, 185, 172, .18), 0 0 26px rgba(20, 125, 120, .3), var(--shadow); animation: active-glow 2.4s ease-in-out infinite; }
-@keyframes active-glow { 0%, 100% { box-shadow: 0 0 0 3px rgba(78, 185, 172, .15), 0 0 20px rgba(20, 125, 120, .22), var(--shadow); } 50% { box-shadow: 0 0 0 4px rgba(78, 185, 172, .24), 0 0 32px rgba(20, 125, 120, .38), var(--shadow); } }
+/* Running tile: wide bloom (option C, 19 Nov 2026), four blurs out to 140px, very faint at the outside; breathes a little wider and stronger. */
+.tile:has(.clock-button.is-running) { border-color: var(--c-4eb9ac); box-shadow: 0 0 12px color-mix(in srgb, var(--teal) 35%, transparent), 0 0 40px color-mix(in srgb, var(--teal) 18%, transparent), 0 0 90px color-mix(in srgb, var(--teal) 8%, transparent), 0 0 140px color-mix(in srgb, var(--teal) 8%, transparent), var(--shadow); animation: active-glow 2.4s ease-in-out infinite; }
+@keyframes active-glow {
+  0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--teal) 28%, transparent), 0 0 34px color-mix(in srgb, var(--teal) 14%, transparent), 0 0 80px color-mix(in srgb, var(--teal) 6%, transparent), 0 0 120px color-mix(in srgb, var(--teal) 6%, transparent), var(--shadow); }
+  50% { box-shadow: 0 0 14px color-mix(in srgb, var(--teal) 42%, transparent), 0 0 46px color-mix(in srgb, var(--teal) 22%, transparent), 0 0 100px color-mix(in srgb, var(--teal) 10%, transparent), 0 0 160px color-mix(in srgb, var(--teal) 10%, transparent), var(--shadow); }
+}
 .user-column-heading { position: sticky; left: 0; z-index: 4; }
 .user-cell { position: sticky; left: 0; z-index: 4; background: var(--c-ffffff); }
 .user-name-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -773,17 +777,18 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
   #edit-times-card .schedule-legend .legend-tips { grid-column: 3; grid-row: 1 / span 2; margin-left: 12px; }
 }
 
-/* Start and stop buttons glow when the mouse is over them: teal to start, orange to stop. Mouse only: on a tablet the hover would stick after a tap. */
+/* Start and stop buttons glow when the mouse is over them: teal to start, orange to stop. Mouse only: on a tablet the hover would stick after a tap.
+   Soft halo (option B, 19 Nov 2026): no ring, three blurs each fainter and wider, so it fades out smoothly about 40px from the button. */
+.clock-button, .metric-clock-button { --glow-c: var(--teal); --glow: 0 0 6px color-mix(in srgb, var(--glow-c) 60%, transparent), 0 0 18px color-mix(in srgb, var(--glow-c) 35%, transparent), 0 0 40px color-mix(in srgb, var(--glow-c) 18%, transparent); }
+.clock-button.is-running, .clock-button.is-paused, .metric-clock-button.is-running, .metric-clock-button.is-paused { --glow-c: var(--coral); }
 @media (hover: hover) {
-  .clock-button, .metric-clock-button { transition: box-shadow .15s ease; }
-  .clock-button:hover, .metric-clock-button:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 22%, transparent), 0 0 14px color-mix(in srgb, var(--teal) 55%, transparent); }
-  .clock-button.is-running:hover, .clock-button.is-paused:hover, .metric-clock-button.is-running:hover, .metric-clock-button.is-paused:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 22%, transparent), 0 0 14px color-mix(in srgb, var(--coral) 55%, transparent); }
+  .clock-button, .metric-clock-button { transition: box-shadow .2s ease; }
+  .clock-button:hover, .metric-clock-button:hover { box-shadow: var(--glow); }
 }
 /* Tablet: the same glow while a finger presses the button, fading out after the tap. */
 @media (hover: none) {
   .clock-button, .metric-clock-button { transition: box-shadow .5s ease-out; -webkit-tap-highlight-color: transparent; } /* no grey Android press box over the glow */
-  .clock-button.is-pressed, .metric-clock-button.is-pressed { transition: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 22%, transparent), 0 0 14px color-mix(in srgb, var(--teal) 55%, transparent); }
-  .clock-button.is-running.is-pressed, .clock-button.is-paused.is-pressed, .metric-clock-button.is-running.is-pressed, .metric-clock-button.is-paused.is-pressed { box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 22%, transparent), 0 0 14px color-mix(in srgb, var(--coral) 55%, transparent); }
+  .clock-button.is-pressed, .metric-clock-button.is-pressed { transition: none; box-shadow: var(--glow); }
 }
 
 /* Setup -> Syspro tables: table list on the left, the chosen table's fields and rows on the right. */
