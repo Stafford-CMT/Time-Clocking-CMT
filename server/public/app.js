@@ -356,7 +356,15 @@ function enforceMinimumDuration(session, prevSession, nextSession, handleType) {
  * start of a word on the tile, and a single letter or digit only matches the
  * suffix, so "4663 B" doesn't also find suffix A for customer "Brown". */
 const normaliseSearch = (text) => String(text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-function tileSearchTokens() { return $('#tile-search').value.split(/[\s|,/]+/).map(normaliseSearch).filter(Boolean); }
+function searchTokens(text) { return text.split(/[\s|,/]+/).map(normaliseSearch).filter(Boolean); }
+function tileSearchTokens() { return searchTokens($('#tile-search').value); }
+// Dashboard search: hides the tiles that don't match, leaving them in place so dragging still saves the full order.
+function applyDashboardSearch() {
+  const tokens = searchTokens($('#dashboard-search').value); let shown = 0;
+  document.querySelectorAll('#contract-grid .tile:not(.tile-nc)').forEach((tile) => { const contract = state.contracts.find((item) => item.id === tile.dataset.id); const match = !tokens.length || (contract && tileMatches(contract, tokens)); tile.classList.toggle('is-hidden', !match); if (match) shown += 1; });
+  const grid = $('#contract-grid'); let empty = grid.querySelector('.dashboard-search-empty');
+  if (tokens.length && !shown && grid.querySelector('.tile:not(.tile-nc)')) { if (!empty) { empty = document.createElement('div'); empty.className = 'empty-dashboard dashboard-search-empty'; grid.append(empty); } empty.textContent = 'No tiles on your dashboard match your search.'; } else empty?.remove();
+}
 function tileMatches(contract, tokens) { const suffix = normaliseSearch(contract.suffix); const words = [contract.number, contract.suffix, `${contract.number}${contract.suffix}`, ...[contract.customerName, contract.suffixDescription, contract.machineType].flatMap((text) => String(text || '').split(/\s+/))].map(normaliseSearch).filter(Boolean); return tokens.every((token) => (token.length === 1 ? suffix.startsWith(token) : words.some((word) => word.startsWith(token)))); }
 // The contract number (and suffix) a search names, to start the Add tile form with.
 function searchPrefill(tokens) { const typed = tokens.join(''); const record = state.contractInfo.filter((item) => normaliseSearch(item.number) && typed.startsWith(normaliseSearch(item.number))).sort((a, b) => b.number.length - a.number.length)[0]; if (!record) return {}; const rest = typed.slice(normaliseSearch(record.number).length); return { number: record.number, suffix: record.suffixes.find((item) => rest && normaliseSearch(item.letter) === rest)?.letter || '' }; }
@@ -433,6 +441,7 @@ function renderContracts() {
   document.querySelectorAll('.delete-contract').forEach((button) => button.addEventListener('click', () => toggleTileVisibility(button.dataset.id)));
   document.querySelectorAll('.tile:not(.tile-nc)').forEach(enableDrag);
   document.querySelectorAll('.tile-image img').forEach((img) => img.addEventListener('click', () => openImageViewer(img.getAttribute('src'))));
+  applyDashboardSearch();
   renderAutoNotice();
   updateMetrics();
 }
@@ -1163,7 +1172,9 @@ function setArranging(on) {
   $('#phone-bar-title').textContent = on ? 'Arrange tiles' : activeView() === 'edit-times' ? 'Review times' : 'Clock';
 }
 $('#phone-arrange-done').addEventListener('click', () => setArranging(false));
-$('#contract-grid').addEventListener('pointerdown', (event) => { if (arranging && event.target === event.currentTarget) setArranging(false); });
+$('#dashboard-search').addEventListener('input', applyDashboardSearch);
+$('#dashboard-search').addEventListener('keydown', (event) => { if (event.key === 'Escape' && event.currentTarget.value) { event.currentTarget.value = ''; applyDashboardSearch(); } });
+$('#contract-grid').addEventListener('pointerdown',(event) => { if (arranging && event.target === event.currentTarget) setArranging(false); });
 function enablePhoneArrange(tile) {
   tile.draggable = false;
   let drag = null;

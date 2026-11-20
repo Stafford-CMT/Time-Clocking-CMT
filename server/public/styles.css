@@ -287,6 +287,8 @@ h2 { font-size: 27px; }
 .tile-search svg { position: absolute; left: 11px; width: 14px; height: 14px; color: var(--muted); pointer-events: none; }
 .tile-search input { width: 300px; max-width: 100%; padding: 10px 12px 10px 32px; border: 1px solid var(--line); border-radius: 9px; background: var(--c-ffffff); color: var(--ink); font-size: 12px; }
 .tile-search input:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+.dashboard-search input { width: 240px; }
+body.is-phone .dashboard-search { display: none; } /* laptops only; phones use the number pad */
 @media (max-width: 650px) { .tile-search { flex: 1; }.tile-search input { width: 100%; } }
 .find-tiles-modal { width: min(960px, 95%); display: flex; flex-direction: column; }
 .find-tiles-modal .modal-header { margin-bottom: 16px; }
