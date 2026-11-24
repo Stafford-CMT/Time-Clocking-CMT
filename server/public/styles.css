@@ -231,7 +231,7 @@ h2 { font-size: 27px; }
 /* Edit times: day strip (last four weeks ending today) */
 .day-strip-bar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; margin-bottom: 14px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--c-ffffff); box-shadow: var(--shadow); }
 .day-strip-month { min-width: 70px; color: var(--muted); font-size: 11px; font-weight: 700; text-align: center; white-space: nowrap; }
-.day-strip { display: flex; gap: 3px; overflow-x: auto; scroll-behavior: smooth; padding: 12px 2px 6px; /* room above for today's triangle */ scrollbar-width: thin; cursor: grab; }
+.day-strip { display: flex; gap: 3px; overflow-x: auto; scroll-behavior: smooth; padding: 12px 2px 6px; /* room above for today's pill */ scrollbar-width: thin; cursor: grab; }
 .day-strip.is-dragging { cursor: grabbing; scroll-behavior: auto; }
 .day-strip:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 8px; }
 .day-chip { flex: 0 0 40px; /* 28 days fit a full-HD screen without the scroll bar */ display: grid; justify-items: center; gap: 3px; padding: 5px 0 6px; border: 1px solid transparent; border-radius: 9px; background: transparent; cursor: pointer; font-variant-numeric: tabular-nums; }
@@ -244,8 +244,7 @@ h2 { font-size: 27px; }
 .day-chip.is-weekend .day-chip-date { color: var(--muted); }
 .day-chip.is-week-start { border-left: 1px dashed var(--line); border-radius: 0 9px 9px 0; } /* weeks start on Sunday */
 .day-chip { position: relative; }
-.day-chip-today { position: absolute; top: -11px; left: 50%; width: 9px; height: 9.506px; transform: translateX(-50%); } /* today: the timeline's "now" triangle, pointing down at the day */
-.day-chip-today svg { display: block; width: 9px; height: 9.506px; fill: none; stroke: var(--now); stroke-width: 1; stroke-linejoin: round; }
+.day-chip-today { position: absolute; top: -9px; left: 0; right: 0; height: 4px; border-radius: 99px; background: var(--now); } /* today: a skinny pill as wide as the chip, so it matches the selected box */
 .day-chip.is-selected, .day-chip.is-selected:hover { border-color: var(--teal); background: var(--mint); }
 .day-strip-today { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--c-ffffff); color: var(--teal-dark); font-size: 12px; font-weight: 700; cursor: pointer; }
 .day-strip-today:disabled { opacity: .45; cursor: default; }
@@ -697,7 +696,6 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
 .edit-times-card .schedule-toolbar .edit-user-block { flex: 1 1 auto; width: auto; }
 .edit-times-card .schedule-toolbar .add-time-button { margin-left: auto; }
 .add-time-button:disabled { opacity: .6; }
-.edit-rework-chip { flex: 0 0 auto; max-width: 96px; margin-left: auto; padding: 3px 8px; font-size: 10px; }
 .add-time-search { width: 100%; margin-bottom: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); font-size: 13px; }
 .add-time-option { display: grid; gap: 2px; }
 .add-time-option span { color: var(--muted); font-size: 11px; font-weight: 400; }
@@ -753,7 +751,6 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
   .edit-session-block .schedule-handle.edit-session-handle { width: clamp(5px, 30%, 18px) !important; touch-action: none; }
   /* an unlinked end keeps its thin red bar at the edge of the wider zone */
   .auto-stop-badge { width: 26px; height: 26px; }
-  .edit-rework-chip { min-height: 32px; padding: 6px 10px; }
   .add-time-button { min-height: 40px; }
   .undo-redo-button { width: 44px; min-height: 40px; }
   .zoom-bar .zoom-button { width: 36px; height: 36px; font-size: 18px; }
@@ -1135,7 +1132,6 @@ body.is-phone .edit-contract-top .edit-contract-code { order: -1; flex: 0 0 auto
 body.is-phone .edit-times-card .user-column-heading { padding: 6px 8px 6px 10px; }
 body.is-phone .edit-times-card .timeline-heading span { padding: 8px 0; }
 body.is-phone .edit-row-total { grid-column: 1; flex: none; font-size: 11px; text-align: left; }
-body.is-phone .edit-rework-chip { grid-column: 2; max-width: 70px; min-height: 0; margin-left: 0; padding: 1px 6px; font-size: 9.5px; }
 body.is-phone .edit-column-heading { align-items: center; padding-left: 10px; padding-right: 8px; }
 body.is-phone .edit-column-heading > span:not(.phone-zoom-hint) { display: none; }
 body.is-phone .phone-zoom-hint { display: inline; color: var(--muted); font-size: 10px; font-weight: 500; text-transform: none; letter-spacing: 0; }

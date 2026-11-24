@@ -94,6 +94,26 @@ async function setSessionDepartment(actor, id, value) {
   return getState(actor);
 }
 
+// Review times: mark one finished block as rework with a reason from the list, or
+// (reason null) as ordinary time again. Own, or anyone's for an admin; not on a
+// committed day, not on Non-contract.
+async function setSessionRework(actor, id, value) {
+  if (value != null && typeof value !== 'string') throw new ApiError(400, 'reworkReason must be text');
+  const reason = value ? value.trim() : null;
+  await withTransaction(async (db) => {
+    const session = await clockRepo.findTimeSession(db, id);
+    if (!session) throw new ApiError(404, 'Time block not found');
+    assertCanActOn(actor, session.userId);
+    await assertNotCommitted(db, actor, session.userId, session.date);
+    if (reason) {
+      if (session.contractId === 'non-contract') throw new ApiError(400, "Non-contract time can't be rework");
+      if (!(await clockRepo.reworkReasonExists(db, reason))) throw new ApiError(400, `"${reason}" is not in the rework reasons list`);
+    }
+    await clockRepo.setSessionRework(db, id, reason);
+  });
+  return getState(actor);
+}
+
 // Stops the user's running clock, if any, and records it as completed
 // session(s). Returns what was running, or null. An automatic stop marks the
 // last piece -- the one ending at the clock-out time -- for the person to check.
@@ -423,6 +443,6 @@ async function markAutoNoticed(actor, ids) {
 
 module.exports = {
   getState, start, stop, updateSessions, restoreSession, addSession, removeSession, commit, uncommit, markAutoNoticed,
-  setWorkingDepartment, setSessionDepartment,
+  setWorkingDepartment, setSessionDepartment, setSessionRework,
   autoClockOutAt, runClockSchedule, startClockSchedule,
 };

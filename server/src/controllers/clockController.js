@@ -25,4 +25,5 @@ module.exports = {
   markAutoNoticed: handle((req) => clockService.markAutoNoticed(req.session.user, req.body && req.body.ids)),
   setWorkingDepartment: handle((req) => clockService.setWorkingDepartment(req.session.user, req.body && req.body.department)),
   setSessionDepartment: handle((req) => clockService.setSessionDepartment(req.session.user, req.params.id, req.body && req.body.department)),
+  setSessionRework: handle((req) => clockService.setSessionRework(req.session.user, req.params.id, req.body && req.body.reworkReason)),
 };

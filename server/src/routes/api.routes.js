@@ -46,6 +46,7 @@ router.post('/sessions/take', clockController.takeSession); // the same, drawn o
 router.post('/sessions/add', clockController.addSession); // time entered by hand (body: contractId, userId, date, start, end, reworkReason?): own, or anyone's for admin; last 28 days
 router.delete('/sessions/:id', clockController.removeSession); // own sessions, or anyone's for admin
 router.put('/sessions/:id/department', clockController.setSessionDepartment); // body: department; own sessions, or anyone's for admin
+router.put('/sessions/:id/rework', clockController.setSessionRework); // body: reworkReason (null = not rework); own sessions, or anyone's for admin
 router.put('/me/working-department', clockController.setWorkingDepartment); // body: department (null = your own); for today, splits a running clock
 router.post('/commits/:userId/:date', clockController.commit); // own day, or anyone's for admin
 router.delete('/commits/:userId/:date', clockController.uncommit); // the same people, only until the day is exported

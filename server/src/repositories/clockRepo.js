@@ -177,6 +177,10 @@ async function setSessionDepartment(db, id, department) {
   await db.query('UPDATE time_sessions SET department = $2 WHERE id = $1', [id, department]);
 }
 
+async function setSessionRework(db, id, reworkReason) {
+  await db.query('UPDATE time_sessions SET rework_reason = $2 WHERE id = $1', [id, reworkReason]);
+}
+
 async function clearBreakState(db, userId) {
   await db.query('DELETE FROM user_break_state WHERE user_id = $1', [userId]);
 }
@@ -261,7 +265,7 @@ module.exports = {
   insertTimeSession, findTimeSession, updateTimeSession, deleteTimeSession,
   markAutoNoticed, findUncheckedAutoStops, findScheduledClockUsers, findClockSchedule,
   findBreakState, setBreakState, setBreakDepartment, clearBreakState,
-  listDepartments, findDepartments, setWorkingDepartment, setSessionDepartment,
+  listDepartments, findDepartments, setWorkingDepartment, setSessionDepartment, setSessionRework,
   findDaySessions, contractIsRetired, keepRemoved, findRemoved, putBackRemoved,
   isCommitted, addCommit, removeCommit, isExported, getClockState, findSessionsForExport,
 };
