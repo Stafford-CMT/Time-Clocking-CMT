@@ -1285,6 +1285,23 @@ $('#phone-whole-day').addEventListener('click', () => phoneZoomTo(null));
   }, { passive: false });
   const end = (event) => { if (event.touches.length < 2) pinch = null; if (!event.touches.length) setTimeout(() => { phonePinching = false; }, 0); };
   document.addEventListener('touchend', end); document.addEventListener('touchcancel', end);
+  /* Laptops (24 Nov 2026): the mouse wheel over the timeline zooms, keeping the time under the pointer in place, like the pinch.
+   * Over the contract names the wheel still scrolls the list; Shift + wheel still slides along the day. A touchpad pinch arrives
+   * as Ctrl + wheel, so it zooms the same way (and not the whole page). */
+  scroller.addEventListener('wheel', (event) => {
+    if (event.shiftKey || !event.deltaY || isPhone() || document.body.classList.contains('is-resizing')) return;
+    if (!event.target.closest('.timeline-lane, .timeline-heading')) return;
+    event.preventDefault();
+    clearTimeout(handleZoom.timer); cancelAnimationFrame(handleZoom.frame); handleZoom.frame = null; handleZoom.saved = null; // your zoom wins over a slide's zoom-back
+    closeBlockMenu();
+    const lines = event.deltaMode === 1 ? event.deltaY * 33 : event.deltaMode === 2 ? event.deltaY * 400 : event.deltaY; // in pixels
+    const step = Math.max(-200, Math.min(200, event.ctrlKey ? lines * 4 : lines)); // a touchpad pinch sends small steps
+    const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, editTimesZoom.zoom * 1.15 ** (-step / 100))); // one mouse notch = 15%
+    if (zoom === editTimesZoom.zoom) return;
+    const box = dayBox(); const minute = (event.clientX - box.left) / box.width * 1440;
+    editTimesZoom.set(zoom, minute);
+    const after = dayBox(); scroller.scrollLeft += after.left + minute / 1440 * after.width - event.clientX; // that minute stays under the pointer
+  }, { passive: false });
 }
 applyPhoneMode();
 PHONE_QUERY.addEventListener('change', applyPhoneMode);
