@@ -40,4 +40,18 @@ function timeToSeconds(value) {
   return h * 3600 + m * 60 + (s || 0);
 }
 
-module.exports = { localDate, localTime, splitByDay, timeToSeconds, TIME_RE, DATE_RE };
+const secondsToTime = (s) => [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map(pad).join(':');
+
+/* Break time never counts: the parts of [start, end) ('HH:MM:SS') that fall
+ * outside every break in `breaks` ([{ start, end }]), as [{ start, end }].
+ * Empty when the whole span is break. */
+function cutOutBreaks(start, end, breaks) {
+  let pieces = [[timeToSeconds(start), timeToSeconds(end)]];
+  for (const brk of breaks) {
+    const from = timeToSeconds(String(brk.start)); const to = timeToSeconds(String(brk.end));
+    pieces = pieces.flatMap(([a, b]) => (to <= a || from >= b ? [[a, b]] : [[a, from], [to, b]].filter(([x, y]) => y > x)));
+  }
+  return pieces.map(([a, b]) => ({ start: secondsToTime(a), end: secondsToTime(b) }));
+}
+
+module.exports = { localDate, localTime, splitByDay, timeToSeconds, secondsToTime, cutOutBreaks, TIME_RE, DATE_RE };

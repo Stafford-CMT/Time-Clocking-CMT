@@ -11,7 +11,8 @@ const { getPool, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 const teamService = require('./teamService');
 const { uid } = require('../utils/ids');
-const { localDate, splitByDay, timeToSeconds, TIME_RE, DATE_RE } = require('../utils/time');
+const workingPatternsRepo = require('../repositories/workingPatternsRepo');
+const { localDate, splitByDay, cutOutBreaks, timeToSeconds, TIME_RE, DATE_RE } = require('../utils/time');
 
 const isAdmin = (actor) => actor.userType === 'admin';
 
@@ -114,13 +115,30 @@ async function setSessionRework(actor, id, value) {
   return getState(actor);
 }
 
+// The breaks in a person's working pattern on `date` ([] without a pattern or on a day off).
+async function breaksOn(db, userId, date) {
+  return (await workingPatternsRepo.dayFor(db, userId, date))?.breaks || [];
+}
+
+// Break time never counts, however it got there: added or edited time may not run into one of the person's breaks.
+async function assertClearOfBreaks(db, userId, date, start, end) {
+  const from = timeToSeconds(start); const to = timeToSeconds(end);
+  const clash = (await breaksOn(db, userId, date)).find((brk) => from < timeToSeconds(brk.end) && to > timeToSeconds(brk.start));
+  if (clash) throw new ApiError(400, `That runs into the break at ${String(clash.start).slice(0, 5)}–${String(clash.end).slice(0, 5)}. Break time never counts`);
+}
+
 // Stops the user's running clock, if any, and records it as completed
-// session(s). Returns what was running, or null. An automatic stop marks the
-// last piece -- the one ending at the clock-out time -- for the person to check.
+// session(s). Returns what was running, or null. Break time never counts: each
+// day's piece is cut around that day's breaks, so a clock started during a
+// break records from the end of it (and one stopped inside a break, nothing).
+// An automatic stop marks the last piece for the person to check.
 async function closeActive(db, userId, endMs, { autoStopped = false } = {}) {
   const active = await clockRepo.findActive(db, userId);
   if (!active) return null;
-  const pieces = splitByDay(active.startedAt, endMs);
+  const pieces = [];
+  for (const day of splitByDay(active.startedAt, endMs)) {
+    pieces.push(...cutOutBreaks(day.start, day.end, await breaksOn(db, userId, day.date)).map((piece) => ({ date: day.date, ...piece })));
+  }
   for (const [index, piece] of pieces.entries()) {
     await clockRepo.insertTimeSession(db, { id: uid('session'), contractId: active.contractId, userId, ...piece, reworkReason: active.reworkReason, department: active.department, autoStopped: autoStopped && index === pieces.length - 1 });
   }
@@ -147,7 +165,8 @@ function autoClockOutAt(startedAt, clockOut) {
 /* The clock schedule, run by the server so nobody needs a page open:
  * - Breaks: a clock that was already running when one of the person's breaks
  *   starts is paused at the break start and restarted at the break end.
- *   Starting a clock during a break (working through it) is left alone. A
+ *   A clock started during a break keeps running, but the break is left out
+ *   when it is recorded (closeActive): break time never counts. A
  *   break that ends at or after the clock-out time ends the clock instead,
  *   marked like an auto clock-out.
  * - Auto clock-out, as above, marked for the person to check.
@@ -250,6 +269,7 @@ async function stop(actor, contractId) {
 // go -- so this takes a batch and applies it all or nothing.
 async function updateSessions(actor, changes) {
   if (!Array.isArray(changes) || !changes.length) throw new ApiError(400, 'changes must be a non-empty array');
+  const addedIds = [];
   await withTransaction(async (db) => {
     for (const change of changes) {
       const session = await clockRepo.findTimeSession(db, change.id);
@@ -266,17 +286,30 @@ async function updateSessions(actor, changes) {
       if (change.autoStopped !== undefined && change.autoStopped !== false) throw new ApiError(400, 'autoStopped can only be cleared');
       // Moving the end of an auto-stopped block, or keeping it (autoStopped:
       // false), means its owner has checked it.
+      const startMoved = timeToSeconds(startTime) !== timeToSeconds(session.start);
       const endMoved = timeToSeconds(endTime) !== timeToSeconds(session.end);
-      await clockRepo.updateTimeSession(db, session.id, {
-        start: startTime,
-        end: endTime,
-        unlinkedStart: change.unlinkedStart ?? session.unlinkedStart,
-        unlinkedEnd: change.unlinkedEnd ?? session.unlinkedEnd,
-        autoStopped: session.autoStopped && !endMoved && change.autoStopped !== false,
-      });
+      const unlinkedStart = change.unlinkedStart ?? session.unlinkedStart;
+      const unlinkedEnd = change.unlinkedEnd ?? session.unlinkedEnd;
+      const autoStopped = session.autoStopped && !endMoved && change.autoStopped !== false;
+      // Break time never counts: a block dragged across a break is saved as the
+      // pieces either side of it. The block keeps the piece on the edge that
+      // didn't move (so a dragged start keeps the last piece); the rest are new
+      // blocks with the same contract, rework and department.
+      const pieces = startMoved || endMoved ? cutOutBreaks(startTime, endTime, await breaksOn(db, session.userId, session.date)) : [{ start: startTime, end: endTime }];
+      if (!pieces.length) throw new ApiError(400, 'That time is all break. Break time never counts');
+      const last = pieces.length - 1;
+      const keep = startMoved && !endMoved ? last : 0;
+      for (const [index, piece] of pieces.entries()) {
+        const fields = { ...piece, unlinkedStart: index === 0 ? unlinkedStart : false, unlinkedEnd: index === last ? unlinkedEnd : false, autoStopped: index === last && autoStopped };
+        if (index === keep) { await clockRepo.updateTimeSession(db, session.id, fields); continue; }
+        const id = uid('session');
+        await clockRepo.insertTimeSession(db, { id, contractId: session.contractId, userId: session.userId, date: session.date, start: piece.start, end: piece.end, reworkReason: session.reworkReason, department: session.department, enteredBy: session.enteredBy, enteredAt: session.enteredAt });
+        await clockRepo.updateTimeSession(db, id, fields);
+        addedIds.push(id);
+      }
     }
   });
-  return getState(actor);
+  return { ...(await getState(actor)), addedIds }; // so Undo can take the new pieces away again
 }
 
 // Undo of a removed block in Edit Times: puts it back exactly as it was.
@@ -310,6 +343,7 @@ async function restoreSession(actor, session) {
     assertCanActOn(actor, removed.userId);
     if (await clockRepo.findTimeSession(db, id)) throw new ApiError(409, 'That time block is already there');
     await assertNotCommitted(db, actor, removed.userId, removed.date);
+    await assertClearOfBreaks(db, removed.userId, removed.date, removed.start, removed.end);
     await assertFree(db, removed.userId, removed.date, removed.start, removed.end);
     await clockRepo.putBackRemoved(db, id);
   });
@@ -382,6 +416,7 @@ async function addSession(actor, body, { take = false } = {}) {
     await assertNotCommitted(db, actor, userId, date);
     // The person's department for that day (their own, or today's Working in); changed afterwards from the block if needed.
     const department = (await checkDepartment(db, userId, body.department)) || (await departmentFor(db, userId, date));
+    await assertClearOfBreaks(db, userId, date, start, end); // the browser already saves drawn time as a piece either side of a break
     if (take) await takeTime(db, actor, userId, date, start, end, changes);
     else await assertFree(db, userId, date, start, end);
     await clockRepo.insertTimeSession(db, { id, contractId, userId, date, start, end, reworkReason: reason, department, enteredBy: actor.id, enteredAt: now });
