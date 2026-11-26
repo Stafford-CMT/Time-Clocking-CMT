@@ -93,6 +93,8 @@ h2 { font-size: 27px; }
 @media (max-width: 1300px) { .tile-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .sidebar { width: 200px; }.main-content { padding: 30px 28px 55px; }.tile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 650px) { .app-shell { display: block; }.sidebar { width: 100%; flex-basis: auto; height: auto; padding: 17px 18px 12px; display: block; border-right: 0; border-bottom: 1px solid var(--line); }.sidebar-resize { display: none; }.brand-copy { margin: -31px 0 27px 55px; }.primary-nav { display: flex; gap: 5px; }.nav-item { flex: 1; padding: 9px 10px; justify-content: center; font-size: 11px; }.nav-group { flex: 1; }.sidebar-note { display: none; }.main-content { padding: 25px 16px 42px; }.topbar { margin-bottom: 40px; }.profile-text { display: none; }.section-heading, .dashboard-toolbar { align-items: flex-start; flex-direction: column; }.section-heading { gap: 16px; }.metrics { grid-template-columns: 1fr; gap: 9px; margin-bottom: 35px; }.metric-card { min-height: 103px; }.tile-grid { grid-template-columns: 1fr; }.toolbar-actions { width: 100%; justify-content: space-between; }.toolbar-hint { display: block; margin: 5px 0 0; }.add-button { align-self: stretch; justify-content: center; } }
+/* GLOW RULE (26 Nov 2026): every glow in the app uses these same four soft blur layers and strengths. Never add a solid
+ * spread ring (0 0 0 Npx): it shows as a hard band. Only the colour and the timing may change (see break-pulse). */
 /* Running tile: wide bloom (option C, 19 Nov 2026), four blurs out to 140px, very faint at the outside; breathes a little wider and stronger. */
 .tile:has(.clock-button.is-running), .metric-card.accent-orange.is-running { border-color: var(--c-4eb9ac); box-shadow: 0 0 12px color-mix(in srgb, var(--bloom-c, var(--teal)) 35%, transparent), 0 0 40px color-mix(in srgb, var(--bloom-c, var(--teal)) 18%, transparent), 0 0 90px color-mix(in srgb, var(--bloom-c, var(--teal)) 8%, transparent), 0 0 140px color-mix(in srgb, var(--bloom-c, var(--teal)) 8%, transparent), var(--shadow); animation: active-glow 2.4s ease-in-out infinite; }
 @keyframes active-glow {
@@ -339,9 +341,18 @@ body.is-phone .dashboard-search { display: none; } /* laptops only; phones use t
 .schedule-row.is-read-only .break-block:hover { background: var(--c-ffe4da); }
 .schedule-row.is-read-only .user-cell, .schedule-row.is-read-only .timeline-lane > * { opacity: .45; }
 /* A clock paused for a scheduled break: restarts by itself unless stopped */
-.clock-button.is-paused { background: var(--teal-dark-solid); }
-.paused-time { color: var(--teal-dark); }
-.metric-clock-button.is-paused { border-color: var(--teal-dark-solid); background: var(--teal-dark-solid); color: #fff; }
+/* On break (option B, 26 Nov 2026): orange edge, orange words and button, and an orange glow that pulses on and off. Same four
+ * soft layers as the running bloom at its peak, but quicker and fading right out between pulses, so it reads as waiting. */
+.clock-button.is-paused { background: var(--c-e09a52); }
+.paused-time { color: var(--c-a85a17); }
+.back-at { display: block; margin-top: 1px; color: var(--muted); font: 500 10px 'DM Sans', sans-serif; }
+.metric-clock-button.is-paused { border-color: var(--c-e09a52); background: var(--c-e09a52); color: #fff; }
+.tile:has(.clock-button.is-paused), .metric-card.accent-orange:has(.metric-clock-button.is-paused) { border-color: var(--c-e09a52); animation: break-pulse 1.6s ease-in-out infinite; }
+@keyframes break-pulse {
+  0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--c-e09a52) 0%, transparent), 0 0 34px color-mix(in srgb, var(--c-e09a52) 0%, transparent), 0 0 80px color-mix(in srgb, var(--c-e09a52) 0%, transparent), 0 0 120px color-mix(in srgb, var(--c-e09a52) 0%, transparent), var(--shadow); }
+  50% { box-shadow: 0 0 14px color-mix(in srgb, var(--c-e09a52) 42%, transparent), 0 0 46px color-mix(in srgb, var(--c-e09a52) 22%, transparent), 0 0 100px color-mix(in srgb, var(--c-e09a52) 10%, transparent), 0 0 160px color-mix(in srgb, var(--c-e09a52) 10%, transparent), var(--shadow); }
+}
+@media (prefers-reduced-motion: reduce) { .tile:has(.clock-button.is-paused), .metric-card.accent-orange:has(.metric-clock-button.is-paused) { animation: none; box-shadow: 0 0 14px color-mix(in srgb, var(--c-e09a52) 40%, transparent), var(--shadow); } }
 /* Edit Times undo / redo, beside Commit */
 .edit-times-card .schedule-toolbar .undo-redo { display: flex; flex: 0 0 auto; align-self: stretch; gap: 4px; }
 .undo-redo-button { display: grid; place-items: center; width: 34px; padding: 0; border: 1.5px solid var(--teal); border-radius: 8px; background: transparent; color: var(--teal-dark); cursor: pointer; }
